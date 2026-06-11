@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PgPassthrough.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d9242eed77561980948f723f672135d16cc5f861")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+30ee51c2b9473bcb8c5e3179b9afd3c0a25a929f")]
 [assembly: System.Reflection.AssemblyProductAttribute("PgPassthrough.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PgPassthrough.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

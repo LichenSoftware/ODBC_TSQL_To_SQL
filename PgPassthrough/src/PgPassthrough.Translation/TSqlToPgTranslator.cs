@@ -63,10 +63,20 @@ public sealed class TSqlToPgTranslator : ISqlTranslator
             };
         }
 
-        // 2. Compute cache key
-        string cacheKey = NormalisedKeyPrinter.Normalise(batch);
+        // 2. Classify early — DML with literal values must not use normalised cache keys
+        //    because the normaliser strips literal values.
+        var stmtType = StatementClassifier.ClassifyBatch(batch);
 
-        // 3. Cache lookup
+        // 3. Compute cache key — use normalised key only for SELECT statements.
+        //    For DML (INSERT/UPDATE/DELETE), use the raw SQL as the key to avoid
+        //    collisions between statements that differ only in literal values.
+        string cacheKey = stmtType switch
+        {
+            StatementType.Select => NormalisedKeyPrinter.Normalise(batch),
+            _ => tsql // raw SQL preserves literal values
+        };
+
+        // 4. Cache lookup
         if (_cache.TryGet(cacheKey, out var cached))
         {
             return new TranslationResult
@@ -77,9 +87,6 @@ public sealed class TSqlToPgTranslator : ISqlTranslator
                 Warnings       = cached.Warnings
             };
         }
-
-        // 4. Classify
-        var stmtType = StatementClassifier.ClassifyBatch(batch);
 
         // 5. Translate
         var emitter = new PgSqlEmitter(context);
