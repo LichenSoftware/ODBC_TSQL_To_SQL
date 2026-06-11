@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PgPassthrough.Core/PgPassthrough.Core.csproj" />
+    <Project Path="src/PgPassthrough.Execution/PgPassthrough.Execution.csproj" />
+    <Project Path="src/PgPassthrough.Results/PgPassthrough.Results.csproj" />
+    <Project Path="src/PgPassthrough.Server/PgPassthrough.Server.csproj" />
+    <Project Path="src/PgPassthrough.SqlParser/PgPassthrough.SqlParser.csproj" />
+    <Project Path="src/PgPassthrough.Tds/PgPassthrough.Tds.csproj" />
+    <Project Path="src/PgPassthrough.Translation/PgPassthrough.Translation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PgPassthrough.Integration.Tests/PgPassthrough.Integration.Tests.csproj" />
+    <Project Path="tests/PgPassthrough.SqlParser.Tests/PgPassthrough.SqlParser.Tests.csproj" />
+    <Project Path="tests/PgPassthrough.Tds.Tests/PgPassthrough.Tds.Tests.csproj" />
+    <Project Path="tests/PgPassthrough.Translation.Tests/PgPassthrough.Translation.Tests.csproj" />
+  </Folder>
+</Solution>

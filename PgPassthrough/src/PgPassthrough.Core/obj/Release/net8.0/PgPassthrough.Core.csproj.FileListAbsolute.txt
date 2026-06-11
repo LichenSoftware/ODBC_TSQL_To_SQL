@@ -1,0 +1,14 @@
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\bin\Release\net8.0\PgPassthrough.Core.deps.json
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\bin\Release\net8.0\PgPassthrough.Core.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\bin\Release\net8.0\PgPassthrough.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\bin\Release\net8.0\PgPassthrough.Core.xml
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.csproj.AssemblyReference.cache
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.AssemblyInfoInputs.cache
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.AssemblyInfo.cs
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.csproj.CoreCompileInputs.cache
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\refint\PgPassthrough.Core.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.xml
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\PgPassthrough.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Release\net8.0\ref\PgPassthrough.Core.dll

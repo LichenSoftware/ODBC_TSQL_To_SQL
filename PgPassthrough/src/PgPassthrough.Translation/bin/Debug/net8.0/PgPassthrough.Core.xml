@@ -1,0 +1,400 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PgPassthrough.Core</name>
+    </assembly>
+    <members>
+        <member name="T:PgPassthrough.Core.Abstractions.IBackendProvider">
+            <summary>
+            Extensibility seam: represents a pluggable backend database engine.
+            Implement this interface to support backends beyond PostgreSQL.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.IBackendProvider.ProviderId">
+            <summary>Unique identifier for this provider, e.g. "postgresql", "mysql".</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.IBackendProvider.DisplayName">
+            <summary>Human-readable display name.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IBackendProvider.CreateExecutionEngine(PgPassthrough.Core.Models.BackendConnectionOptions)">
+            <summary>Returns the execution engine for this provider.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IBackendProvider.CreateSqlTranslator">
+            <summary>Returns the SQL translator for this provider.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.IExecutionEngine">
+            <summary>
+            Executes translated SQL against the backend database engine.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IExecutionEngine.ExecuteQueryAsync(PgPassthrough.Core.Models.ExecutionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Executes a query and returns a result set.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IExecutionEngine.ExecuteNonQueryAsync(PgPassthrough.Core.Models.ExecutionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Executes a non-query statement (INSERT, UPDATE, DELETE, DDL).
+            Returns rows affected.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IExecutionEngine.BeginTransactionAsync(PgPassthrough.Core.Models.TransactionOptions,System.Threading.CancellationToken)">
+            <summary>Begins a new transaction and returns its handle.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.IQueryHandler">
+            <summary>
+            Top-level request handler for a client session. Receives a parsed client
+            request and orchestrates translation + execution + result encoding.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.IResponseWriter">
+            <summary>
+            Protocol-agnostic interface for writing response data back to the client.
+            The TDS layer provides a concrete implementation that serialises tokens
+            into the TDS packet stream.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.WriteColumnsAsync(System.Collections.Generic.IReadOnlyList{PgPassthrough.Core.Models.ColumnMetadata},System.Threading.CancellationToken)">
+            <summary>Writes column metadata (schema row descriptor).</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.WriteRowAsync(System.Object[],System.Threading.CancellationToken)">
+            <summary>Writes a single data row.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.WriteDoneAsync(PgPassthrough.Core.Models.DoneStatus,System.Int64,System.Threading.CancellationToken)">
+            <summary>Writes a DONE token indicating statement completion.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.WriteErrorAsync(PgPassthrough.Core.Models.ServerError,System.Threading.CancellationToken)">
+            <summary>Writes an error back to the client.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.WriteInfoAsync(PgPassthrough.Core.Models.ServerMessage,System.Threading.CancellationToken)">
+            <summary>Writes an informational message.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResponseWriter.FlushAsync(System.Threading.CancellationToken)">
+            <summary>Flushes any buffered data to the underlying transport.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.IResultSet">
+            <summary>
+            Represents a tabular result set returned from query execution.
+            Modelled as a forward-only, async reader to handle large result sets
+            without materialising them entirely in memory.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.IResultSet.Columns">
+            <summary>Column schema for the current result.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResultSet.ReadAsync(System.Threading.CancellationToken)">
+            <summary>Advances to the next row. Returns false when exhausted.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResultSet.GetValue(System.Int32)">
+            <summary>Gets the raw value at the current row for the given column index.</summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.IResultSet.NextResultAsync(System.Threading.CancellationToken)">
+            <summary>
+            Advances to the next result set (for multi-statement batches).
+            Returns false if no more result sets exist.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.IResultSet.RowsAffected">
+            <summary>Total rows affected (for DML statements).</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.ISqlTranslator">
+            <summary>
+            Translates a SQL statement from the source dialect (T-SQL) into
+            the target backend dialect (e.g. PostgreSQL SQL).
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Abstractions.ISqlTranslator.Translate(System.String,PgPassthrough.Core.Models.TranslationContext)">
+            <summary>
+            Translates the given T-SQL text into a backend-compatible SQL statement.
+            Implementations are expected to be thread-safe and cache results internally.
+            </summary>
+            <param name="tsql">Raw T-SQL text from the client.</param>
+            <param name="context">Session context (database name, SET options, etc.).</param>
+            <returns>A <see cref="T:PgPassthrough.Core.Models.TranslationResult"/> containing the translated SQL and diagnostics.</returns>
+        </member>
+        <member name="T:PgPassthrough.Core.Abstractions.ITransactionHandle">
+            <summary>
+            Represents an active database transaction. Scoped to a single client session.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.ITransactionHandle.TransactionId">
+            <summary>Opaque transaction identifier for logging.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Abstractions.ITransactionHandle.IsActive">
+            <summary>Whether this transaction is still active (not committed or rolled back).</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Diagnostics.DiagnosticsService">
+            <summary>
+            Centralises logging and metrics for the middleware.
+            Uses Microsoft.Extensions.Logging for structured logging and
+            System.Diagnostics.Metrics for OpenTelemetry-compatible instrumentation.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Core.Diagnostics.DiagnosticsService.BeginTiming(System.String)">
+            <summary>
+            Creates a timing scope. Dispose to record elapsed time.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ClientRequest">
+            <summary>
+            Discriminated union of all request types a client session can issue.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ClientRequest.RequestId">
+            <summary>Unique identifier for tracing this request through logs.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ClientRequest.Session">
+            <summary>The session that originated this request.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.SqlBatchRequest">
+            <summary>A plain SQL batch request (TDS SQLBatch message).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SqlBatchRequest.SqlText">
+            <summary>Raw T-SQL text as received from the client.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.RpcRequest">
+            <summary>
+            A stored procedure or system procedure RPC request (TDS RPC message).
+            Covers both user sprocs and special system calls like sp_executesql.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.TransactionRequest">
+            <summary>
+            Transaction control request: BEGIN, COMMIT, ROLLBACK, SAVEPOINT.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ColumnMetadata">
+            <summary>
+            Describes a single column in a result set, in SQL Server client terms.
+            Used to build the COLMETADATA token in the TDS response.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.TypeCode">
+            <summary>SQL Server type code (e.g. SqlDbType value).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.MaxLength">
+            <summary>Max length in bytes. -1 for MAX types (nvarchar(max), etc.).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.Precision">
+            <summary>Numeric precision (for decimal/numeric types).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.Scale">
+            <summary>Numeric scale (for decimal/numeric types).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.IsIdentity">
+            <summary>Whether this column has an IDENTITY property.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ColumnMetadata.Ordinal">
+            <summary>Zero-based ordinal position.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.SqlServerTypeCode">
+            <summary>
+            SQL Server type codes that appear in TDS COLMETADATA tokens.
+            This is a subset covering the most common types. Extend as needed.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ExecutionRequest">
+            <summary>
+            A request sent to the execution engine after translation.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionRequest.Sql">
+            <summary>The translated SQL to execute against the backend.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionRequest.Parameters">
+            <summary>Bound parameter values.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionRequest.Transaction">
+            <summary>Active transaction to enlist this command in, if any.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionRequest.CommandTimeout">
+            <summary>Per-command timeout override. Null uses the engine default.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionRequest.RequestId">
+            <summary>Tracing correlation id.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ExecutionResult">
+            <summary>
+            The result of executing a SQL command against the backend.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionResult.Error">
+            <summary>Set when IsSuccess is false.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionResult.ResultSet">
+            <summary>Result set reader. Non-null for SELECT statements.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionResult.RowsAffected">
+            <summary>Rows affected for DML statements.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ExecutionResult.GeneratedIdentity">
+            <summary>
+            RETURNING clause value or equivalent for identity retrieval.
+            Populated when the translated query included identity capture.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.BackendError">
+            <summary>
+            An error returned from the backend database.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.TransactionOptions">
+            <summary>
+            Options for transaction isolation.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.QueryParameter">
+            <summary>
+            A named or positional query parameter with its SQL Server type information.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.QueryParameter.Name">
+            <summary>
+            Parameter name including the @ prefix, e.g. "@CustomerId".
+            For positional parameters, use "@p1", "@p2", etc.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.QueryParameter.Value">
+            <summary>The parameter value. Null represents SQL NULL.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.QueryParameter.TsqlType">
+            <summary>The declared T-SQL data type, e.g. "nvarchar(50)", "int".</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.QueryParameter.IsOutput">
+            <summary>Whether this is an OUTPUT parameter.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.DoneStatus">
+            <summary>
+            Status flags for the TDS DONE token.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ServerError">
+            <summary>An error to be sent to the client as a TDS ERROR token.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ServerMessage">
+            <summary>An informational message (TDS INFO token, severity 0-10).</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.ServerConfiguration">
+            <summary>
+            Top-level server configuration, bound from appsettings.json.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.Port">
+            <summary>TCP port to listen on. Default: 1433.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.BindAddress">
+            <summary>Bind address. Default: 0.0.0.0 (all interfaces).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.MaxConcurrentSessions">
+            <summary>Maximum concurrent client sessions.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.Backend">
+            <summary>PostgreSQL backend configuration.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.Cache">
+            <summary>Translation cache settings.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.ServerConfiguration.EnableQueryLogging">
+            <summary>
+            Whether to enable detailed query logging.
+            Warning: may log sensitive data. Disable in production by default.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.BackendConnectionOptions">
+            <summary>
+            Connection options for the backend PostgreSQL instance.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.BackendConnectionOptions.Password">
+            <summary>
+            Password. In production, prefer environment variable or secrets manager.
+            Do not commit real passwords in appsettings.json.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.CacheConfiguration">
+            <summary>
+            Configuration for the translation result cache.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.CacheConfiguration.MaxEntries">
+            <summary>Maximum number of distinct SQL strings to cache translations for.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.CacheConfiguration.EntryTtl">
+            <summary>How long a cache entry remains valid. Null means indefinite.</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.SessionContext">
+            <summary>
+            Per-client-session state. Immutable snapshot per request; mutable fields
+            updated by the session manager after SET statements or USE commands.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.ApplicationName">
+            <summary>Client application name, from Login7.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.ClientHostName">
+            <summary>Client host name, from Login7.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.LoginName">
+            <summary>Authenticated login name.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.DatabaseName">
+            <summary>Current database context (from USE or Login7).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.AnsiNulls">
+            <summary>Current SET ANSI_NULLS setting. Default: ON (T-SQL default).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.QuotedIdentifier">
+            <summary>Current SET QUOTED_IDENTIFIER setting. Default: ON.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.InTransaction">
+            <summary>Whether an explicit transaction is active.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.ActiveTransactionHandle">
+            <summary>Active transaction handle, if any.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.LastRowCount">
+            <summary>The @@ROWCOUNT value from the last statement execution.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.SessionContext.LastIdentityValue">
+            <summary>The last identity value inserted, for @@IDENTITY / SCOPE_IDENTITY().</summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.TranslationContext">
+            <summary>
+            Context provided to the translator alongside the SQL text.
+            Allows session-specific translation decisions (e.g., database name substitution).
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.TranslationContext.Parameters">
+            <summary>
+            Named parameter definitions passed with the query (e.g. from sp_executesql).
+            The translator uses these to ensure parameter token substitution is correct.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.TranslationResult">
+            <summary>
+            Output of the translation pipeline.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.TranslationResult.TranslatedSql">
+            <summary>The translated SQL ready for the backend.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.TranslationResult.FromCache">
+            <summary>Whether this result came from the translation cache.</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.TranslationResult.Warnings">
+            <summary>Any warnings generated during translation (non-fatal).</summary>
+        </member>
+        <member name="P:PgPassthrough.Core.Models.TranslationResult.StatementType">
+            <summary>
+            Indicates the statement type to allow the caller to decide
+            whether to use ExecuteQuery vs ExecuteNonQuery.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Core.Models.TranslationWarning">
+            <summary>
+            A non-fatal translation warning that should be forwarded to the client
+            as an informational message.
+            </summary>
+        </member>
+    </members>
+</doc>

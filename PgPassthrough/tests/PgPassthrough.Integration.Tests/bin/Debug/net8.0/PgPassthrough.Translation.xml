@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PgPassthrough.Translation</name>
+    </assembly>
+    <members>
+        <member name="T:PgPassthrough.Translation.FunctionMap.TsqlFunctionMap">
+             <summary>
+             Maps T-SQL function names to their PostgreSQL equivalents.
+             
+             Three categories:
+               1. Direct rename: same semantics, different name (GETDATE → NOW)
+               2. Signature change: same concept, different argument order or structure
+               3. Unsupported: no PostgreSQL equivalent (emit warning)
+            
+             This map covers the ~50 most common T-SQL functions seen in OLTP applications.
+             </summary>
+        </member>
+        <member name="F:PgPassthrough.Translation.FunctionMap.TsqlFunctionMap.DirectRenames">
+            <summary>
+            Simple 1:1 renames. Key = T-SQL name (UPPER), Value = PostgreSQL name.
+            </summary>
+        </member>
+        <member name="F:PgPassthrough.Translation.FunctionMap.TsqlFunctionMap.SpecialFunctions">
+            <summary>
+            Functions that require structural transformation (not just a rename).
+            The translator handles these in dedicated code paths.
+            </summary>
+        </member>
+        <member name="F:PgPassthrough.Translation.FunctionMap.TsqlFunctionMap.GlobalVariables">
+            <summary>
+            Global variables and their PostgreSQL translations.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Translation.FunctionMap.TypeMap">
+            <summary>
+            Maps T-SQL data type names to PostgreSQL equivalents.
+            Used in CAST/CONVERT expressions and CREATE TABLE DDL.
+            </summary>
+        </member>
+        <member name="F:PgPassthrough.Translation.FunctionMap.TypeMap.Map">
+            <summary>
+            T-SQL type name (UPPER) → PostgreSQL type name.
+            Types with parameters (length, precision, scale) are handled
+            by the caller — this map only covers the base type name.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Translation.FunctionMap.TypeMap.Translate(System.String,System.Nullable{System.Int32},System.Boolean,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Translates a T-SQL type name with optional length/precision/scale
+            to its PostgreSQL equivalent.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Translation.TranslationCache">
+             <summary>
+             Thread-safe LRU cache for translation results.
+             Key: normalised SQL string (from NormalisedKeyPrinter).
+             Value: TranslationResult.
+            
+             Uses a ConcurrentDictionary with a bounded size.
+             When the cache exceeds the max entries, the oldest 25% of entries
+             are evicted (approximate LRU via insertion order tracking).
+             </summary>
+        </member>
+        <member name="T:PgPassthrough.Translation.Translators.PgSqlEmitter">
+             <summary>
+             The core T-SQL → PostgreSQL translator.
+             Implements <see cref="T:PgPassthrough.SqlParser.Ast.ISqlVisitor`1"/> where TResult = string.
+            
+             Each Visit method returns a SQL fragment string. The top-level VisitBatch
+             concatenates all statement translations separated by semicolons.
+            
+             Key translations:
+               - SELECT TOP N → LIMIT N
+               - ISNULL(a,b) → COALESCE(a,b)
+               - GETDATE() → NOW()
+               - CONVERT(type, val) → CAST(val AS type)
+               - [bracketed] identifiers → "double-quoted" identifiers
+               - @param → $N positional parameters (for parameterised queries)
+               - @@ROWCOUNT → lastval() etc.
+               - Table hints stripped with warning
+               - IDENTITY → GENERATED ALWAYS AS IDENTITY
+               - #temp → pg_temp.temp
+               - String + operator → || concatenation (context-sensitive)
+             </summary>
+        </member>
+        <member name="T:PgPassthrough.Translation.TSqlToPgTranslator">
+             <summary>
+             Production implementation of <see cref="T:PgPassthrough.Core.Abstractions.ISqlTranslator"/>.
+            
+             Pipeline:
+               1. Parse the T-SQL text into an AST.
+               2. Compute the normalised cache key.
+               3. Check the translation cache — if hit, return immediately.
+               4. Classify the statement type.
+               5. Walk the AST with <see cref="T:PgPassthrough.Translation.Translators.PgSqlEmitter"/> to produce PostgreSQL SQL.
+               6. Store the result in the cache.
+               7. Return the result with warnings and statement type.
+            
+             This class is thread-safe. The cache is shared across all sessions.
+             Each call to <see cref="M:PgPassthrough.Translation.TSqlToPgTranslator.Translate(System.String,PgPassthrough.Core.Models.TranslationContext)"/> creates its own emitter instance
+             (visitors carry state and are not reused).
+             </summary>
+        </member>
+    </members>
+</doc>

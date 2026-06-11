@@ -1,0 +1,401 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PgPassthrough.SqlParser</name>
+    </assembly>
+    <members>
+        <member name="T:PgPassthrough.SqlParser.Ast.TempTableDetector">
+            <summary>
+            Returns true if the subtree contains any reference to a temporary table
+            (#name or ##name). Used to decide whether temp-table rewriting is needed.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.GlobalVariableCollector">
+            <summary>
+            Collects all <see cref="T:PgPassthrough.SqlParser.Ast.GlobalVariableExpression"/> names referenced in a subtree.
+            Used so the translator can decide which global variable rewrites are needed
+            (e.g. @@ROWCOUNT → pg_affected_rows, @@IDENTITY → lastval()).
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.ParameterCollector">
+            <summary>
+            Collects all distinct @parameter names from a statement.
+            Used to validate that all bound parameters are accounted for.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.TableHintCollector">
+            <summary>
+            Returns all table hint names found in the FROM clause of a statement.
+            The translator uses this to emit warnings for hints that have no PostgreSQL
+            equivalent (NOLOCK, UPDLOCK, etc.) and silently strips them.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlExpression">
+            <summary>Base for all expression-level nodes.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.StringLiteralExpression.IsUnicode">
+            <summary>True if the original was N'...' (Unicode prefix).</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.ObjectName">
+            <summary>
+            A possibly-qualified name: server.database.schema.object or any prefix thereof.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.ObjectName.TwoPartName">
+            <summary>Canonical two-part name: schema.name or just name.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.ObjectName.IsTemporaryTable">
+            <summary>True if the name starts with # (temp table).</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.ColumnReferenceExpression">
+            <summary>
+            A column reference: [table.]column
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.ColumnReferenceExpression.TableAlias">
+            <summary>Optional table/alias qualifier.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.ParameterExpression.Name">
+            <summary>The parameter name including the @ prefix.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.GlobalVariableExpression.Name">
+            <summary>E.g. "@@ROWCOUNT", "@@IDENTITY".</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.FunctionCallExpression.Name">
+            <summary>Function name, possibly qualified (e.g. "dbo.udf_GetPrice").</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.ConvertExpression.Style">
+            <summary>Optional style argument (e.g. CONVERT(VARCHAR, dt, 103)).</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.CaseExpression.InputExpression">
+            <summary>Non-null for simple CASE (CASE expr WHEN val THEN ...) form.</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.ISqlVisitor`1">
+            <summary>
+            Visitor interface over the complete T-SQL AST.
+            Every concrete node type has a corresponding Visit method.
+            
+            Type parameter <typeparamref name="TResult"/> is the return type of each visit.
+            For the translator it will be <c>string</c> (emitted PostgreSQL text).
+            For diagnostic walkers it may be <c>bool</c> or a collector type.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.NormalisedKeyPrinter">
+             <summary>
+             Produces a normalised SQL string suitable for use as a translation cache key.
+            
+             Differences from <see cref="T:PgPassthrough.SqlParser.Ast.SqlPrinter"/>:
+               - All literal values (integers, decimals, strings) are replaced with a
+                 canonical placeholder (?), so two queries that differ only in literal
+                 values produce the same cache key.
+               - Parameter names are preserved (they're already placeholders).
+               - Whitespace is collapsed to single spaces.
+               - All identifiers are upper-cased.
+            
+             Example:
+               "SELECT * FROM Orders WHERE Id = 42 AND Name = 'Smith'"
+               →  "SELECT * FROM ORDERS WHERE ID = ? AND NAME = ?"
+            
+             This is critical for cache hit rate in OLTP workloads, where the same
+             query structure is sent thousands of times with different literal values.
+             </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlNode">
+            <summary>
+            Base class for every AST node.
+            Carries source position so error messages and diagnostics can point back
+            to the exact location in the original T-SQL text.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SqlNode.Line">
+            <summary>1-based line in the source where this node begins.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SqlNode.Column">
+            <summary>1-based column in the source where this node begins.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Ast.SqlNode.Accept``1(PgPassthrough.SqlParser.Ast.ISqlVisitor{``0})">
+            <summary>Visitor dispatch. Each concrete node calls the matching visitor method.</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlBatch">
+            <summary>
+            Root of a parsed T-SQL batch. A batch is a sequence of one or more statements
+            separated by GO or semicolons.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlPrinter">
+             <summary>
+             Walks a T-SQL AST and regenerates canonical SQL text.
+            
+             This is NOT a translator — it emits T-SQL syntax, not PostgreSQL.
+             Its purpose is:
+               1. Debugging: inspect what the parser produced.
+               2. Round-trip testing: parse → print → compare to normalised input.
+               3. UnparsedStatement passthrough: re-emit raw SQL for unsupported nodes.
+               4. Cache key normalisation: the printer output is used as the translation
+                  cache key after stripping literal values (see <see cref="T:PgPassthrough.SqlParser.Ast.NormalisedKeyPrinter"/>).
+            
+             Output style:
+               - Keywords in UPPER CASE.
+               - Identifiers unquoted (no brackets or double-quotes).
+               - Consistent single-space separation.
+               - No trailing semicolons.
+             </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Ast.SqlPrinter.Print(PgPassthrough.SqlParser.Ast.SqlNode)">
+            <summary>Converts any <see cref="T:PgPassthrough.SqlParser.Ast.SqlNode"/> to its canonical SQL text.</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlVisitorBase`1">
+            <summary>
+            Default base implementation of <see cref="T:PgPassthrough.SqlParser.Ast.ISqlVisitor`1"/>.
+            Every method calls <see cref="M:PgPassthrough.SqlParser.Ast.SqlVisitorBase`1.DefaultVisit(PgPassthrough.SqlParser.Ast.SqlNode)"/> which returns <see cref="P:PgPassthrough.SqlParser.Ast.SqlVisitorBase`1.DefaultResult"/>.
+            Override only the node types you care about.
+            
+            Used by diagnostic walkers and as a base for the translator.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.StatementClassifier">
+            <summary>
+            Inspects a <see cref="T:PgPassthrough.SqlParser.Ast.SqlStatement"/> and returns its <see cref="T:PgPassthrough.Core.Models.StatementType"/>.
+            Used by the translation pipeline to decide whether to call ExecuteQuery
+            or ExecuteNonQuery on the backend, and to set the TDS DONE token's curCmd field.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Ast.StatementClassifier.ClassifyBatch(PgPassthrough.SqlParser.Ast.SqlBatch)">
+            <summary>
+            Classifies a batch that may contain multiple statements.
+            Returns <see cref="F:PgPassthrough.Core.Models.StatementType.Batch"/> if more than one meaningful statement exists,
+            otherwise the type of the single statement.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.SqlStatement">
+            <summary>Base for all statement-level nodes.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SelectItem.Expression">
+            <summary>null = wildcard (*)</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SelectItem.StarQualifier">
+            <summary>Optional "schema.table.*" qualifier when IsStar is true.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SelectItem.Alias">
+            <summary>Column alias (AS alias or bare alias).</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.InsertStatement.ValuesSource">
+            <summary>Either ValuesSource or SelectSource is set.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Ast.SetOptionStatement.Value">
+            <summary>Non-boolean value (e.g. SET ROWCOUNT 100, SET DATEFORMAT mdy).</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Ast.UnparsedStatement">
+            <summary>
+            Wraps a SQL statement that the parser could not fully parse.
+            The translator will pass the raw text through unchanged and emit a warning.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Lexer.Keywords">
+            <summary>
+            Static lookup table: uppercase keyword text → <see cref="T:PgPassthrough.SqlParser.Lexer.TokenKind"/>.
+            The lexer upper-cases the text it scans and checks here.
+            Any word not in this table is emitted as <see cref="F:PgPassthrough.SqlParser.Lexer.TokenKind.Identifier"/>.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Lexer.Token">
+            <summary>
+            A single lexical token produced by <see cref="T:PgPassthrough.SqlParser.Lexer.TSqlLexer"/>.
+            Immutable value type; stored by value in the token list.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Lexer.Token.Kind">
+            <summary>What kind of token this is.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Lexer.Token.Value">
+            <summary>
+            The raw source text of this token.
+            For keywords: the original casing (e.g. "Select", "SELECT", "select").
+            For identifiers: the unquoted name (brackets/quotes stripped).
+            For string literals: the content without the surrounding quotes,
+              with escape sequences resolved ('' → ').
+            For numeric literals: the original text.
+            For parameters: the name including the @ prefix.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Lexer.Token.Line">
+            <summary>1-based line number in the source text.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Lexer.Token.Column">
+            <summary>1-based column number in the source text.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Lexer.Token.IsEof">
+            <summary>Convenience: returns true for End-of-file.</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Lexer.TokenKind">
+            <summary>
+            Every distinct token type the T-SQL lexer can produce.
+            The order of keyword values is not significant; switch statements use the enum name.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Lexer.TSqlLexer">
+             <summary>
+             Converts a T-SQL source string into a flat list of <see cref="T:PgPassthrough.SqlParser.Lexer.Token"/>s.
+            
+             Design decisions:
+             - Single-pass, index-driven (no regex, no string splits).
+             - Produces ALL tokens including whitespace is skipped inline.
+             - Keywords are case-insensitive via the <see cref="T:PgPassthrough.SqlParser.Lexer.Keywords"/> table.
+             - Bracket identifiers [name] are unquoted; the brackets are consumed.
+             - Double-quoted identifiers "name" are also unquoted (QUOTED_IDENTIFIER behaviour).
+             - String literals resolve doubled-quote escapes: '' → '
+             - Unicode string literals N'...' are treated identically to '...'
+             - Block comments /* ... */ are skipped; nested block comments are supported.
+             - Line comments -- ... \n are skipped.
+             - Produces a single EndOfFile token at the end.
+             </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Lexer.TSqlLexer.Tokenize(System.String)">
+            <summary>
+            Tokenises <paramref name="source"/> and returns the complete token list,
+            terminated by an <see cref="F:PgPassthrough.SqlParser.Lexer.TokenKind.EndOfFile"/> token.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Parser.ParseContext">
+            <summary>
+            Wraps the token list produced by <see cref="T:PgPassthrough.SqlParser.Lexer.TSqlLexer"/> and provides
+            the lookahead / consume primitives used by <see cref="T:PgPassthrough.SqlParser.Parser.TSqlParser"/>.
+            
+            Thread-safety: not thread-safe. One instance per parse call.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.Parser.ParseContext.Current">
+            <summary>Current token without consuming it.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.Peek(System.Int32)">
+            <summary>Look ahead by <paramref name="offset"/> positions (0 = current).</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.Is(PgPassthrough.SqlParser.Lexer.TokenKind)">
+            <summary>True when the current token has the given kind.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.IsKeyword(System.String)">
+            <summary>True when the current token is a keyword matching <paramref name="keyword"/> (case-insensitive).</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.IsAny(PgPassthrough.SqlParser.Lexer.TokenKind[])">
+            <summary>True when the current token kind is in the given set.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.TryConsume(PgPassthrough.SqlParser.Lexer.TokenKind,PgPassthrough.SqlParser.Lexer.Token@)">
+            <summary>Returns true and advances if current kind matches.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.Expect(PgPassthrough.SqlParser.Lexer.TokenKind)">
+            <summary>Advances if the current token matches, otherwise throws.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.ExpectKeyword(System.String)">
+            <summary>Expects a keyword by value (case-insensitive).</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.Consume">
+            <summary>
+            Consumes and returns the current token, advancing position.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.TryConsume(PgPassthrough.SqlParser.Lexer.TokenKind)">
+            <summary>
+            Optionally consumes the current token if it matches.
+            Returns null if not matched.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.TryConsumeKeyword(System.String)">
+            <summary>
+            Optionally consumes a keyword token matching the given text.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.SkipTo(PgPassthrough.SqlParser.Lexer.TokenKind[])">
+            <summary>Skips tokens until EOF or one of the stop-kinds is the current token.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.SavePosition">
+            <summary>Records current position for backtracking.</summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.ParseContext.RestorePosition(System.Int32)">
+            <summary>Restores position to a previously saved value.</summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Parser.ParseException">
+            <summary>
+            Thrown when the parser encounters a T-SQL construct it cannot parse.
+            Callers should catch this and produce an <see cref="T:PgPassthrough.SqlParser.Ast.UnparsedStatement"/>
+            rather than failing the entire request.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.Parser.TSqlParser">
+             <summary>
+             Recursive-descent T-SQL parser.
+            
+             Input:  Token list from <see cref="T:PgPassthrough.SqlParser.Lexer.TSqlLexer"/>.
+             Output: <see cref="T:PgPassthrough.SqlParser.Ast.SqlBatch"/> containing one or more <see cref="T:PgPassthrough.SqlParser.Ast.SqlStatement"/> nodes.
+            
+             Design principles:
+             - Fail fast with a <see cref="T:PgPassthrough.SqlParser.Parser.ParseException"/> on hard syntax errors.
+             - For unsupported or unrecognised constructs, produce an
+               <see cref="T:PgPassthrough.SqlParser.Ast.UnparsedStatement"/> and skip to the next statement boundary.
+             - Never silently drop tokens that might matter for correctness.
+             - Operator precedence via a Pratt-style recursive expression parser.
+             </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.Parser.TSqlParser.Parse(System.String)">
+            <summary>
+            Parse a complete T-SQL batch and return the AST root.
+            Errors in individual statements produce <see cref="T:PgPassthrough.SqlParser.Ast.UnparsedStatement"/> nodes;
+            the batch itself never throws.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.SpExecuteSqlDecomposer">
+             <summary>
+             Decomposes an <c>sp_executesql</c> call into its constituent parts.
+            
+             sp_executesql has the signature:
+               sp_executesql @stmt, @params, @p1 = val1, @p2 = val2, ...
+            
+             Where:
+               @stmt   — the T-SQL text to execute (a string literal or variable)
+               @params — a type declaration string, e.g. N'@id INT, @name NVARCHAR(50)'
+               remaining args — the actual parameter values, in order or named
+            
+             This is the primary mechanism ODBC drivers use for parameterised queries.
+             Without correct handling of sp_executesql, no application using SqlCommand
+             with parameters will work correctly.
+            
+             The decomposer:
+               1. Extracts the SQL text from the first argument.
+               2. Parses the @params declaration string to build a typed parameter list.
+               3. Maps the value arguments back to their declared names.
+               4. Returns a <see cref="T:PgPassthrough.SqlParser.SpExecuteSqlResult"/> ready for the translation pipeline.
+             </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.SpExecuteSqlDecomposer.IsSpExecuteSql(PgPassthrough.Core.Models.RpcRequest)">
+            <summary>
+            Returns true if this RPC request is an sp_executesql call.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.SpExecuteSqlDecomposer.TryDecompose(PgPassthrough.Core.Models.RpcRequest)">
+            <summary>
+            Decomposes an sp_executesql RPC request.
+            Returns null if the call cannot be decomposed (e.g. dynamic SQL using a variable).
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.SqlParser.SpExecuteSqlDecomposer.ParseParamDeclarations(System.String)">
+            <summary>
+            Parses a parameter declaration string like:
+              N'@id INT, @name NVARCHAR(50), @active BIT'
+            into a list of <see cref="T:PgPassthrough.SqlParser.SpExecuteSqlDecomposer.TypedParameter"/>.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.SqlParser.SpExecuteSqlResult">
+            <summary>
+            The result of decomposing an sp_executesql call.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.SpExecuteSqlResult.SqlText">
+            <summary>The raw SQL text extracted from the @stmt argument.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.SpExecuteSqlResult.Ast">
+            <summary>Parsed AST of SqlText.</summary>
+        </member>
+        <member name="P:PgPassthrough.SqlParser.SpExecuteSqlResult.Parameters">
+            <summary>Bound parameter values with their declared T-SQL types.</summary>
+        </member>
+    </members>
+</doc>

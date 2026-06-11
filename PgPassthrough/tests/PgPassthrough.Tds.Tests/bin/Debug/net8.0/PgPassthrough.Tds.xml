@@ -1,0 +1,434 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PgPassthrough.Tds</name>
+    </assembly>
+    <members>
+        <member name="T:PgPassthrough.Tds.Messages.Login7Message">
+            <summary>
+            Parses a TDS LOGIN7 message (packet type 0x10).
+            
+            LOGIN7 carries authentication credentials and client capability flags.
+            We extract: login name, password (obfuscated), database name, app name,
+            host name, and the requested packet size.
+            
+            Reference: MS-TDS §2.2.6.4 LOGIN7
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.Login7Message.Parse(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Parses a LOGIN7 payload.
+            </summary>
+            <exception cref="T:PgPassthrough.Tds.Protocol.TdsProtocolException">Thrown for malformed payloads.</exception>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.Login7Message.DecodePassword(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            TDS password obfuscation: swap nibbles then XOR with 0xA5.
+            Reference: MS-TDS §2.2.6.4 PasswordChange
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Messages.PreLoginMessage">
+            <summary>
+            Represents a TDS PRELOGIN message (packet type 0x12).
+            
+            The client sends PRELOGIN before Login7 to negotiate capabilities.
+            Key fields we care about: TDS version, encryption request, instance name.
+            We respond indicating we do not support encryption (for now — see tech debt).
+            
+            Reference: MS-TDS §2.2.6.4, §2.2.6.5
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.PreLoginMessage.Parse(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Parses a PRELOGIN payload and returns a <see cref="T:PgPassthrough.Tds.Messages.PreLoginMessage"/>.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.PreLoginMessage.BuildResponse(System.UInt32,System.Byte)">
+            <summary>
+            Builds the server's PRELOGIN response payload.
+            We respond: same TDS version, encryption NOT SUPPORTED, MARS off.
+            
+            Tech debt: support TLS encryption (EncryptionOn) in a future phase.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Messages.RpcRequestMessage">
+            <summary>
+            Parses a TDS RPC request message (packet type 0x03).
+            
+            RPC messages are used for:
+              - Stored procedure calls: EXEC sp_name @p1, @p2
+              - sp_executesql: parameterised query execution
+              - sp_prepare / sp_execute: prepared statement handles
+              - Metadata discovery: sp_tables, sp_columns, sp_pkeys, etc.
+            
+            Reference: MS-TDS §2.2.6.5 RPC Request
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.RpcRequestMessage.Parse(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Parses the RPC request payload. May contain multiple procedure calls
+            separated by BatchFlag (0xFF 0xFF).
+            Returns the first procedure call; batched RPCs are uncommon in practice.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.RpcRequestMessage.ReadTypedValue(System.ReadOnlySpan{System.Byte},System.Int32,System.Byte)">
+            <summary>
+            Reads a typed value from the parameter stream.
+            Only the most common type tokens are decoded here; 
+            unknowns are returned as raw bytes.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Messages.RpcParameter">
+            <summary>A single parameter from an RPC request.</summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.RpcParameter.ToQueryParameter">
+            <summary>Converts to the core model parameter.</summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Messages.SqlBatchMessage">
+            <summary>
+            Parses a TDS SQLBATCH message (packet type 0x01).
+            
+            A SQLBatch is simply a UTF-16LE encoded SQL text, optionally preceded
+            by ALL_HEADERS (TDS 7.2+). We strip the ALL_HEADERS block and return
+            the raw SQL text.
+            
+            Reference: MS-TDS §2.2.6.7
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.SqlBatchMessage.Parse(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Parses the SQLBatch payload and returns the SQL text string.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Messages.SqlBatchMessage.SkipAllHeaders(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Skips the optional ALL_HEADERS block and returns the offset of the SQL text.
+            If no ALL_HEADERS block is present, returns 0.
+            
+            ALL_HEADERS layout:
+              [TotalLength:4 LE]
+              [HeaderLength:4 LE][HeaderType:2 LE][HeaderData:variable]*
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.ConfiguredCredentialValidator">
+            <summary>
+            Validates credentials against the static list defined in <see cref="T:PgPassthrough.Core.Models.ServerConfiguration"/>.
+            
+            This is the Phase 2 implementation. Production deployments should replace this
+            with a backend-delegated validator (e.g., attempt a PostgreSQL connection with
+            the client's credentials) so PgPassthrough does not hold separate credential state.
+            
+            Tech debt: passwords are stored in plain text in appsettings. Use environment
+            variables or a secrets manager in production.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.ICredentialValidator">
+            <summary>
+            Validates client login credentials during the Login7 handshake.
+            
+            The default implementation checks against a configured set of
+            username/password pairs. Future implementations can delegate to
+            LDAP, Active Directory, or the backend database.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.ICredentialValidator.ValidateAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns true if the provided credentials are accepted.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsPacketType">
+            <summary>
+            TDS packet type codes (first byte of the 8-byte packet header).
+            Reference: MS-TDS §2.2.3.1
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsPacketStatus">
+            <summary>
+            TDS packet status flags (second byte of the 8-byte packet header).
+            Reference: MS-TDS §2.2.3.1.2
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsTokenType">
+            <summary>
+            TDS token type codes embedded within the tabular data stream payload.
+            Reference: MS-TDS §2.2.7
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.EnvChangeType">
+            <summary>
+            ENVCHANGE token sub-types.
+            Reference: MS-TDS §2.2.7.13
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsTypeCode">
+            <summary>
+            TDS on-the-wire type codes for nullable (N-suffixed) variant types.
+            When a column is nullable, the server sends these instead of the
+            fixed-length type codes. Each is followed by a 1-byte maxLength in COLMETADATA
+            and a 1-byte actual-length prefix per ROW value.
+            Reference: MS-TDS §2.2.5.4.2
+            </summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsTypeCode.IntN">
+            <summary>Nullable integer (1, 2, 4, or 8 bytes).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsTypeCode.BitN">
+            <summary>Nullable bit (1 byte).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsTypeCode.FltN">
+            <summary>Nullable float/real (4 or 8 bytes).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsTypeCode.MoneyN">
+            <summary>Nullable money/smallmoney (4 or 8 bytes).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsTypeCode.DateTimeN">
+            <summary>Nullable datetime/smalldatetime (4 or 8 bytes).</summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsProtocol">
+            <summary>
+            Fixed sizes and protocol constants.
+            </summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.PacketHeaderSize">
+            <summary>Size of the TDS packet header in bytes.</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.DefaultPacketSize">
+            <summary>Default negotiated packet size (bytes). Matches SQL Server default.</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.MaxPacketSize">
+            <summary>Maximum packet size we accept from clients.</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.MinPacketSize">
+            <summary>Minimum packet size per spec.</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.TdsVersion74">
+            <summary>TDS version 7.4 (SQL Server 2012+).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.TdsVersion73B">
+            <summary>TDS version 7.3B (SQL Server 2008 R2).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.ServerName">
+            <summary>Server name reported to clients.</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.ServerVersion">
+            <summary>Reported server version (impersonates SQL Server 2019).</summary>
+        </member>
+        <member name="F:PgPassthrough.Tds.Protocol.TdsProtocol.CollationLcid">
+            <summary>Collation LCID: 1033 = en-US.</summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsListener">
+            <summary>
+            Accepts inbound TCP connections and spawns a <see cref="T:PgPassthrough.Tds.Protocol.TdsSession"/> per client.
+            
+            Lifecycle:
+              - StartAsync: opens the TCP listener and begins the accept loop
+              - StopAsync: signals shutdown; waits for all active sessions to close
+            
+            Session management:
+              - Sessions are tracked in a concurrent set.
+              - MaxConcurrentSessions is enforced; excess connections receive an error and are closed.
+              - Each session runs on the thread pool via Task.Run / awaiting its ProcessAsync.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsListener.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Starts the TCP listener. Returns immediately; the accept loop runs in the background.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsListener.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Signals shutdown and waits for all active sessions to finish.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsPacketReader">
+            <summary>
+            Reads TDS packets from the underlying network stream.
+            Handles packet header parsing and multi-packet message reassembly.
+            Exposes the complete message payload as a byte array.
+            
+            This class is NOT thread-safe. One instance per session.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketReader.ReadMessageAsync(System.Threading.CancellationToken)">
+            <summary>
+            Reads a complete TDS message from the stream. Reassembles multi-packet
+            messages transparently. Returns the full payload (excluding headers) and
+            the packet type of the first packet in the message.
+            </summary>
+            <exception cref="T:PgPassthrough.Tds.Protocol.TdsProtocolException">Thrown on protocol violations.</exception>
+            <exception cref="T:System.IO.EndOfStreamException">Thrown when the client disconnects.</exception>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketReader.SetPacketSize(System.Int32)">
+            <summary>
+            Updates the negotiated packet size after PRELOGIN/Login7 negotiation.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsMessage">
+            <summary>
+            A fully-reassembled TDS message: type byte + complete payload bytes.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsPacketWriter">
+            <summary>
+            Writes TDS response data to the underlying network stream.
+            Buffers data and flushes in correctly-framed TDS packets.
+            
+            Usage pattern:
+              writer.BeginMessage(packetType)
+              writer.Write*(...)   // write payload bytes
+              await writer.EndMessageAsync(ct)  // flushes all buffered bytes as packets
+            
+            This class is NOT thread-safe. One instance per session.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.BeginMessage(System.Byte)">
+            <summary>Begins a new TDS message. Must be paired with EndMessageAsync.</summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.EndMessageAsync(System.Threading.CancellationToken)">
+            <summary>
+            Flushes the buffered payload to the stream as one or more TDS packets,
+            with the final packet marked EOM.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.WriteBVarchar(System.String)">
+            <summary>
+            Writes a B_VARCHAR: 1-byte length prefix + UTF-16LE encoded string.
+            Used for server name, proc name, etc. in error/info tokens.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.WriteUsVarchar(System.String)">
+            <summary>
+            Writes a US_VARCHAR: 2-byte length prefix + UTF-16LE encoded string.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.WriteBVarbyte(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Writes a B_VARBYTE: 1-byte length prefix + raw bytes.
+            Used for collation, environment change values, etc.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Tds.Protocol.TdsPacketWriter.PayloadLength">
+            <summary>Current length of the buffered payload in bytes.</summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.GetPosition">
+            <summary>
+            Records the current payload position and returns it.
+            Use with <see cref="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.PatchUInt16LE(System.Int32,System.UInt16)"/> to backfill length fields.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.PatchUInt16LE(System.Int32,System.UInt16)">
+            <summary>
+            Patches a previously-written 2-byte LE length field at <paramref name="position"/>.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsPacketWriter.SetPacketSize(System.Int32)">
+            <summary>Update the negotiated packet size (called after Login7 handshake).</summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsProtocolException">
+            <summary>
+            Thrown when the incoming TDS byte stream violates the protocol specification.
+            The session should be closed on receipt of this exception.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsResponseWriter">
+            <summary>
+            Implements <see cref="T:PgPassthrough.Core.Abstractions.IResponseWriter"/> over a TDS packet stream.
+            
+            Wraps a <see cref="T:PgPassthrough.Tds.Protocol.TdsPacketWriter"/> and delegates to <see cref="T:PgPassthrough.Tds.Tokens.TdsTokenWriter"/>
+            to serialise individual tokens. The response is accumulated in the packet writer's
+            buffer and flushed to the network on <see cref="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.FlushAsync(System.Threading.CancellationToken)"/>.
+            
+            This class is NOT thread-safe. One instance per session per response.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteColumnsAsync(System.Collections.Generic.IReadOnlyList{PgPassthrough.Core.Models.ColumnMetadata},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteRowAsync(System.Object[],System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteDoneAsync(PgPassthrough.Core.Models.DoneStatus,System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteErrorAsync(PgPassthrough.Core.Models.ServerError,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteInfoAsync(PgPassthrough.Core.Models.ServerMessage,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.FlushAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteLoginResponseAsync(System.String,System.UInt32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Writes the LOGINACK + ENVCHANGE tokens for a successful login response.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsResponseWriter.WriteLoginErrorAsync(PgPassthrough.Core.Models.ServerError,System.Threading.CancellationToken)">
+            <summary>
+            Writes a standalone error response (not preceded by column metadata).
+            Begins and ends its own message.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsServerOptions">
+            <summary>
+            Options specific to the TDS server, bound from the "TdsServer" config section.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Tds.Protocol.TdsServerOptions.AllowedLogins">
+            <summary>
+            Allowed SQL login credentials.
+            In production, prefer delegating to the backend PostgreSQL instance.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.AllowedLogin">
+            <summary>A single allowed login entry.</summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Protocol.TdsSession">
+            <summary>
+            Manages the full lifecycle of one client connection.
+            
+            State machine:
+              New → PreLogin → Login → Active → Closed
+            
+            Each state handles one or more inbound TDS message types.
+            On error the session logs, sends an ERROR+DONE response, and closes.
+            
+            This class drives an async loop; it does not use threads directly.
+            The caller (TdsListener) awaits ProcessAsync() per client.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsSession.#ctor(System.Net.Sockets.TcpClient,PgPassthrough.Core.Abstractions.IQueryHandler,PgPassthrough.Tds.Protocol.ICredentialValidator,Microsoft.Extensions.Logging.ILogger,System.Threading.CancellationToken)">
+            <summary>Primary constructor used by TdsListener for real TCP connections.</summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsSession.#ctor(System.IO.Stream,PgPassthrough.Core.Abstractions.IQueryHandler,PgPassthrough.Tds.Protocol.ICredentialValidator,Microsoft.Extensions.Logging.ILogger,System.Threading.CancellationToken)">
+            <summary>
+            Test-only constructor that accepts a pre-existing stream.
+            Avoids the need for a real TcpClient in unit tests.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Protocol.TdsSession.ProcessAsync">
+            <summary>
+            Runs the session message loop to completion.
+            Returns when the client disconnects or the server shuts down.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.TdsServerService">
+            <summary>
+            <see cref="T:Microsoft.Extensions.Hosting.IHostedService"/> that owns the <see cref="T:PgPassthrough.Tds.Protocol.TdsListener"/> lifecycle.
+            Registered in DI as a hosted service; the .NET host calls StartAsync/StopAsync.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Tds.Tokens.TdsTokenWriter">
+            <summary>
+            Writes TDS response tokens into a <see cref="T:PgPassthrough.Tds.Protocol.TdsPacketWriter"/>.
+            Each public method appends one complete token to the writer's payload buffer.
+            
+            Token layout references: MS-TDS §2.2.7.*
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Tds.Tokens.TdsTokenWriter.GetTimeLength(System.Byte)">
+            <summary>Gets the byte length of the time component for a given scale.</summary>
+        </member>
+    </members>
+</doc>
