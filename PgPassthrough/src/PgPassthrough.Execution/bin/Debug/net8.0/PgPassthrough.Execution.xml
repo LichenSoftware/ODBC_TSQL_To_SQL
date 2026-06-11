@@ -4,5 +4,45 @@
         <name>PgPassthrough.Execution</name>
     </assembly>
     <members>
+        <member name="T:PgPassthrough.Execution.NpgsqlExecutionEngine">
+            <summary>
+            Executes translated SQL against a PostgreSQL backend via Npgsql.
+            Uses NpgsqlDataSource for built-in connection pooling.
+            
+            Parameter mapping: T-SQL @name parameters are rewritten to positional $1, $2, ...
+            by the execution layer before sending to PostgreSQL.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Execution.NpgsqlExecutionEngine.RewriteParameters(System.String)">
+            <summary>
+            Rewrites @name parameters to positional $N parameters.
+            Returns the rewritten SQL and the ordered list of parameter names (without @).
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Execution.NpgsqlResultSet">
+            <summary>
+            Wraps an <see cref="T:Npgsql.NpgsqlDataReader"/> as an <see cref="T:PgPassthrough.Core.Abstractions.IResultSet"/>.
+            Maps PostgreSQL column types to SQL Server type codes for TDS encoding.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Execution.NpgsqlResultSet.InitializeAsync(System.Threading.CancellationToken)">
+            <summary>
+            Must be called after construction to build column metadata from the reader's schema.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Execution.NpgsqlResultSet.MapPgTypeToSqlServer(System.String,System.Type)">
+            <summary>
+            Maps a PostgreSQL type name to the closest SQL Server type code + metadata.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Execution.NpgsqlResultSet.MapByClrType(System.Type)">
+            <summary>Fallback: map by the .NET CLR type that Npgsql returns.</summary>
+        </member>
+        <member name="T:PgPassthrough.Execution.NpgsqlTransactionHandle">
+            <summary>
+            Wraps an Npgsql transaction as an <see cref="T:PgPassthrough.Core.Abstractions.ITransactionHandle"/>.
+            Owns both the connection and transaction lifetime.
+            </summary>
+        </member>
     </members>
 </doc>

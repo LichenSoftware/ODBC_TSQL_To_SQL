@@ -301,6 +301,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "Microsoft.Extensions.Logging.Abstractions >= 8.0.3",
       "Npgsql >= 8.0.7",
       "PgPassthrough.Core >= 1.0.0"
     ]
@@ -360,6 +361,10 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": {
+            "target": "Package",
+            "version": "[8.0.3, )"
+          },
           "Npgsql": {
             "target": "Package",
             "version": "[8.0.7, )"

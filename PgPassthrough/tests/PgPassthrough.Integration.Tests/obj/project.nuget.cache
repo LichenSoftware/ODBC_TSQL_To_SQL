@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "h0j9iThc+Wk=",
+  "dgSpecHash": "4+foUKHW6tA=",
   "success": true,
   "projectFilePath": "C:\\code\\ODBC_TSQL_To_SQL\\PgPassthrough\\tests\\PgPassthrough.Integration.Tests\\PgPassthrough.Integration.Tests.csproj",
   "expectedPackageFiles": [

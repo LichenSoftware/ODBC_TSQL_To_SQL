@@ -1039,6 +1039,7 @@
       },
       "PgPassthrough.Execution/1.0.0": {
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
           "Npgsql": "8.0.7",
           "PgPassthrough.Core": "1.0.0"
         },

@@ -2,11 +2,14 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using PgPassthrough.Core.Abstractions;
 using PgPassthrough.Core.Models;
+using PgPassthrough.Execution;
 using PgPassthrough.Server;
 using PgPassthrough.Tds;
 using PgPassthrough.Tds.Protocol;
+using PgPassthrough.Translation;
 
 var host = Host.CreateDefaultBuilder(args)
     .UseContentRoot(AppContext.BaseDirectory)
@@ -22,8 +25,41 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ICredentialValidator, ConfiguredCredentialValidator>();
         services.AddSingleton<TdsListener>();
 
-        // Query handler — replaced in Phase 6 with the real pipeline
-        services.AddSingleton<IQueryHandler, StubQueryHandler>();
+        // PostgreSQL backend (Npgsql DataSource with connection pooling)
+        services.AddSingleton<NpgsqlDataSource>(sp =>
+        {
+            var config = sp.GetRequiredService<IOptions<ServerConfiguration>>().Value;
+            var backend = config.Backend;
+            var connStr = new NpgsqlConnectionStringBuilder
+            {
+                Host = backend.Host,
+                Port = backend.Port,
+                Database = backend.Database,
+                Username = backend.Username,
+                Password = backend.Password,
+                MinPoolSize = backend.MinPoolSize,
+                MaxPoolSize = backend.MaxPoolSize,
+                Timeout = backend.ConnectionTimeoutSeconds,
+                CommandTimeout = backend.CommandTimeoutSeconds,
+                SslMode = backend.SslMode ? SslMode.Require : SslMode.Disable
+            };
+            return NpgsqlDataSource.Create(connStr.ToString());
+        });
+
+        // Execution engine
+        services.AddSingleton<IExecutionEngine>(sp =>
+        {
+            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
+            var config = sp.GetRequiredService<IOptions<ServerConfiguration>>().Value;
+            var logger = sp.GetRequiredService<ILogger<NpgsqlExecutionEngine>>();
+            return new NpgsqlExecutionEngine(dataSource, config.Backend, logger);
+        });
+
+        // SQL translator
+        services.AddSingleton<ISqlTranslator, TSqlToPgTranslator>();
+
+        // Query handler — the real pipeline
+        services.AddSingleton<IQueryHandler, PipelineQueryHandler>();
 
         // Hosted service that owns TdsListener lifetime
         services.AddHostedService<TdsServerService>();
