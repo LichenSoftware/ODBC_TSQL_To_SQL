@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MigrationAssessment.Reporting</name>
+    </assembly>
+    <members>
+        <member name="T:MigrationAssessment.Reporting.JsonReportWriter">
+            <summary>
+            Writes the assessment report as a JSON file matching the published schema.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Reporting.JsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Reporting.JsonReportWriter.GetConversionCategory(System.Int32)">
+            <summary>
+            Maps a risk score to a conversion category.
+            Risk 1-2 = automatic, Risk 3 = semi-automatic, Risk 4-5 = manual.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Reporting.ReportGenerator">
+            <summary>
+            Generates the complete migration assessment report from analyzed data.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Reporting.ReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure})">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

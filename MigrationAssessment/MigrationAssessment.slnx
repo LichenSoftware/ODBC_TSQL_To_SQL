@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MigrationAssessment.Core/MigrationAssessment.Core.csproj" />
+    <Project Path="src/MigrationAssessment.Collectors/MigrationAssessment.Collectors.csproj" />
+    <Project Path="src/MigrationAssessment.Analysis/MigrationAssessment.Analysis.csproj" />
+    <Project Path="src/MigrationAssessment.Reporting/MigrationAssessment.Reporting.csproj" />
+    <Project Path="src/MigrationAssessment.Cli/MigrationAssessment.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MigrationAssessment.Core.Tests/MigrationAssessment.Core.Tests.csproj" />
+    <Project Path="tests/MigrationAssessment.Collectors.Tests/MigrationAssessment.Collectors.Tests.csproj" />
+    <Project Path="tests/MigrationAssessment.Analysis.Tests/MigrationAssessment.Analysis.Tests.csproj" />
+    <Project Path="tests/MigrationAssessment.Reporting.Tests/MigrationAssessment.Reporting.Tests.csproj" />
+  </Folder>
+</Solution>

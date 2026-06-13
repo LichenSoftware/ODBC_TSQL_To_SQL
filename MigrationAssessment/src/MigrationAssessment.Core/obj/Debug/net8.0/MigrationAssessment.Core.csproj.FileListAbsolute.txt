@@ -1,0 +1,15 @@
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\bin\Debug\net8.0\MigrationAssessment.Core.deps.json
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\bin\Debug\net8.0\MigrationAssessment.Core.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\bin\Debug\net8.0\MigrationAssessment.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\bin\Debug\net8.0\MigrationAssessment.Core.xml
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.csproj.AssemblyReference.cache
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.AssemblyInfoInputs.cache
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.AssemblyInfo.cs
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.csproj.CoreCompileInputs.cache
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.sourcelink.json
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\refint\MigrationAssessment.Core.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.xml
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\MigrationAssessment.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Core\obj\Debug\net8.0\ref\MigrationAssessment.Core.dll

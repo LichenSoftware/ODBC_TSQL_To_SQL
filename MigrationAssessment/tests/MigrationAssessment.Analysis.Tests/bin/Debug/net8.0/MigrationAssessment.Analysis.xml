@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MigrationAssessment.Analysis</name>
+    </assembly>
+    <members>
+        <member name="T:MigrationAssessment.Analysis.FeatureDetectionVisitor">
+            <summary>
+            A TSqlFragmentVisitor that walks the AST to detect SQL Server-specific features
+            including query constructs, function calls, temporary objects, and transaction patterns.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Analysis.FeatureDetectionVisitor.KnownFunctions">
+            <summary>
+            Known T-SQL functions that map to FunctionUsage features.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Analysis.FeatureDetectionVisitor.JsonFunctions">
+            <summary>
+            JSON built-in functions that map to JSON_METHOD features.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Analysis.FeatureDetectionVisitor.XmlMethods">
+            <summary>
+            XML method names that map to XML_METHOD features.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Analysis.MigrationReadinessScorer">
+            <summary>
+            Calculates the overall migration readiness score and maps it to a classification.
+            Formula: MigrationReadinessScore = 100 × (1 - (SumOfWeightedRisks / MaxPossibleWeightedRisk))
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.MigrationReadinessScorer.CalculateScore(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Analysis.MigrationReadinessScorer.ClassifyScore(System.Int32)">
+            <summary>
+            Maps a score in [0, 100] to its classification string.
+            Req 9.2-9.6: Deterministic score-to-classification mapping.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Analysis.RiskScorer">
+            <summary>
+            Assigns a deterministic risk score (1-5) to a statement based on its detected features.
+            Uses a lookup table mapping feature names to risk levels and returns the maximum
+            risk level among all detected features.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Analysis.RiskScorer.FeatureRiskMap">
+            <summary>
+            Deterministic lookup table mapping feature names to risk levels.
+            Features not in this table are treated as Risk 1 (standard SQL).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.RiskScorer.ScoreStatement(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.DetectedFeature},System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.Analysis.StatementAnalyzer">
+            <summary>
+            Analyzes parsed T-SQL statements by walking the AST with a visitor to detect
+            SQL Server-specific features across query constructs, functions, temporary objects,
+            and transaction patterns.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementAnalyzer.Analyze(MigrationAssessment.Core.Interfaces.ParsedStatementResult,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.Analysis.StatementParser">
+            <summary>
+            Parses T-SQL batches using ScriptDom's TSql160Parser, splitting on GO delimiters
+            and classifying each statement by type.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.ParseBatch(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.SplitOnGo(System.String)">
+            <summary>
+            Splits the input SQL text on GO batch delimiters (case-insensitive, on its own line).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.ParseSegment(System.String,System.Int32@)">
+            <summary>
+            Parses a single batch segment (no GO delimiters) using ScriptDom.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.GetStatementText(Microsoft.SqlServer.TransactSql.ScriptDom.TSqlFragment,System.String)">
+            <summary>
+            Extracts the text of a statement from the source using its fragment offsets.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.ClassifyStatement(Microsoft.SqlServer.TransactSql.ScriptDom.TSqlStatement)">
+            <summary>
+            Classifies a TSqlStatement into the appropriate StatementClassification enum value.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Analysis.StatementRanker">
+            <summary>
+            Ranks analyzed statements by weighted risk for prioritization.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementRanker.RankByWeightedRisk(System.Collections.Generic.IEnumerable{MigrationAssessment.Core.Models.AnalyzedStatement})">
+            <summary>
+            Ranks analyzed statements by WeightedRisk descending, with RiskScore descending as a tiebreaker.
+            </summary>
+            <param name="statements">The statements to rank.</param>
+            <returns>An ordered list of statements ranked by priority.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Analysis.WeightedComplexityCalculator">
+            <summary>
+            Calculates weighted risk incorporating execution frequency and business importance.
+            Formula: RiskScore × ExecutionFrequency × BusinessImportance
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.WeightedComplexityCalculator.CalculateWeightedRisk(System.Int32,System.Int64,System.Double)">
+            <summary>
+            Calculates the weighted risk for a statement.
+            Formula: RiskScore × ExecutionFrequency × BusinessImportance
+            </summary>
+            <param name="riskScore">The base risk score (1-5).</param>
+            <param name="executionFrequency">How often the statement executes. Defaults to 1 if less than 1.</param>
+            <param name="businessImportance">The business importance multiplier. Clamped to [1.0, 5.0].</param>
+            <returns>The weighted risk value.</returns>
+        </member>
+    </members>
+</doc>

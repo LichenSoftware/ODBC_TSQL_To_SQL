@@ -1,0 +1,391 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MigrationAssessment.Core</name>
+    </assembly>
+    <members>
+        <member name="T:MigrationAssessment.Core.Interfaces.IFeatureDetector">
+            <summary>
+            Detects SQL Server-specific features that may impact migration to PostgreSQL.
+            Queries system views across 13 feature categories and reports inventory, counts, and permissions issues.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IFeatureDetector.DetectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <summary>
+            Detects server-level features across all categories.
+            </summary>
+            <param name="connection">An open database connection.</param>
+            <param name="options">Collection options including timeouts.</param>
+            <param name="ct">Cancellation token for cooperative cancellation.</param>
+            <returns>Feature detection result with counts, inventory, and inaccessible features.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IJsonReportWriter">
+            <summary>
+            Writes an assessment report to a JSON file matching the published schema.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IJsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Serializes the assessment report and supporting data to a JSON file.
+            </summary>
+            <param name="report">The generated assessment report.</param>
+            <param name="statements">All analyzed statements with risk scores.</param>
+            <param name="objectInventory">Database object metadata inventory.</param>
+            <param name="featureDetection">Server feature detection results.</param>
+            <param name="outputPath">The file path to write the JSON output to.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>A result indicating success or failure with error details.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.JsonWriteResult">
+            <summary>
+            Result of a JSON report write operation.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.JsonWriteResult.Succeeded">
+            <summary>
+            Whether the write operation succeeded.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.JsonWriteResult.ErrorMessage">
+            <summary>
+            Error message if the write operation failed.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.JsonWriteResult.OutputPath">
+            <summary>
+            The output file path where the JSON was written (on success).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IMetadataCollector">
+            <summary>
+            Collects database object metadata (tables, indexes, constraints, etc.) from SQL Server catalog views.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IMetadataCollector.CollectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <summary>
+            Collects a complete inventory of database objects from the connected SQL Server instance.
+            </summary>
+            <param name="connection">An open database connection.</param>
+            <param name="options">Collection options including timeouts.</param>
+            <param name="ct">Cancellation token for cooperative cancellation.</param>
+            <returns>A complete inventory of database objects organized by schema and type.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IMigrationReadinessScorer">
+            <summary>
+            Calculates the overall migration readiness score and classification.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IMigrationReadinessScorer.CalculateScore(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult)">
+            <summary>
+            Calculates the migration readiness score from analyzed statements and server features.
+            </summary>
+            <param name="statements">All analyzed statements.</param>
+            <param name="serverFeatures">Detected server-level features.</param>
+            <returns>The readiness result including score, classification, and data sufficiency.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IReportGenerator">
+            <summary>
+            Generates the final assessment report from all collected and analyzed data.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure})">
+            <summary>
+            Generates a complete assessment report.
+            </summary>
+            <param name="statements">All analyzed statements with risk scores.</param>
+            <param name="objectInventory">Database object metadata inventory.</param>
+            <param name="featureDetection">Server feature detection results.</param>
+            <param name="failures">Collection failures from any sources that failed.</param>
+            <returns>The complete assessment report.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IRiskScorer">
+            <summary>
+            Assigns a risk score (1-5) to a statement based on its detected features.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IRiskScorer.ScoreStatement(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.DetectedFeature},System.Boolean)">
+            <summary>
+            Scores a statement based on its detected features and parse status.
+            </summary>
+            <param name="features">The features detected in the statement.</param>
+            <param name="parseFailed">Whether the statement failed to parse.</param>
+            <returns>A risk score from 1 (trivial) to 5 (critical).</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IStatementAnalyzer">
+            <summary>
+            Analyzes a parsed T-SQL statement to detect SQL Server-specific features.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IStatementAnalyzer.Analyze(MigrationAssessment.Core.Interfaces.ParsedStatementResult,System.String)">
+            <summary>
+            Walks the AST of a parsed statement to detect SQL Server-specific features
+            such as query constructs, function calls, temporary objects, and transaction patterns.
+            </summary>
+            <param name="parsedStatement">The parsed statement with its AST node.</param>
+            <param name="statementId">A unique identifier for the statement being analyzed.</param>
+            <returns>The analysis result containing detected features and completion status.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.StatementAnalysisResult">
+            <summary>
+            Result of analyzing a single parsed statement for SQL Server-specific features.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.StatementAnalysisResult.Features">
+            <summary>
+            All SQL Server-specific features detected within the statement.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.StatementAnalysisResult.AnalysisComplete">
+            <summary>
+            Whether the analysis completed successfully for the entire statement.
+            False indicates the visitor encountered unrecognized syntax mid-analysis.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.StatementAnalysisResult.FailurePosition">
+            <summary>
+            The character position where analysis failed, if AnalysisComplete is false.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IStatementCollector">
+            <summary>
+            Collects SQL statements from a specific data source (Query Store, Extended Events, etc.).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.IStatementCollector.SourceName">
+            <summary>
+            Gets the human-readable name identifying this collector source.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IStatementCollector.CollectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <summary>
+            Collects SQL statements from the connected database.
+            </summary>
+            <param name="connection">An open database connection.</param>
+            <param name="options">Collection options including timeouts and batch sizes.</param>
+            <param name="ct">Cancellation token for cooperative cancellation.</param>
+            <returns>The collection result containing statements and status.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IStatementParser">
+            <summary>
+            Parses T-SQL text into individual statement results with classification.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IStatementParser.ParseBatch(System.String)">
+            <summary>
+            Parses a T-SQL batch (which may contain GO separators or multiple statements)
+            and returns a result for each individual statement found.
+            </summary>
+            <param name="sqlText">The raw T-SQL text to parse.</param>
+            <returns>A list of parsed statement results in ordinal order.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.ParsedStatementResult">
+            <summary>
+            Result of parsing a single T-SQL statement from a batch.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.OrdinalPosition">
+            <summary>
+            1-based ordinal position of this statement within the batch.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.StatementText">
+            <summary>
+            The original SQL text of the statement.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.Classification">
+            <summary>
+            The classification of the statement type.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.ParseSucceeded">
+            <summary>
+            Whether the statement was successfully parsed.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.ParseError">
+            <summary>
+            Error description if parsing failed.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.ErrorLine">
+            <summary>
+            Line number of the parse error (1-based).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.ErrorColumn">
+            <summary>
+            Column number of the parse error (1-based).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ParsedStatementResult.AstNode">
+            <summary>
+            The AST node (TSqlFragment) stored as object to avoid ScriptDom dependency in Core.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IWeightedComplexityCalculator">
+            <summary>
+            Calculates weighted risk incorporating execution frequency and business importance.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IWeightedComplexityCalculator.CalculateWeightedRisk(System.Int32,System.Int64,System.Double)">
+            <summary>
+            Calculates the weighted risk value for a statement.
+            </summary>
+            <param name="riskScore">The base risk score (1-5).</param>
+            <param name="executionFrequency">How often the statement executes (≥ 1).</param>
+            <param name="businessImportance">The business importance multiplier (1.0-5.0).</param>
+            <returns>The weighted risk value.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.AnalyzedStatement">
+            <summary>
+            Result of analyzing a single collected statement, including classification, detected features, and risk.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.AssessmentConfiguration">
+            <summary>
+            Configuration for an assessment pipeline run, including connection, retry, and output settings.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.AssessmentReport">
+            <summary>
+            The complete migration assessment report containing all sections.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.CollectedStatement">
+            <summary>
+            Represents a collected SQL statement with its source metadata and performance metrics.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.CollectionFailure">
+            <summary>
+            Records a failure that occurred during data collection from a specific source.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.CollectionOptions">
+            <summary>
+            Options controlling how statement collection is performed.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.CollectionResult">
+            <summary>
+            The result of a statement collection operation from a single source.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ColumnMetadata">
+            <summary>
+            Metadata for a table column including type information and constraints.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ConstraintMetadata">
+            <summary>
+            Metadata for a table constraint (PrimaryKey, Unique, Check, Default).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.DatabaseObjectInventory">
+            <summary>
+            Complete inventory of database objects collected from metadata queries.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.DetectedFeature">
+            <summary>
+            A detected SQL Server-specific feature within a statement, including its location.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.DetectedServerFeature">
+            <summary>
+            A detected server-level feature with its category, object name, and properties.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ExecutiveSummary">
+            <summary>
+            Executive summary section of the assessment report.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.FeatureCategory">
+            <summary>
+            Categorizes a detected SQL Server-specific feature within a statement.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.FeatureDetectionResult">
+            <summary>
+            Result of server-level feature detection across all feature categories.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ForeignKeyMetadata">
+            <summary>
+            Metadata for a foreign key relationship between tables.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.HourRange">
+            <summary>
+            A range of estimated hours (minimum to maximum).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.InaccessibleFeature">
+            <summary>
+            A feature category that could not be checked due to insufficient permissions.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.IndexMetadata">
+            <summary>
+            Metadata for a database index including key and included columns.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.MigrationChallenge">
+            <summary>
+            A top migration challenge identified in the assessment.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.MigrationEffortEstimate">
+            <summary>
+            Estimated effort for the migration broken down by category.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.MigrationReadinessResult">
+            <summary>
+            Result of the migration readiness score calculation.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.MigrationReadinessResult.Score">
+            <summary>
+            The readiness score (0-100), or null when insufficient data is available.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.MigrationRecommendation">
+            <summary>
+            The final migration recommendation with reasoning and score.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ProgrammableObjectMetadata">
+            <summary>
+            Metadata for a programmable database object (View, Trigger, Function, StoredProcedure).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.RiskBreakdown">
+            <summary>
+            Breakdown of statements by risk level.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.StatementClassification">
+            <summary>
+            Classifies a T-SQL statement by its primary operation type.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.StatementSource">
+            <summary>
+            Identifies the origin of a collected SQL statement.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.SynonymMetadata">
+            <summary>
+            Metadata for a database synonym pointing to a base object.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.TableMetadata">
+            <summary>
+            Metadata for a database table including its columns.
+            </summary>
+        </member>
+    </members>
+</doc>

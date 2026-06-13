@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MigrationAssessment.Collectors</name>
+    </assembly>
+    <members>
+        <member name="T:MigrationAssessment.Collectors.ExtendedEventsCollector">
+            <summary>
+            Collects SQL statements from a SQL Server Extended Events session.
+            Supports ring_buffer and file targets, capturing ad hoc SQL, stored procedure
+            executions, dynamic SQL, temp table DDL, and TRY/CATCH batches.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Collectors.ExtendedEventsCollector.MaxSqlTextLength">
+            <summary>
+            Maximum number of characters preserved for SQL text (Requirement 2.6).
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Collectors.ExtendedEventsCollector.MaxParameterValueLength">
+            <summary>
+            Maximum number of characters for parameter values (Requirement 2.2).
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Collectors.ExtendedEventsCollector.MaxParameterCount">
+            <summary>
+            Maximum number of stored procedure parameters captured (Requirement 2.2).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Collectors.ExtendedEventsCollector.SourceName">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Collectors.ExtendedEventsCollector.CollectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.Collectors.ExtendedEventsCollector.SessionStatus">
+            <summary>
+            Represents the status of an Extended Events session.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Collectors.ExtendedEventsCollector.SessionStatus.#ctor(System.Boolean,System.String)">
+            <summary>
+            Represents the status of an Extended Events session.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Collectors.ExtendedEventsCollector.XeEventData">
+            <summary>
+            Represents a parsed Extended Events event with extracted data fields.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Collectors.ExtendedEventsCollector.ProcedureParameter">
+            <summary>
+            Represents a stored procedure parameter extracted from an XE event.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Collectors.ExtendedEventsCollector.ProcedureParameter.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Represents a stored procedure parameter extracted from an XE event.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Collectors.FeatureDetector">
+            <summary>
+            Detects SQL Server-specific features across 13 categories by querying system views.
+            Reports detailed inventory per category, inaccessible features when permissions are
+            insufficient, and zero counts for categories with no instances.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Collectors.FeatureDetector.DetectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.Collectors.MetadataCollector">
+            <summary>
+            Collects database object metadata from SQL Server sys catalog views.
+            Excludes system schemas and handles encrypted/inaccessible objects gracefully.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Collectors.MetadataCollector.CollectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.Collectors.QueryStoreCollector">
+            <summary>
+            Collects SQL statements from SQL Server Query Store.
+            Queries sys.query_store_query_text, sys.query_store_plan, and sys.query_store_runtime_stats
+            to capture query performance data for migration assessment.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Collectors.QueryStoreCollector.SourceName">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Collectors.QueryStoreCollector.CollectAsync(System.Data.Common.DbConnection,MigrationAssessment.Core.Models.CollectionOptions,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Collectors.QueryStoreCollector.ConvertHashToString(System.Object)">
+            <summary>
+            Converts a query_hash or query_plan_hash value (byte array) to a hex string representation.
+            </summary>
+        </member>
+    </members>
+</doc>
