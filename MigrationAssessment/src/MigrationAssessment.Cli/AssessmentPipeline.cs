@@ -218,7 +218,8 @@ public sealed class AssessmentPipeline
             {
                 var connectionString = new SqlConnectionStringBuilder(config.ConnectionString)
                 {
-                    ConnectTimeout = (int)config.ConnectionTimeout.TotalSeconds
+                    ConnectTimeout = (int)config.ConnectionTimeout.TotalSeconds,
+                    MultipleActiveResultSets = true
                 }.ConnectionString;
 
                 var connection = new SqlConnection(connectionString);
@@ -237,7 +238,8 @@ public sealed class AssessmentPipeline
         // Final attempt — let the exception propagate
         var finalConnectionString = new SqlConnectionStringBuilder(config.ConnectionString)
         {
-            ConnectTimeout = (int)config.ConnectionTimeout.TotalSeconds
+            ConnectTimeout = (int)config.ConnectionTimeout.TotalSeconds,
+            MultipleActiveResultSets = true
         }.ConnectionString;
 
         var finalConnection = new SqlConnection(finalConnectionString);

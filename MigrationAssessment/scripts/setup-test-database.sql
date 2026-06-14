@@ -38,6 +38,17 @@ GO
 -- SCHEMA: Risk Level 1 - Standard SQL (trivial to migrate)
 -- =============================================================================
 
+CREATE TABLE dbo.Categories (
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+    CategoryName NVARCHAR(100) NOT NULL,
+    ParentCategoryID INT NULL
+);
+GO
+
+ALTER TABLE dbo.Categories ADD CONSTRAINT FK_Categories_Parent
+    FOREIGN KEY (ParentCategoryID) REFERENCES dbo.Categories(CategoryID);
+GO
+
 CREATE TABLE dbo.Customers (
     CustomerID INT IDENTITY(1,1) PRIMARY KEY,
     FirstName NVARCHAR(100) NOT NULL,
@@ -46,6 +57,7 @@ CREATE TABLE dbo.Customers (
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
     IsActive BIT NOT NULL DEFAULT 1
 );
+GO
 
 CREATE TABLE dbo.Products (
     ProductID INT IDENTITY(1,1) PRIMARY KEY,
@@ -53,8 +65,9 @@ CREATE TABLE dbo.Products (
     SKU NVARCHAR(50) NOT NULL UNIQUE,
     Price DECIMAL(10, 2) NOT NULL,
     StockQuantity INT NOT NULL DEFAULT 0,
-    CategoryID INT NULL
+    CategoryID INT NULL REFERENCES dbo.Categories(CategoryID)
 );
+GO
 
 CREATE TABLE dbo.Orders (
     OrderID INT IDENTITY(1,1) PRIMARY KEY,
@@ -63,6 +76,7 @@ CREATE TABLE dbo.Orders (
     TotalAmount DECIMAL(12, 2) NOT NULL,
     Status NVARCHAR(20) NOT NULL DEFAULT 'Pending'
 );
+GO
 
 CREATE TABLE dbo.OrderItems (
     OrderItemID INT IDENTITY(1,1) PRIMARY KEY,
@@ -71,15 +85,7 @@ CREATE TABLE dbo.OrderItems (
     Quantity INT NOT NULL,
     UnitPrice DECIMAL(10, 2) NOT NULL
 );
-
-CREATE TABLE dbo.Categories (
-    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
-    CategoryName NVARCHAR(100) NOT NULL,
-    ParentCategoryID INT NULL REFERENCES dbo.Categories(CategoryID)
-);
-
-ALTER TABLE dbo.Products ADD CONSTRAINT FK_Products_Category
-    FOREIGN KEY (CategoryID) REFERENCES dbo.Categories(CategoryID);
+GO
 
 -- Indexes
 CREATE NONCLUSTERED INDEX IX_Orders_CustomerID ON dbo.Orders(CustomerID);
@@ -87,6 +93,7 @@ CREATE NONCLUSTERED INDEX IX_Orders_OrderDate ON dbo.Orders(OrderDate DESC)
     INCLUDE (CustomerID, TotalAmount);
 CREATE NONCLUSTERED INDEX IX_Products_Category ON dbo.Products(CategoryID)
     WHERE CategoryID IS NOT NULL;
+GO
 
 -- =============================================================================
 -- SCHEMA: Risk Level 2 - Simple translations (TOP, ISNULL, GETDATE, etc.)
@@ -140,40 +147,40 @@ CREATE PROCEDURE dbo.sp_ProcessOrder
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     BEGIN TRY
         BEGIN TRANSACTION;
-        
+
         -- Check stock
         DECLARE @CurrentStock INT;
         SELECT @CurrentStock = StockQuantity FROM dbo.Products WHERE ProductID = @ProductID;
-        
+
         IF @CurrentStock < @Quantity
             THROW 50001, 'Insufficient stock', 1;
-        
+
         -- Create order
         DECLARE @Price DECIMAL(10,2);
         SELECT @Price = Price FROM dbo.Products WHERE ProductID = @ProductID;
-        
+
         INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)
         VALUES (@CustomerID, @Price * @Quantity, 'Processing');
-        
+
         SET @OrderID = SCOPE_IDENTITY();
-        
+
         INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)
         VALUES (@OrderID, @ProductID, @Quantity, @Price);
-        
+
         -- Update stock
         UPDATE dbo.Products
         SET StockQuantity = StockQuantity - @Quantity
         WHERE ProductID = @ProductID;
-        
+
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
-        
+
         THROW;
     END CATCH;
 END;
@@ -186,11 +193,11 @@ CREATE PROCEDURE dbo.sp_DynamicSearch
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     DECLARE @SQL NVARCHAR(MAX);
     SET @SQL = N'SELECT * FROM ' + QUOTENAME(@TableName) +
                N' WHERE ' + QUOTENAME(@FilterColumn) + N' = @Value';
-    
+
     EXEC sp_executesql @SQL, N'@Value NVARCHAR(256)', @Value = @FilterValue;
 END;
 GO
@@ -201,14 +208,14 @@ CREATE PROCEDURE dbo.sp_BuildMonthlyReport
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     -- Temp table usage
     CREATE TABLE #MonthlyStats (
         CustomerID INT,
         OrderCount INT,
         TotalRevenue DECIMAL(12,2)
     );
-    
+
     INSERT INTO #MonthlyStats
     SELECT
         o.CustomerID,
@@ -217,7 +224,7 @@ BEGIN
     FROM dbo.Orders o
     WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month
     GROUP BY o.CustomerID;
-    
+
     -- Return results joined with customer info
     SELECT
         c.FirstName + ' ' + c.LastName AS CustomerName,
@@ -226,7 +233,7 @@ BEGIN
     FROM #MonthlyStats ms
     INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID
     ORDER BY ms.TotalRevenue DESC;
-    
+
     DROP TABLE #MonthlyStats;
 END;
 GO
@@ -235,19 +242,19 @@ GO
 -- SCHEMA: Risk Level 4 - Significant redesign (MERGE, locking hints, PIVOT)
 -- =============================================================================
 
--- Staging table for MERGE operations
 CREATE TABLE dbo.ProductImportStaging (
     SKU NVARCHAR(50) NOT NULL,
     ProductName NVARCHAR(200) NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
     StockQuantity INT NOT NULL
 );
+GO
 
 CREATE PROCEDURE dbo.sp_UpsertProducts
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     MERGE dbo.Products AS target
     USING dbo.ProductImportStaging AS source
     ON target.SKU = source.SKU
@@ -268,7 +275,7 @@ CREATE PROCEDURE dbo.sp_GetInventorySnapshot
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     -- Uses NOLOCK hint (dirty reads for performance)
     SELECT
         p.ProductID,
@@ -287,7 +294,7 @@ CREATE PROCEDURE dbo.sp_UpdateStockWithLock
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     UPDATE p
     SET p.StockQuantity = @NewQuantity
     FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)
@@ -295,7 +302,6 @@ BEGIN
 END;
 GO
 
--- PIVOT example: monthly revenue by category
 CREATE VIEW dbo.vw_MonthlyCategoryRevenue AS
     SELECT CategoryName, [1] AS Jan, [2] AS Feb, [3] AS Mar, [4] AS Apr,
            [5] AS May, [6] AS Jun, [7] AS Jul, [8] AS Aug,
@@ -315,18 +321,17 @@ CREATE VIEW dbo.vw_MonthlyCategoryRevenue AS
     ) pvt;
 GO
 
--- Global temp table usage
 CREATE PROCEDURE dbo.sp_SharedTempReport
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     CREATE TABLE ##GlobalOrderSummary (
         OrderDate DATE,
         TotalOrders INT,
         TotalRevenue DECIMAL(12,2)
     );
-    
+
     INSERT INTO ##GlobalOrderSummary
     SELECT
         CAST(OrderDate AS DATE),
@@ -334,9 +339,9 @@ BEGIN
         SUM(TotalAmount)
     FROM dbo.Orders
     GROUP BY CAST(OrderDate AS DATE);
-    
+
     SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC;
-    
+
     DROP TABLE ##GlobalOrderSummary;
 END;
 GO
@@ -345,19 +350,19 @@ GO
 -- SCHEMA: Risk Level 5 - Architectural features (XML, linked server references)
 -- =============================================================================
 
--- XML column and methods
 CREATE TABLE dbo.OrderMetadata (
     OrderID INT NOT NULL REFERENCES dbo.Orders(OrderID),
     MetadataXml XML NOT NULL,
     CONSTRAINT PK_OrderMetadata PRIMARY KEY (OrderID)
 );
+GO
 
 CREATE PROCEDURE dbo.sp_GetOrderShippingInfo
     @OrderID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     SELECT
         o.OrderID,
         m.MetadataXml.value('(/order/shipping/address)[1]', 'NVARCHAR(500)') AS ShippingAddress,
@@ -369,22 +374,20 @@ BEGIN
 END;
 GO
 
--- XML index
 CREATE PRIMARY XML INDEX IX_OrderMetadata_Xml ON dbo.OrderMetadata(MetadataXml);
 GO
 
--- Procedure referencing linked server pattern (simulated - won't actually connect)
 CREATE PROCEDURE dbo.sp_GetExternalInventory
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     -- This references a linked server pattern that the feature detector will find
     -- In a real environment this would query a remote server
     DECLARE @SQL NVARCHAR(MAX) = N'
-        SELECT * FROM OPENQUERY(RemoteWarehouse, 
+        SELECT * FROM OPENQUERY(RemoteWarehouse,
             ''SELECT ProductCode, AvailableStock FROM Inventory WHERE AvailableStock > 0'')';
-    
+
     -- Just print for testing - actual execution would fail without the linked server
     PRINT @SQL;
 END;
@@ -407,6 +410,7 @@ INSERT INTO dbo.Categories (CategoryName, ParentCategoryID) VALUES
 ('Electronics > Laptops', 1),
 ('Clothing > Mens', 2),
 ('Clothing > Womens', 2);
+GO
 
 -- Products
 INSERT INTO dbo.Products (ProductName, SKU, Price, StockQuantity, CategoryID) VALUES
@@ -420,6 +424,7 @@ INSERT INTO dbo.Products (ProductName, SKU, Price, StockQuantity, CategoryID) VA
 ('PostgreSQL Up & Running', 'BOOK-002', 44.99, 80, 3),
 ('Wireless Earbuds', 'AUDIO-001', 129.99, 300, 1),
 ('USB-C Cable', 'CABLE-001', 12.99, 1000, 1);
+GO
 
 -- Customers
 INSERT INTO dbo.Customers (FirstName, LastName, Email) VALUES
@@ -428,6 +433,7 @@ INSERT INTO dbo.Customers (FirstName, LastName, Email) VALUES
 ('Bob', 'Johnson', 'bob.j@example.com'),
 ('Alice', 'Williams', 'alice.w@example.com'),
 ('Charlie', 'Brown', 'charlie.b@example.com');
+GO
 
 -- Orders
 INSERT INTO dbo.Orders (CustomerID, OrderDate, TotalAmount, Status) VALUES
@@ -441,6 +447,7 @@ INSERT INTO dbo.Orders (CustomerID, OrderDate, TotalAmount, Status) VALUES
 (4, '2024-02-28', 899.99, 'Completed'),
 (5, '2024-03-01', 12.99, 'Pending'),
 (5, '2024-03-20', 44.99, 'Pending');
+GO
 
 -- Order Items
 INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice) VALUES
@@ -454,18 +461,21 @@ INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice) VALUES
 (8, 2, 1, 899.99),
 (9, 10, 1, 12.99),
 (10, 8, 1, 44.99);
+GO
 
 -- Order Metadata (XML)
 INSERT INTO dbo.OrderMetadata (OrderID, MetadataXml) VALUES
 (1, '<order><shipping><address>123 Main St, Seattle, WA</address><method>Express</method></shipping><items><item sku="PHONE-001" qty="1"/></items></order>'),
 (3, '<order><shipping><address>456 Oak Ave, Portland, OR</address><method>Standard</method></shipping><items><item sku="LAPTOP-001" qty="1"/></items></order>'),
 (5, '<order><shipping><address>789 Pine Rd, Denver, CO</address><method>Express</method></shipping><items><item sku="LAPTOP-002" qty="1"/></items></order>');
+GO
 
 -- Staging data for MERGE test
 INSERT INTO dbo.ProductImportStaging (SKU, ProductName, Price, StockQuantity) VALUES
-('PHONE-001', 'iPhone 15 Pro', 1099.99, 60),    -- Will UPDATE existing
-('PHONE-003', 'Pixel 8', 699.99, 40),            -- Will INSERT new
-('CABLE-001', 'USB-C Cable 2m', 14.99, 1200);    -- Will UPDATE existing
+('PHONE-001', 'iPhone 15 Pro', 1099.99, 60),
+('PHONE-003', 'Pixel 8', 699.99, 40),
+('CABLE-001', 'USB-C Cable 2m', 14.99, 1200);
+GO
 
 -- =============================================================================
 -- EXERCISE QUERIES - Run statements so Query Store captures them

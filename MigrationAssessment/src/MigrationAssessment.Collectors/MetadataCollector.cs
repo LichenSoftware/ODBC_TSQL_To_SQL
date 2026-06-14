@@ -141,7 +141,7 @@ public sealed class MetadataCollector : IMetadataCollector
                 i.name AS IndexName,
                 i.type_desc AS IndexType,
                 i.filter_definition AS FilterExpression,
-                i.fill_factor AS FillFactor,
+                i.[fill_factor] AS [FillFactor],
                 ic.key_ordinal AS KeyOrdinal,
                 ic.is_included_column AS IsIncluded,
                 c.name AS ColumnName
@@ -414,7 +414,7 @@ public sealed class MetadataCollector : IMetadataCollector
                 o.name AS ObjectName,
                 o.type_desc AS ObjectType,
                 sm.definition AS SourceText,
-                ISNULL(sm.is_encrypted, 0) AS IsEncrypted
+                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted
             FROM sys.objects o
             INNER JOIN sys.schemas s ON o.schema_id = s.schema_id
             LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id

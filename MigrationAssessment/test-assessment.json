@@ -1,0 +1,225 @@
+{
+  "assessmentMetadata": {
+    "generatedAt": "2026-06-14T18:28:47.3321362+00:00",
+    "engineVersion": "1.0.0.0"
+  },
+  "executiveSummary": {
+    "migrationReadinessScore": 46,
+    "classification": "High Risk",
+    "totalStatements": 14,
+    "riskDistribution": {
+      "1": 5,
+      "2": 1,
+      "3": 2,
+      "4": 5,
+      "5": 1
+    }
+  },
+  "objectInventory": [],
+  "featureInventory": [
+    {
+      "featureName": "SQL CLR",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Service Broker",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Agent Jobs",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "CDC",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Change Tracking",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Replication",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Linked Servers",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Full Text Search",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "FileStream",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "XML Indexes",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Temporal Tables",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Memory Optimized",
+      "occurrenceCount": 0
+    },
+    {
+      "featureName": "Partitioning",
+      "occurrenceCount": 0
+    }
+  ],
+  "analyzedStatements": [
+    {
+      "statementText": "(@CustomerID int,@Price decimal(10,2),@Quantity int)INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)\r\n        VALUES (@CustomerID, @Price * @Quantity, \u0027Processing\u0027)",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "(@OrderID int)SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID",
+      "riskScore": 5,
+      "weightedRisk": 5,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "XML_METHOD",
+        "XML_METHOD",
+        "XML_METHOD"
+      ]
+    },
+    {
+      "statementText": "(@OrderID int,@ProductID int,@Quantity int,@Price decimal(10,2))INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)\r\n        VALUES (@OrderID, @ProductID, @Quantity, @Price)",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "(@ProductID int,@CurrentStock int)SELECT @CurrentStock = StockQuantity FROM dbo.Products WHERE ProductID = @ProductID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "UPDLOCK",
+        "ROWLOCK"
+      ]
+    },
+    {
+      "statementText": "(@ProductID int,@Price decimal(10,2))SELECT @Price = Price FROM dbo.Products WHERE ProductID = @ProductID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "(@ProductID int,@Quantity int)UPDATE dbo.Products\r\n        SET StockQuantity = StockQuantity - @Quantity\r\n        WHERE ProductID = @ProductID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "TOP",
+        "ISNULL",
+        "DATEDIFF",
+        "GETDATE"
+      ]
+    },
+    {
+      "statementText": "(@Year int,@Month int)INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [
+        "TEMP_TABLE"
+      ]
+    },
+    {
+      "statementText": "INSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "GLOBAL_TEMP_TABLE"
+      ]
+    },
+    {
+      "statementText": "MERGE dbo.Products AS target\r\n    USING dbo.ProductImportStaging AS source\r\n    ON target.SKU = source.SKU\r\n    WHEN MATCHED THEN\r\n        UPDATE SET\r\n            ProductName = source.ProductName,\r\n            Price = source.Price,\r\n            StockQuantity = source.StockQuantity\r\n    WHEN NOT MATCHED BY TARGET THEN\r\n        INSERT (ProductName, SKU, Price, StockQuantity)\r\n        VALUES (source.ProductName, source.SKU, source.Price, source.StockQuantity)\r\n    WHEN NOT MATCHED BY SOURCE THEN\r\n        DELETE;",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "MERGE"
+      ]
+    },
+    {
+      "statementText": "SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "GLOBAL_TEMP_TABLE"
+      ]
+    },
+    {
+      "statementText": "SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [
+        "TEMP_TABLE"
+      ]
+    },
+    {
+      "statementText": "SELECT\r\n        p.ProductID,\r\n        p.ProductName,\r\n        p.StockQuantity,\r\n        p.Price\r\n    FROM dbo.Products p WITH (NOLOCK)\r\n    WHERE p.StockQuantity \u003E 0\r\n    ORDER BY p.StockQuantity ASC",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "NOLOCK"
+      ]
+    }
+  ],
+  "migrationRecommendation": {
+    "recommendation": "Partial Migration",
+    "reasoning": "Migration readiness score of 46 indicates significant challenges. 1 critical (Risk 5) and 5 high-risk (Risk 4) statements suggest only portions of the workload can be migrated to PostgreSQL.",
+    "migrationReadinessScore": 46
+  },
+  "effort": {
+    "schemaConversion": {
+      "minHours": 0,
+      "maxHours": 0
+    },
+    "codeConversion": {
+      "minHours": 61,
+      "maxHours": 408
+    },
+    "testing": {
+      "minHours": 91,
+      "maxHours": 612
+    },
+    "dataMigration": {
+      "minHours": 0,
+      "maxHours": 0
+    },
+    "performanceTuning": {
+      "minHours": 12,
+      "maxHours": 48
+    },
+    "totalClassification": "Large"
+  }
+}

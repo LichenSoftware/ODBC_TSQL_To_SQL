@@ -19,6 +19,14 @@ public sealed class StatementParser : IStatementParser
         @"^\s*GO\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
+    /// <summary>
+    /// Matches Query Store's parameterized statement prefix format:
+    /// (@param1 type1, @param2 type2, ...)actual SQL here
+    /// </summary>
+    private static readonly Regex ParameterDeclarationPrefix = new(
+        @"^\s*\((@\w+\s+\w+(?:\s*\([^)]*\))?(?:\s*,\s*@\w+\s+\w+(?:\s*\([^)]*\))?)*)\)\s*",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+
     private const int MaxErrorStatementTextLength = 1000;
 
     public StatementParser(ILogger<StatementParser> logger)
@@ -35,7 +43,10 @@ public sealed class StatementParser : IStatementParser
             return [];
         }
 
-        var segments = SplitOnGo(sqlText);
+        // Strip Query Store parameterized statement prefix: (@p1 int, @p2 nvarchar(100))SELECT ...
+        var cleanedText = StripParameterDeclarationPrefix(sqlText);
+
+        var segments = SplitOnGo(cleanedText);
         var results = new List<ParsedStatementResult>();
         var ordinal = 1;
 
@@ -51,6 +62,21 @@ public sealed class StatementParser : IStatementParser
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// Strips the Query Store parameterized statement prefix if present.
+    /// Query Store captures statements like: (@CustomerID int,@ProductID int)SELECT * FROM...
+    /// ScriptDom cannot parse these — we need to remove the prefix.
+    /// </summary>
+    private static string StripParameterDeclarationPrefix(string sqlText)
+    {
+        var match = ParameterDeclarationPrefix.Match(sqlText);
+        if (match.Success)
+        {
+            return sqlText[match.Length..];
+        }
+        return sqlText;
     }
 
     /// <summary>

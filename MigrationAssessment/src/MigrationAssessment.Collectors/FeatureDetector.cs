@@ -146,15 +146,15 @@ public sealed class FeatureDetector : IFeatureDetector
         const string sql = """
             SELECT 'Queue' AS object_type, name, NULL AS service_name
             FROM sys.service_queues
-            WHERE is_ms_shipped = 0
+            WHERE schema_id != SCHEMA_ID('sys')
             UNION ALL
             SELECT 'Service' AS object_type, name, NULL AS service_name
             FROM sys.services
-            WHERE is_ms_shipped = 0
+            WHERE name NOT LIKE 'http://%' AND name NOT LIKE 'InternalMailQueue%' AND name != 'ExternalMailQueue'
             UNION ALL
             SELECT 'Contract' AS object_type, name, NULL AS service_name
             FROM sys.service_contracts
-            WHERE is_ms_shipped = 0
+            WHERE name NOT LIKE 'http://%' AND name != 'DEFAULT'
             """;
 
         try
@@ -370,18 +370,23 @@ public sealed class FeatureDetector : IFeatureDetector
         CancellationToken ct)
     {
         const string sql = """
-            SELECT 'Article' AS object_type, a.name, p.name AS publication_name
-            FROM sys.articles a
-            JOIN sys.publications p ON a.pubid = p.pubid
-            UNION ALL
-            SELECT 'Publication' AS object_type, name, name AS publication_name
-            FROM sys.publications
-            UNION ALL
-            SELECT 'Subscription' AS object_type, 
-                   s.dest_db AS name, 
-                   p.name AS publication_name
-            FROM sys.subscriptions s
-            JOIN sys.publications p ON s.pubid = p.pubid
+            IF OBJECT_ID('sys.articles') IS NOT NULL
+            BEGIN
+                SELECT 'Article' AS object_type, a.name, p.name AS publication_name
+                FROM sys.articles a
+                JOIN sys.publications p ON a.pubid = p.pubid
+                UNION ALL
+                SELECT 'Publication' AS object_type, name, name AS publication_name
+                FROM sys.publications
+                UNION ALL
+                SELECT 'Subscription' AS object_type, 
+                       s.dest_db AS name, 
+                       p.name AS publication_name
+                FROM sys.subscriptions s
+                JOIN sys.publications p ON s.pubid = p.pubid
+            END
+            ELSE
+                SELECT 'None' AS object_type, '' AS name, '' AS publication_name WHERE 1=0
             """;
 
         try

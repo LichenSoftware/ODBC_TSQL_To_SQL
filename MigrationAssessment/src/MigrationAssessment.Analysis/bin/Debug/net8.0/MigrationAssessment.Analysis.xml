@@ -72,8 +72,21 @@
             and classifying each statement by type.
             </summary>
         </member>
+        <member name="F:MigrationAssessment.Analysis.StatementParser.ParameterDeclarationPrefix">
+            <summary>
+            Matches Query Store's parameterized statement prefix format:
+            (@param1 type1, @param2 type2, ...)actual SQL here
+            </summary>
+        </member>
         <member name="M:MigrationAssessment.Analysis.StatementParser.ParseBatch(System.String)">
             <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Analysis.StatementParser.StripParameterDeclarationPrefix(System.String)">
+            <summary>
+            Strips the Query Store parameterized statement prefix if present.
+            Query Store captures statements like: (@CustomerID int,@ProductID int)SELECT * FROM...
+            ScriptDom cannot parse these — we need to remove the prefix.
+            </summary>
         </member>
         <member name="M:MigrationAssessment.Analysis.StatementParser.SplitOnGo(System.String)">
             <summary>
