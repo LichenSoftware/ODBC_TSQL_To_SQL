@@ -26,5 +26,30 @@
         <member name="M:MigrationAssessment.Reporting.ReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure},MigrationAssessment.Core.Models.SchemaAnalysisResult)">
             <inheritdoc />
         </member>
+        <member name="T:MigrationAssessment.Reporting.RiskRationaleGenerator">
+            <summary>
+            Generates deterministic risk rationale strings for analyzed statements
+            based on a lookup table keyed by the highest-risk detected feature.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Reporting.RiskRationaleGenerator.FeatureRationales">
+            <summary>
+            Lookup table mapping feature names to their rationale explanation.
+            Keyed on uppercase feature name for case-insensitive matching.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Reporting.RiskRationaleGenerator.FeatureRiskMap">
+            <summary>
+            Risk-level ordering used to determine which feature drives the score.
+            Matches the RiskScorer lookup.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Reporting.RiskRationaleGenerator.GenerateRationale(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.DetectedFeature},System.Int32)">
+            <summary>
+            Generates a deterministic risk rationale for an analyzed statement.
+            Returns a single sentence (under 200 characters) naming the highest-risk
+            feature and explaining why it drives the assigned score.
+            </summary>
+        </member>
     </members>
 </doc>

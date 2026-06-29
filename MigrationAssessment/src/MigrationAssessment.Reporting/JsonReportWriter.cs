@@ -202,7 +202,8 @@ public sealed class JsonReportWriter : IJsonReportWriter
             s.RiskScore,
             s.WeightedRisk,
             ConversionCategory = GetConversionCategory(s.RiskScore),
-            DetectedFeatures = s.Features.Select(f => f.FeatureName).ToList()
+            DetectedFeatures = s.Features.Select(f => f.FeatureName).ToList(),
+            RiskRationale = RiskRationaleGenerator.GenerateRationale(s.Features, s.RiskScore)
         }).ToList();
     }
 
