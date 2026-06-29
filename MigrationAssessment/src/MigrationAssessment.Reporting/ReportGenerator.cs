@@ -20,7 +20,8 @@ public sealed class ReportGenerator : IReportGenerator
         IReadOnlyList<AnalyzedStatement> statements,
         DatabaseObjectInventory objectInventory,
         FeatureDetectionResult featureDetection,
-        IReadOnlyList<CollectionFailure> failures)
+        IReadOnlyList<CollectionFailure> failures,
+        SchemaAnalysisResult? schemaAnalysis = null)
     {
         // Edge case: zero statements (Req 10.7)
         if (statements.Count == 0)
@@ -33,7 +34,7 @@ public sealed class ReportGenerator : IReportGenerator
         var summary = BuildExecutiveSummary(statements, readinessResult);
         var riskBreakdown = BuildRiskBreakdown(statements);
         var topChallenges = BuildTopChallenges(statements);
-        var effort = CalculateEffort(statements, objectInventory);
+        var effort = CalculateEffort(statements, objectInventory, schemaAnalysis);
         var recommendation = BuildRecommendation(readinessResult, statements, featureDetection);
 
         return new AssessmentReport
@@ -43,7 +44,8 @@ public sealed class ReportGenerator : IReportGenerator
             TopChallenges = topChallenges,
             Effort = effort,
             Recommendation = recommendation,
-            FailureSummary = failures
+            FailureSummary = failures,
+            SchemaAnalysis = schemaAnalysis
         };
     }
 
@@ -178,16 +180,26 @@ public sealed class ReportGenerator : IReportGenerator
 
     private static MigrationEffortEstimate CalculateEffort(
         IReadOnlyList<AnalyzedStatement> statements,
-        DatabaseObjectInventory objectInventory)
+        DatabaseObjectInventory objectInventory,
+        SchemaAnalysisResult? schemaAnalysis)
     {
-        // Schema conversion: based on object inventory size
-        var tableCount = objectInventory.Tables.Count;
-        var indexCount = objectInventory.Indexes.Count;
-        var constraintCount = objectInventory.Constraints.Count;
-        var schemaObjectCount = tableCount + indexCount + constraintCount;
+        // Schema conversion: use schema analysis if available, otherwise fallback to object count heuristic
+        HourRange schemaConversion;
+        if (schemaAnalysis is not null && schemaAnalysis.Findings.Count > 0)
+        {
+            schemaConversion = schemaAnalysis.EstimatedEffort;
+        }
+        else
+        {
+            var tableCount = objectInventory.Tables.Count;
+            var indexCount = objectInventory.Indexes.Count;
+            var constraintCount = objectInventory.Constraints.Count;
+            var schemaObjectCount = tableCount + indexCount + constraintCount;
 
-        var schemaMin = (int)(schemaObjectCount * 0.1);
-        var schemaMax = (int)(schemaObjectCount * 0.5);
+            var schemaMin = (int)(schemaObjectCount * 0.1);
+            var schemaMax = (int)(schemaObjectCount * 0.5);
+            schemaConversion = new HourRange { MinHours = schemaMin, MaxHours = schemaMax };
+        }
 
         // Code conversion: based on Risk 3-5 statement counts
         var risk3Count = statements.Count(s => s.RiskScore == 3);
@@ -203,8 +215,8 @@ public sealed class ReportGenerator : IReportGenerator
         var testMax = (int)(codeMax * 1.5);
 
         // Data migration: based on table count
-        var dataMin = tableCount * 1;
-        var dataMax = tableCount * 4;
+        var dataMin = objectInventory.Tables.Count * 1;
+        var dataMax = objectInventory.Tables.Count * 4;
 
         // Performance tuning: based on high-risk items (Risk 4-5)
         var highRiskCount = risk4Count + risk5Count;
@@ -212,12 +224,12 @@ public sealed class ReportGenerator : IReportGenerator
         var perfMax = highRiskCount * 8;
 
         // Total classification based on max hours sum
-        var totalMaxHours = schemaMax + codeMax + testMax + dataMax + perfMax;
+        var totalMaxHours = schemaConversion.MaxHours + codeMax + testMax + dataMax + perfMax;
         var totalClassification = ClassifyTotalEffort(totalMaxHours);
 
         return new MigrationEffortEstimate
         {
-            SchemaConversion = new HourRange { MinHours = schemaMin, MaxHours = schemaMax },
+            SchemaConversion = schemaConversion,
             CodeConversion = new HourRange { MinHours = codeMin, MaxHours = codeMax },
             Testing = new HourRange { MinHours = testMin, MaxHours = testMax },
             DataMigration = new HourRange { MinHours = dataMin, MaxHours = dataMax },

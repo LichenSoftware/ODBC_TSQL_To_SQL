@@ -23,6 +23,7 @@ public sealed class AssessmentPipeline
     private readonly IReportGenerator _reportGenerator;
     private readonly IJsonReportWriter _jsonWriter;
     private readonly IObjectInventoryBuilder _objectInventoryBuilder;
+    private readonly ISchemaAnalyzer _schemaAnalyzer;
     private readonly IWorkItemGenerator? _workItemGenerator;
     private readonly ILogger<AssessmentPipeline> _logger;
 
@@ -37,6 +38,7 @@ public sealed class AssessmentPipeline
         IReportGenerator reportGenerator,
         IJsonReportWriter jsonWriter,
         IObjectInventoryBuilder objectInventoryBuilder,
+        ISchemaAnalyzer schemaAnalyzer,
         ILogger<AssessmentPipeline> logger,
         IWorkItemGenerator? workItemGenerator = null)
     {
@@ -50,6 +52,7 @@ public sealed class AssessmentPipeline
         _reportGenerator = reportGenerator;
         _jsonWriter = jsonWriter;
         _objectInventoryBuilder = objectInventoryBuilder;
+        _schemaAnalyzer = schemaAnalyzer;
         _logger = logger;
         _workItemGenerator = workItemGenerator;
     }
@@ -196,8 +199,12 @@ public sealed class AssessmentPipeline
                 }
             }
 
-            // 4. Generate report
-            var report = _reportGenerator.GenerateReport(analyzedStatements, objectInventory, featureResult, failures);
+            // 4. Generate report (with schema analysis)
+            var schemaAnalysis = _schemaAnalyzer.Analyze(objectInventory);
+            _logger.LogInformation("Schema analysis found {Count} findings", schemaAnalysis.Findings.Count);
+
+            var report = _reportGenerator.GenerateReport(
+                analyzedStatements, objectInventory, featureResult, failures, schemaAnalysis);
 
             // 4.5. Build parsed object inventory from analyzed statements + metadata
             var parsedObjectInventory = _objectInventoryBuilder.BuildInventory(analyzedStatements, objectInventory);

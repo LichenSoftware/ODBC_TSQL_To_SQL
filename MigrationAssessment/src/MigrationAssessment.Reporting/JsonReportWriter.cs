@@ -91,6 +91,7 @@ public sealed class JsonReportWriter : IJsonReportWriter
             ObjectInventory = BuildObjectInventory(objectInventory, parsedObjectInventory),
             FeatureInventory = BuildFeatureInventory(featureDetection),
             AnalyzedStatements = BuildAnalyzedStatements(statements),
+            SchemaAnalysis = BuildSchemaAnalysis(report.SchemaAnalysis),
             MigrationRecommendation = BuildMigrationRecommendation(report.Recommendation),
             Effort = BuildEffort(report.Effort)
         };
@@ -217,6 +218,32 @@ public sealed class JsonReportWriter : IJsonReportWriter
             DataMigration = new { effort.DataMigration.MinHours, effort.DataMigration.MaxHours },
             PerformanceTuning = new { effort.PerformanceTuning.MinHours, effort.PerformanceTuning.MaxHours },
             effort.TotalClassification
+        };
+    }
+
+    private static object? BuildSchemaAnalysis(SchemaAnalysisResult? schemaAnalysis)
+    {
+        if (schemaAnalysis is null || schemaAnalysis.Findings.Count == 0)
+            return null;
+
+        return new
+        {
+            Findings = schemaAnalysis.Findings.Select(f => new
+            {
+                f.TableName,
+                f.ColumnName,
+                f.IssueType,
+                f.SqlServerType,
+                f.PostgresType,
+                f.RiskScore,
+                f.Description
+            }).ToList(),
+            EstimatedEffort = new
+            {
+                schemaAnalysis.EstimatedEffort.MinHours,
+                schemaAnalysis.EstimatedEffort.MaxHours
+            },
+            schemaAnalysis.FindingCountsByType
         };
     }
 

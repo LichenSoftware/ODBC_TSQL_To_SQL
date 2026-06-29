@@ -23,7 +23,7 @@
             Generates the complete migration assessment report from analyzed data.
             </summary>
         </member>
-        <member name="M:MigrationAssessment.Reporting.ReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure})">
+        <member name="M:MigrationAssessment.Reporting.ReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure},MigrationAssessment.Core.Models.SchemaAnalysisResult)">
             <inheritdoc />
         </member>
     </members>

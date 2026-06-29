@@ -14,10 +14,12 @@ public interface IReportGenerator
     /// <param name="objectInventory">Database object metadata inventory.</param>
     /// <param name="featureDetection">Server feature detection results.</param>
     /// <param name="failures">Collection failures from any sources that failed.</param>
+    /// <param name="schemaAnalysis">Optional schema DDL analysis results.</param>
     /// <returns>The complete assessment report.</returns>
     AssessmentReport GenerateReport(
         IReadOnlyList<AnalyzedStatement> statements,
         DatabaseObjectInventory objectInventory,
         FeatureDetectionResult featureDetection,
-        IReadOnlyList<CollectionFailure> failures);
+        IReadOnlyList<CollectionFailure> failures,
+        SchemaAnalysisResult? schemaAnalysis = null);
 }

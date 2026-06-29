@@ -107,7 +107,7 @@
             Generates the final assessment report from all collected and analyzed data.
             </summary>
         </member>
-        <member name="M:MigrationAssessment.Core.Interfaces.IReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure})">
+        <member name="M:MigrationAssessment.Core.Interfaces.IReportGenerator.GenerateReport(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.CollectionFailure},MigrationAssessment.Core.Models.SchemaAnalysisResult)">
             <summary>
             Generates a complete assessment report.
             </summary>
@@ -115,6 +115,7 @@
             <param name="objectInventory">Database object metadata inventory.</param>
             <param name="featureDetection">Server feature detection results.</param>
             <param name="failures">Collection failures from any sources that failed.</param>
+            <param name="schemaAnalysis">Optional schema DDL analysis results.</param>
             <returns>The complete assessment report.</returns>
         </member>
         <member name="T:MigrationAssessment.Core.Interfaces.IRiskScorer">
@@ -129,6 +130,21 @@
             <param name="features">The features detected in the statement.</param>
             <param name="parseFailed">Whether the statement failed to parse.</param>
             <returns>A risk score from 1 (trivial) to 5 (critical).</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.ISchemaAnalyzer">
+            <summary>
+            Analyzes schema DDL metadata to detect SQL Server-specific patterns
+            that require conversion for PostgreSQL migration.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.ISchemaAnalyzer.Analyze(MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <summary>
+            Analyzes the database object inventory for schema-level migration issues
+            including data type mappings, identity columns, clustered indexes,
+            collation differences, and computed columns.
+            </summary>
+            <param name="objectInventory">The database object inventory from metadata collection.</param>
+            <returns>Schema analysis result with findings and effort estimate.</returns>
         </member>
         <member name="T:MigrationAssessment.Core.Interfaces.IStatementAnalyzer">
             <summary>
@@ -442,6 +458,48 @@
             <summary>
             Breakdown of statements by risk level.
             </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.SchemaAnalysisResult">
+            <summary>
+            Result of schema DDL analysis containing all flagged columns, indexes,
+            and constraints that require attention during migration.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaAnalysisResult.Findings">
+            <summary>All schema-level findings requiring conversion.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaAnalysisResult.EstimatedEffort">
+            <summary>Estimated effort for schema conversion derived from findings.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaAnalysisResult.FindingCountsByType">
+            <summary>Summary counts by issue type.</summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.SchemaFinding">
+            <summary>
+            A single schema-level finding flagging a column, index, or constraint
+            that requires conversion from SQL Server to PostgreSQL.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.TableName">
+            <summary>Schema-qualified table name (e.g., "dbo.Orders").</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.ColumnName">
+            <summary>Column or index name affected.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.IssueType">
+            <summary>Category of the issue (e.g., "DataType", "Identity", "ClusteredIndex", "Collation", "ComputedColumn").</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.SqlServerType">
+            <summary>Original SQL Server data type or construct.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.PostgresType">
+            <summary>Recommended PostgreSQL equivalent.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.RiskScore">
+            <summary>Risk score 1-5 for this schema finding.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.SchemaFinding.Description">
+            <summary>Human-readable description of the conversion concern.</summary>
         </member>
         <member name="T:MigrationAssessment.Core.Models.StatementClassification">
             <summary>

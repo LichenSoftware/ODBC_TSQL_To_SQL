@@ -45,6 +45,7 @@ services.AddTransient<IRiskScorer, RiskScorer>();
 services.AddTransient<IWeightedComplexityCalculator, WeightedComplexityCalculator>();
 services.AddTransient<IMigrationReadinessScorer, MigrationReadinessScorer>();
 services.AddTransient<IObjectInventoryBuilder, ObjectInventoryBuilder>();
+services.AddTransient<ISchemaAnalyzer, SchemaAnalyzer>();
 services.AddTransient<IReportGenerator, ReportGenerator>();
 services.AddTransient<IJsonReportWriter, JsonReportWriter>();
 

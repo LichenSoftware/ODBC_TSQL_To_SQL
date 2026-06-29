@@ -11,4 +11,5 @@ public sealed record AssessmentReport
     public required MigrationEffortEstimate Effort { get; init; }
     public required MigrationRecommendation Recommendation { get; init; }
     public required IReadOnlyList<CollectionFailure> FailureSummary { get; init; }
+    public SchemaAnalysisResult? SchemaAnalysis { get; init; }
 }

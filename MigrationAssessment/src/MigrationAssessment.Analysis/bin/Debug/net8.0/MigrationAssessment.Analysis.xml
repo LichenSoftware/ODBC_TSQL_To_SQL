@@ -103,6 +103,31 @@
         <member name="M:MigrationAssessment.Analysis.RiskScorer.ScoreStatement(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.DetectedFeature},System.Boolean)">
             <inheritdoc />
         </member>
+        <member name="T:MigrationAssessment.Analysis.SchemaAnalyzer">
+            <summary>
+            Analyzes schema DDL metadata to detect SQL Server-specific patterns
+            that require conversion for PostgreSQL migration. Detects:
+            - Data type mappings (UNIQUEIDENTIFIER, DATETIME, BIT, etc.)
+            - Identity columns (IDENTITY → GENERATED ALWAYS AS IDENTITY)
+            - Clustered indexes (no PostgreSQL equivalent)
+            - Collation issues (case-insensitive defaults)
+            - Computed columns (AS expression → GENERATED ALWAYS AS STORED)
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Analysis.SchemaAnalyzer.DataTypeMappings">
+            <summary>
+            Data type mappings from SQL Server to PostgreSQL with risk scores.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.SchemaAnalyzer.Analyze(MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Analysis.SchemaAnalyzer.CalculateSchemaEffort(System.Collections.Generic.List{MigrationAssessment.Core.Models.SchemaFinding})">
+            <summary>
+            Calculates schema conversion effort from the count and risk of findings.
+            Base: 0.25h per Risk 1-2 finding, 0.5h per Risk 3, 1h per Risk 4-5.
+            </summary>
+        </member>
         <member name="T:MigrationAssessment.Analysis.StatementAnalyzer">
             <summary>
             Analyzes parsed T-SQL statements by walking the AST with a visitor to detect
