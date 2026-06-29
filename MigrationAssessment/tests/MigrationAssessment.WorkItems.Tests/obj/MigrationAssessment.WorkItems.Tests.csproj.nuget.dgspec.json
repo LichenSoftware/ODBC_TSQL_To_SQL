@@ -608,6 +608,9 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
+              "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Analysis\\MigrationAssessment.Analysis.csproj": {
+                "projectPath": "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Analysis\\MigrationAssessment.Analysis.csproj"
+              },
               "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Cli\\MigrationAssessment.Cli.csproj": {
                 "projectPath": "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Cli\\MigrationAssessment.Cli.csproj"
               },

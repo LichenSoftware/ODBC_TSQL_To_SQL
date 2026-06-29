@@ -232,7 +232,7 @@ public sealed class AssessmentPipeline
                 };
 
                 var workItemResult = _workItemGenerator.GenerateWorkItems(
-                    analyzedStatements, featureResult, workItemConfig, parsedObjectInventory);
+                    analyzedStatements, featureResult, workItemConfig, parsedObjectInventory, objectInventory);
 
                 if (workItemResult.Succeeded)
                 {

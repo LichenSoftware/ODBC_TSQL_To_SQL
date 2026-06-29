@@ -371,13 +371,13 @@ public class ContentGenerationUnitTests
     {
         var interfaceType = typeof(IStatementGrouper);
 
-        // Verify the two-overload GroupStatements methods exist with correct parameter types
+        // Verify the three-overload GroupStatements methods exist with correct parameter types
         var methods = interfaceType.GetMethods()
             .Where(m => m.Name == "GroupStatements")
             .ToList();
 
-        methods.Should().HaveCount(2,
-            "IStatementGrouper should have exactly 2 GroupStatements overloads");
+        methods.Should().HaveCount(3,
+            "IStatementGrouper should have exactly 3 GroupStatements overloads");
 
         // Verify 3-parameter overload: (IReadOnlyList<AnalyzedStatement>, FeatureDetectionResult, int)
         var threeParamOverload = methods.FirstOrDefault(m => m.GetParameters().Length == 3);
@@ -398,9 +398,21 @@ public class ContentGenerationUnitTests
         fourParams[2].ParameterType.Should().Be(typeof(int));
         fourParams[3].ParameterType.Should().Be(typeof(IReadOnlyList<ObjectInventoryEntry>));
 
+        // Verify 5-parameter overload: (IReadOnlyList<AnalyzedStatement>, FeatureDetectionResult, int, IReadOnlyList<ObjectInventoryEntry>, DatabaseObjectInventory)
+        var fiveParamOverload = methods.FirstOrDefault(m => m.GetParameters().Length == 5);
+        fiveParamOverload.Should().NotBeNull(
+            "IStatementGrouper should have a 5-parameter GroupStatements overload");
+        var fiveParams = fiveParamOverload!.GetParameters();
+        fiveParams[0].ParameterType.Should().Be(typeof(IReadOnlyList<AnalyzedStatement>));
+        fiveParams[1].ParameterType.Should().Be(typeof(FeatureDetectionResult));
+        fiveParams[2].ParameterType.Should().Be(typeof(int));
+        fiveParams[3].ParameterType.Should().Be(typeof(IReadOnlyList<ObjectInventoryEntry>));
+        fiveParams[4].ParameterType.Should().Be(typeof(DatabaseObjectInventory));
+
         // Verify return types
         threeParamOverload.ReturnType.Should().Be(typeof(IReadOnlyList<StatementGroup>));
         fourParamOverload.ReturnType.Should().Be(typeof(IReadOnlyList<StatementGroup>));
+        fiveParamOverload.ReturnType.Should().Be(typeof(IReadOnlyList<StatementGroup>));
     }
 
     #endregion

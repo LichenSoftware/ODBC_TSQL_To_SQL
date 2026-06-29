@@ -84,6 +84,27 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
         WorkItemConfiguration config,
         IReadOnlyList<ObjectInventoryEntry> objectInventory)
     {
+        return GenerateWorkItemsInternal(statements, featureDetection, config, objectInventory, null);
+    }
+
+    /// <inheritdoc />
+    public WorkItemResult GenerateWorkItems(
+        IReadOnlyList<AnalyzedStatement> statements,
+        FeatureDetectionResult featureDetection,
+        WorkItemConfiguration config,
+        IReadOnlyList<ObjectInventoryEntry> objectInventory,
+        DatabaseObjectInventory rawObjectInventory)
+    {
+        return GenerateWorkItemsInternal(statements, featureDetection, config, objectInventory, rawObjectInventory);
+    }
+
+    private WorkItemResult GenerateWorkItemsInternal(
+        IReadOnlyList<AnalyzedStatement> statements,
+        FeatureDetectionResult featureDetection,
+        WorkItemConfiguration config,
+        IReadOnlyList<ObjectInventoryEntry> objectInventory,
+        DatabaseObjectInventory? rawObjectInventory)
+    {
         ArgumentNullException.ThrowIfNull(statements);
         ArgumentNullException.ThrowIfNull(featureDetection);
         ArgumentNullException.ThrowIfNull(config);
@@ -96,9 +117,19 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
         }
 
         // 2. Group statements by feature + database object
-        var groups = objectInventory.Count > 0
-            ? _grouper.GroupStatements(statements, featureDetection, config.MinimumRiskLevel, objectInventory)
-            : _grouper.GroupStatements(statements, featureDetection, config.MinimumRiskLevel);
+        IReadOnlyList<StatementGroup> groups;
+        if (objectInventory.Count > 0 && rawObjectInventory is not null)
+        {
+            groups = _grouper.GroupStatements(statements, featureDetection, config.MinimumRiskLevel, objectInventory, rawObjectInventory);
+        }
+        else if (objectInventory.Count > 0)
+        {
+            groups = _grouper.GroupStatements(statements, featureDetection, config.MinimumRiskLevel, objectInventory);
+        }
+        else
+        {
+            groups = _grouper.GroupStatements(statements, featureDetection, config.MinimumRiskLevel);
+        }
 
         // 3. Deduplicate groups
         var deduplicatedGroups = _deduplicator.Deduplicate(groups);
@@ -137,6 +168,10 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
         var totalEffort = _effortEstimator.CalculateTotalEffort(workItems);
         var confidenceSummary = _effortEstimator.BuildConfidenceSummary(workItems);
 
+        // 9. Run validation gate
+        var validator = new WorkItemValidator();
+        var validationSummary = validator.Validate(workItems, objectInventory);
+
         var metadata = new WorkItemMetadata
         {
             GeneratedAt = DateTimeOffset.UtcNow,
@@ -150,7 +185,8 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
         {
             WorkItems = workItems,
             Metadata = metadata,
-            Succeeded = true
+            Succeeded = true,
+            ValidationSummary = validationSummary
         };
     }
 

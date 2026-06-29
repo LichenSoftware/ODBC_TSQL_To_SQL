@@ -1,3 +1,4 @@
+using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.Core.Models;
 using MigrationAssessment.WorkItems.Models;
 
@@ -27,4 +28,16 @@ public interface IStatementGrouper
         FeatureDetectionResult featureDetection,
         int minimumRiskLevel,
         IReadOnlyList<ObjectInventoryEntry> objectInventory);
+
+    /// <summary>
+    /// Groups statements into work item clusters using both the parsed object inventory
+    /// and the raw database object inventory (with source texts) to correctly attribute
+    /// statements to their containing named objects via the shared resolver.
+    /// </summary>
+    IReadOnlyList<StatementGroup> GroupStatements(
+        IReadOnlyList<AnalyzedStatement> statements,
+        FeatureDetectionResult featureDetection,
+        int minimumRiskLevel,
+        IReadOnlyList<ObjectInventoryEntry> objectInventory,
+        DatabaseObjectInventory rawObjectInventory);
 }

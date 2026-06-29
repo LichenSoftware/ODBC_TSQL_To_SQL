@@ -1,6 +1,6 @@
 ﻿# Migration Work Items Report
 
-**Generated:** 2026-06-29T15:58:31.6510792+00:00
+**Generated:** 2026-06-29T18:28:29.7013816+00:00
 **Source:** ./test-assessment.json
 **Total Work Items:** 10
 **Estimated Effort:** 90.18-418.6 hours
@@ -137,12 +137,13 @@ Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
 
 **PostgreSQL Equivalent:**
 ```sql
--- TODO: verify locking strategy; UPDLOCK replaced with FOR UPDATE
+-- TODO: UPDLOCK removed. Row-level locking on UPDATE/DELETE is implicit in PostgreSQL's MVCC.
+-- If explicit pessimistic locking is required, use SELECT ... FOR UPDATE in a preceding
+-- statement within the same transaction, then perform the UPDATE/DELETE.
 (@ProductID int,@NewQuantity int)UPDATE p
     SET p.StockQuantity = @NewQuantity
     FROM dbo.Products p
     WHERE p.ProductID = @ProductID
-FOR UPDATE
 ```
 
 **Affected Objects:**
@@ -176,6 +177,8 @@ INSERT INTO ##GlobalOrderSummary
 
 **PostgreSQL Equivalent:**
 ```sql
+-- TODO: global temp table reference converted to regular table name.
+-- Ensure the table exists as a permanent/unlogged table with appropriate lifecycle management.
 INSERT INTO GlobalOrderSummary
     SELECT
         CAST(OrderDate AS DATE),
@@ -222,14 +225,13 @@ MERGE dbo.Products AS target
 ```sql
 -- TODO: verify conflict target column and update columns match your schema
 -- Original MERGE converted to INSERT ... ON CONFLICT (upsert pattern)
-INSERT INTO dbo.Products AS t
-SELECT * FROM dbo.ProductImportStaging AS s
-WHERE NOT EXISTS (
-    SELECT 1 FROM dbo.Products WHERE target.SKU = source.SKU
-)
+INSERT INTO dbo.Products (ProductName, SKU, Price, StockQuantity)
+SELECT ProductName, SKU, Price, StockQuantity
+FROM dbo.ProductImportStaging AS source
 ON CONFLICT (SKU) DO UPDATE SET
-    -- TODO: list columns to update on conflict
-    updated_at = NOW();
+    ProductName = EXCLUDED.ProductName,
+            Price = EXCLUDED.Price,
+            StockQuantity = EXCLUDED.StockQuantity;
 ```
 
 **Affected Objects:**
@@ -255,6 +257,8 @@ SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC
 
 **PostgreSQL Equivalent:**
 ```sql
+-- TODO: global temp table reference converted to regular table name.
+-- Ensure the table exists as a permanent/unlogged table with appropriate lifecycle management.
 SELECT * FROM GlobalOrderSummary ORDER BY OrderDate DESC
 ```
 
@@ -414,7 +418,7 @@ Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
         c.FirstName || ' ' || c.LastName AS FullName,
         COUNT(o.OrderID) AS OrderCount,
         COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent,
-        (GETDATE(::date - MAX(o.OrderDate)::date)) AS DaysSinceLastOrder
+        (NOW()::date - MAX(o.OrderDate)::date) AS DaysSinceLastOrder
     FROM dbo.Customers c
     LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID
     GROUP BY c.CustomerID, c.FirstName, c.LastName

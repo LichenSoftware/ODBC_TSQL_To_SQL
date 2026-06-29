@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.Core.Models;
 using MigrationAssessment.WorkItems.Models;
 
@@ -13,6 +14,7 @@ namespace MigrationAssessment.WorkItems;
 public sealed class StatementGrouper : IStatementGrouper
 {
     private readonly ILogger<StatementGrouper> _logger;
+    private readonly IStatementObjectResolver? _resolver;
 
     /// <summary>
     /// Feature-to-risk-level mapping consistent with the RiskScorer in the Analysis layer.
@@ -82,6 +84,13 @@ public sealed class StatementGrouper : IStatementGrouper
     public StatementGrouper(ILogger<StatementGrouper> logger)
     {
         _logger = logger;
+        _resolver = null;
+    }
+
+    public StatementGrouper(ILogger<StatementGrouper> logger, IStatementObjectResolver resolver)
+    {
+        _logger = logger;
+        _resolver = resolver;
     }
 
     /// <inheritdoc/>
@@ -90,7 +99,7 @@ public sealed class StatementGrouper : IStatementGrouper
         FeatureDetectionResult featureDetection,
         int minimumRiskLevel)
     {
-        return GroupStatementsInternal(statements, featureDetection, minimumRiskLevel, null);
+        return GroupStatementsInternal(statements, featureDetection, minimumRiskLevel, null, null);
     }
 
     /// <inheritdoc/>
@@ -100,17 +109,31 @@ public sealed class StatementGrouper : IStatementGrouper
         int minimumRiskLevel,
         IReadOnlyList<ObjectInventoryEntry> objectInventory)
     {
-        return GroupStatementsInternal(statements, featureDetection, minimumRiskLevel, objectInventory);
+        return GroupStatementsInternal(statements, featureDetection, minimumRiskLevel, objectInventory, null);
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<StatementGroup> GroupStatements(
+        IReadOnlyList<AnalyzedStatement> statements,
+        FeatureDetectionResult featureDetection,
+        int minimumRiskLevel,
+        IReadOnlyList<ObjectInventoryEntry> objectInventory,
+        DatabaseObjectInventory rawObjectInventory)
+    {
+        return GroupStatementsInternal(statements, featureDetection, minimumRiskLevel, objectInventory, rawObjectInventory);
     }
 
     private IReadOnlyList<StatementGroup> GroupStatementsInternal(
         IReadOnlyList<AnalyzedStatement> statements,
         FeatureDetectionResult featureDetection,
         int minimumRiskLevel,
-        IReadOnlyList<ObjectInventoryEntry>? objectInventory)
+        IReadOnlyList<ObjectInventoryEntry>? objectInventory,
+        DatabaseObjectInventory? rawObjectInventory)
     {
-        // Build a lookup from statement SQL text to object name (if inventory is provided)
-        var statementToObject = BuildStatementToObjectMap(statements, objectInventory);
+        // Build a lookup from statement to its containing object
+        // When rawObjectInventory is available and we have a resolver, use the shared resolver
+        // for accurate text-containment matching. Otherwise, fall back to the legacy DDL-pattern approach.
+        var statementToObject = BuildStatementToObjectMap(statements, objectInventory, rawObjectInventory);
 
         // Step 1: Filter statements by minimum risk level
         var filteredStatements = statements
@@ -224,25 +247,35 @@ public sealed class StatementGrouper : IStatementGrouper
 
     /// <summary>
     /// Builds a mapping from each AnalyzedStatement to its containing database object info,
-    /// using the ObjectInventoryBuilder's results. The inventory tells us which object each
-    /// statement text belongs to based on DDL pattern detection.
+    /// using the shared IStatementObjectResolver when raw inventory is available.
+    /// Falls back to the ObjectInventoryEntry list when raw metadata is not provided.
     /// </summary>
-    private static Dictionary<AnalyzedStatement, (string Name, string Type)> BuildStatementToObjectMap(
+    private Dictionary<AnalyzedStatement, (string Name, string Type)> BuildStatementToObjectMap(
         IReadOnlyList<AnalyzedStatement> statements,
-        IReadOnlyList<ObjectInventoryEntry>? objectInventory)
+        IReadOnlyList<ObjectInventoryEntry>? objectInventory,
+        DatabaseObjectInventory? rawObjectInventory)
     {
         var map = new Dictionary<AnalyzedStatement, (string Name, string Type)>(
             ReferenceEqualityComparer.Instance);
 
+        // Prefer the shared resolver for accurate text-containment matching
+        if (_resolver is not null && rawObjectInventory is not null)
+        {
+            var resolvedMap = _resolver.ResolveStatementObjects(statements, rawObjectInventory);
+            foreach (var (stmt, resolved) in resolvedMap)
+            {
+                map[stmt] = (resolved.Name, resolved.Type);
+            }
+            return map;
+        }
+
+        // Fallback: use the ObjectInventoryEntry list with DDL pattern matching
+        // (legacy behavior for when raw inventory is not available)
         if (objectInventory is null || objectInventory.Count == 0)
         {
             return map;
         }
 
-        // The ObjectInventoryBuilder uses the same DDL pattern matching on SQL text.
-        // We replicate a lightweight version here: match statement's source SQL to the
-        // inventory entry by checking if the SQL text contains the CREATE/ALTER DDL for the object.
-        // For a statement that IS the DDL definition, its source text starts with CREATE/ALTER.
         foreach (var statement in statements)
         {
             var sqlText = statement.Source.SqlText;
@@ -258,7 +291,6 @@ public sealed class StatementGrouper : IStatementGrouper
                     continue;
                 }
 
-                // Check if this statement's SQL text contains a CREATE/ALTER for this object
                 if (ContainsObjectDefinition(sqlText, entry.Name, entry.Type))
                 {
                     map[statement] = (entry.Name, entry.Type);

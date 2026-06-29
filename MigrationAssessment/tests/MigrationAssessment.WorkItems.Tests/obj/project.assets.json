@@ -7276,6 +7276,7 @@
       "FluentAssertions >= 6.12.2",
       "FsCheck.Xunit >= 2.16.6",
       "Microsoft.NET.Test.Sdk >= 17.11.1",
+      "MigrationAssessment.Analysis >= 1.0.0",
       "MigrationAssessment.Cli >= 1.0.0",
       "MigrationAssessment.WorkItems >= 1.0.0",
       "NSubstitute >= 5.1.0",
@@ -7315,6 +7316,9 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
+            "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Analysis\\MigrationAssessment.Analysis.csproj": {
+              "projectPath": "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Analysis\\MigrationAssessment.Analysis.csproj"
+            },
             "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Cli\\MigrationAssessment.Cli.csproj": {
               "projectPath": "C:\\code\\ODBC_TSQL_To_SQL\\MigrationAssessment\\src\\MigrationAssessment.Cli\\MigrationAssessment.Cli.csproj"
             },

@@ -1,11 +1,11 @@
 {
   "assessmentMetadata": {
-    "generatedAt": "2026-06-29T15:56:44.6911568+00:00",
+    "generatedAt": "2026-06-29T18:28:14.5881857+00:00",
     "engineVersion": "1.0.0.0",
     "scoringMethodology": "Migration readiness score is calculated as a weighted average across all analyzed statements, where each statement\u0027s risk level (1-5) is determined by its most complex SQL Server feature. Risk 1-2 features have known direct PostgreSQL equivalents (e.g., ISNULL\u2192COALESCE, TOP\u2192LIMIT). Risk 3 features require procedural restructuring (e.g., TRY_CATCH, TEMP_TABLE). Risk 4-5 features require architectural redesign or have no direct equivalent (e.g., MERGE, XML_METHOD, SQL_CLR). Effort ranges use a geometric series model (0.7 reduction factor per repeated pattern) with confidence-based range clamping: high-confidence items (risk 1-2) are capped at \u22642x ratio, medium-confidence (risk 3) at \u22644x, and low-confidence (risk 4-5) at \u22647x. The overall readiness score ranges from 0 (all risk-5) to 100 (all risk-1), normalized by statement frequency and execution count."
   },
   "executiveSummary": {
-    "migrationReadinessScore": 51,
+    "migrationReadinessScore": 52,
     "classification": "Moderate Candidate - Significant Work Required",
     "totalStatements": 22,
     "riskDistribution": {
@@ -499,7 +499,7 @@
     {
       "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
       "riskScore": 1,
-      "weightedRisk": 1,
+      "weightedRisk": 2,
       "conversionCategory": "automatic",
       "detectedFeatures": [],
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
@@ -766,8 +766,8 @@
   },
   "migrationRecommendation": {
     "recommendation": "PostgreSQL Migration with Compatibility Middleware",
-    "reasoning": "Migration readiness score of 51 indicates moderate complexity. 1 critical (Risk 5) and 8 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
-    "migrationReadinessScore": 51
+    "reasoning": "Migration readiness score of 52 indicates moderate complexity. 1 critical (Risk 5) and 8 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
+    "migrationReadinessScore": 52
   },
   "effort": {
     "schemaConversion": {

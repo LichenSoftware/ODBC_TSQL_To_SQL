@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MigrationAssessment.WorkItems\MigrationAssessment.WorkItems.csproj" />
+    <ProjectReference Include="..\..\src\MigrationAssessment.Analysis\MigrationAssessment.Analysis.csproj" />
     <ProjectReference Include="..\..\src\MigrationAssessment.Cli\MigrationAssessment.Cli.csproj" />
   </ItemGroup>
 

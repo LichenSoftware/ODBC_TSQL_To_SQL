@@ -1,6 +1,5 @@
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
+using MigrationAssessment.Core;
 using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.Core.Models;
 
@@ -17,20 +16,33 @@ public sealed class ObjectInventoryBuilder : IObjectInventoryBuilder
     private readonly IStatementParser _parser;
     private readonly IStatementAnalyzer _analyzer;
     private readonly IRiskScorer _riskScorer;
+    private readonly IStatementObjectResolver _resolver;
     private readonly ILogger<ObjectInventoryBuilder> _logger;
-
-    private static readonly TSql160Parser TsqlParser = new(initialQuotedIdentifiers: true);
 
     public ObjectInventoryBuilder(
         IStatementParser parser,
         IStatementAnalyzer analyzer,
         IRiskScorer riskScorer,
+        IStatementObjectResolver resolver,
         ILogger<ObjectInventoryBuilder> logger)
     {
         _parser = parser;
         _analyzer = analyzer;
         _riskScorer = riskScorer;
+        _resolver = resolver;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Backward-compatible constructor that creates a default resolver.
+    /// </summary>
+    public ObjectInventoryBuilder(
+        IStatementParser parser,
+        IStatementAnalyzer analyzer,
+        IRiskScorer riskScorer,
+        ILogger<ObjectInventoryBuilder> logger)
+        : this(parser, analyzer, riskScorer, new StatementObjectResolver(), logger)
+    {
     }
 
     /// <inheritdoc />
@@ -39,7 +51,21 @@ public sealed class ObjectInventoryBuilder : IObjectInventoryBuilder
         DatabaseObjectInventory objectInventory)
     {
         var entries = new List<ObjectInventoryEntry>();
-        var attributedStatements = new HashSet<AnalyzedStatement>(ReferenceEqualityComparer.Instance);
+
+        // Use the shared resolver to attribute statements to named objects
+        var resolvedMap = _resolver.ResolveStatementObjects(statements, objectInventory);
+
+        // Build a lookup: object name → list of matched statements
+        var objectToStatements = new Dictionary<string, List<AnalyzedStatement>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (stmt, resolved) in resolvedMap)
+        {
+            if (!objectToStatements.TryGetValue(resolved.Name, out var list))
+            {
+                list = new List<AnalyzedStatement>();
+                objectToStatements[resolved.Name] = list;
+            }
+            list.Add(stmt);
+        }
 
         // Step 1: Process each programmable object from the metadata collector
         foreach (var obj in objectInventory.ProgrammableObjects)
@@ -66,8 +92,9 @@ public sealed class ObjectInventoryBuilder : IObjectInventoryBuilder
             // Parse the object's full source text to detect features
             var objectAnalysis = AnalyzeObjectSource(obj.SourceText, obj.ObjectName);
 
-            // Try to correlate Query Store statements to this object
-            var matchedStatements = CorrelateStatements(statements, obj.SourceText, attributedStatements);
+            // Get correlated Query Store statements from the shared resolver results
+            objectToStatements.TryGetValue(obj.ObjectName, out var matchedStatements);
+            matchedStatements ??= new List<AnalyzedStatement>();
 
             // Merge features from the object source analysis and any matched Query Store statements
             var allFeatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -119,6 +146,8 @@ public sealed class ObjectInventoryBuilder : IObjectInventoryBuilder
         }
 
         // Step 2: Group remaining (unattributed) statements under "Ad Hoc"
+        var attributedStatements = new HashSet<AnalyzedStatement>(
+            resolvedMap.Keys, ReferenceEqualityComparer.Instance);
         var adHocStatements = statements.Where(s => !attributedStatements.Contains(s)).ToList();
         if (adHocStatements.Count > 0)
         {
@@ -203,93 +232,12 @@ public sealed class ObjectInventoryBuilder : IObjectInventoryBuilder
     }
 
     /// <summary>
-    /// Attempts to correlate Query Store statements to a programmable object by checking
-    /// if the statement text is contained within the object's source definition.
-    /// </summary>
-    private static List<AnalyzedStatement> CorrelateStatements(
-        IReadOnlyList<AnalyzedStatement> statements,
-        string objectSourceText,
-        HashSet<AnalyzedStatement> alreadyAttributed)
-    {
-        var matched = new List<AnalyzedStatement>();
-
-        // Normalize the object source for comparison
-        var normalizedSource = NormalizeForComparison(objectSourceText);
-
-        foreach (var stmt in statements)
-        {
-            if (alreadyAttributed.Contains(stmt))
-                continue;
-
-            // Get the core SQL text (strip Query Store parameter prefix if present)
-            var stmtText = stmt.Source.SqlText;
-            if (string.IsNullOrWhiteSpace(stmtText))
-                continue;
-
-            var normalizedStmt = NormalizeForComparison(StripParameterPrefix(stmtText));
-
-            // Check if this statement's normalized text appears in the object source
-            if (normalizedStmt.Length >= 20 && normalizedSource.Contains(normalizedStmt))
-            {
-                matched.Add(stmt);
-                alreadyAttributed.Add(stmt);
-            }
-        }
-
-        return matched;
-    }
-
-    /// <summary>
-    /// Strips the Query Store parameterized prefix: (@p1 type, @p2 type)SELECT ...
-    /// </summary>
-    private static string StripParameterPrefix(string sqlText)
-    {
-        if (sqlText.Length > 0 && sqlText[0] == '(')
-        {
-            // Find the matching closing paren
-            var depth = 0;
-            for (int i = 0; i < sqlText.Length; i++)
-            {
-                if (sqlText[i] == '(') depth++;
-                else if (sqlText[i] == ')') depth--;
-
-                if (depth == 0)
-                {
-                    return sqlText[(i + 1)..].TrimStart();
-                }
-            }
-        }
-        return sqlText;
-    }
-
-    /// <summary>
-    /// Normalizes SQL text for fuzzy comparison: lowercases, collapses whitespace.
-    /// </summary>
-    private static string NormalizeForComparison(string text)
-    {
-        // Collapse all whitespace (including \r\n) into single spaces and lowercase
-        return Regex.Replace(text.ToLowerInvariant(), @"\s+", " ").Trim();
-    }
-
-    /// <summary>
     /// Maps SQL Server sys.objects.type_desc to our inventory type.
+    /// Delegates to the shared resolver's mapping logic.
     /// </summary>
     private static string MapObjectType(string typeDesc)
     {
-        return typeDesc.ToUpperInvariant() switch
-        {
-            "SQL_STORED_PROCEDURE" => "StoredProcedure",
-            "VIEW" => "View",
-            "SQL_SCALAR_FUNCTION" => "ScalarFunction",
-            "SQL_INLINE_TABLE_VALUED_FUNCTION" => "TableValuedFunction",
-            "SQL_TABLE_VALUED_FUNCTION" => "TableValuedFunction",
-            "SQL_TRIGGER" => "Trigger",
-            "CLR_STORED_PROCEDURE" => "StoredProcedure",
-            "CLR_SCALAR_FUNCTION" => "ScalarFunction",
-            "CLR_TABLE_VALUED_FUNCTION" => "TableValuedFunction",
-            "AGGREGATE_FUNCTION" => "ScalarFunction",
-            _ => "StoredProcedure" // Fallback
-        };
+        return StatementObjectResolver.MapObjectType(typeDesc);
     }
 
     /// <summary>

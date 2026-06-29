@@ -200,6 +200,37 @@
             <param name="ct">Cancellation token for cooperative cancellation.</param>
             <returns>The collection result containing statements and status.</returns>
         </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IStatementObjectResolver">
+            <summary>
+            Resolves which named database object (stored procedure, view, function, trigger)
+            a given analyzed statement belongs to. Used by both the ObjectInventoryBuilder and
+            the work item generator to ensure consistent object attribution.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IStatementObjectResolver.ResolveStatementObjects(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <summary>
+            Builds a lookup that maps each analyzed statement to its containing named object,
+            based on normalized text containment within the programmable object source definitions.
+            Statements that cannot be matched to any named object are not included in the result.
+            </summary>
+            <param name="statements">The analyzed statements (e.g., from Query Store).</param>
+            <param name="objectInventory">The database object inventory from the metadata collector.</param>
+            <returns>
+            A dictionary mapping each statement (by reference) to a tuple of (ObjectName, ObjectType).
+            Only statements that can be attributed to a named object are included.
+            </returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.ResolvedObject">
+            <summary>
+            The resolved object attribution for a statement.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ResolvedObject.Name">
+            <summary>The object name (e.g., "sp_UpdateStockWithLock").</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Interfaces.ResolvedObject.Type">
+            <summary>One of: StoredProcedure, View, ScalarFunction, TableValuedFunction, Trigger.</summary>
+        </member>
         <member name="T:MigrationAssessment.Core.Interfaces.IStatementParser">
             <summary>
             Parses T-SQL text into individual statement results with classification.
@@ -530,6 +561,43 @@
         <member name="T:MigrationAssessment.Core.Models.TableMetadata">
             <summary>
             Metadata for a database table including its columns.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.StatementObjectResolver">
+            <summary>
+            Resolves statement-to-object attribution using normalized text containment matching.
+            This is the single shared implementation used by both the ObjectInventoryBuilder
+            (for building per-object feature/risk summaries) and the work item generator
+            (for labeling work items with the correct containing object).
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.Core.StatementObjectResolver.MinMatchLength">
+            <summary>
+            Minimum normalized statement length to attempt matching.
+            Very short statements (less than 20 chars normalized) could produce false positives.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.StatementObjectResolver.ResolveStatementObjects(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Core.StatementObjectResolver.StripParameterPrefix(System.String)">
+            <summary>
+            Strips the Query Store parameterized prefix: (@p1 type, @p2 type)SELECT ...
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.StatementObjectResolver.NormalizeForComparison(System.String)">
+            <summary>
+            Normalizes SQL text for fuzzy comparison: lowercases, collapses all whitespace into single spaces.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.StatementObjectResolver.MapObjectType(System.String)">
+            <summary>
+            Maps SQL Server sys.objects.type_desc to our inventory type.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.StatementObjectResolver.ReferenceEqualityComparer">
+            <summary>
+            Reference equality comparer for AnalyzedStatement (record type uses value equality by default).
             </summary>
         </member>
     </members>

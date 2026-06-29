@@ -91,6 +91,11 @@
             3. Grouping remaining statements under "Ad Hoc".
             </summary>
         </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.#ctor(MigrationAssessment.Core.Interfaces.IStatementParser,MigrationAssessment.Core.Interfaces.IStatementAnalyzer,MigrationAssessment.Core.Interfaces.IRiskScorer,Microsoft.Extensions.Logging.ILogger{MigrationAssessment.Analysis.ObjectInventoryBuilder})">
+            <summary>
+            Backward-compatible constructor that creates a default resolver.
+            </summary>
+        </member>
         <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.BuildInventory(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory)">
             <inheritdoc />
         </member>
@@ -99,25 +104,10 @@
             Parses the full object source text to count statements and detect features.
             </summary>
         </member>
-        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.CorrelateStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},System.String,System.Collections.Generic.HashSet{MigrationAssessment.Core.Models.AnalyzedStatement})">
-            <summary>
-            Attempts to correlate Query Store statements to a programmable object by checking
-            if the statement text is contained within the object's source definition.
-            </summary>
-        </member>
-        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.StripParameterPrefix(System.String)">
-            <summary>
-            Strips the Query Store parameterized prefix: (@p1 type, @p2 type)SELECT ...
-            </summary>
-        </member>
-        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.NormalizeForComparison(System.String)">
-            <summary>
-            Normalizes SQL text for fuzzy comparison: lowercases, collapses whitespace.
-            </summary>
-        </member>
         <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.MapObjectType(System.String)">
             <summary>
             Maps SQL Server sys.objects.type_desc to our inventory type.
+            Delegates to the shared resolver's mapping logic.
             </summary>
         </member>
         <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.GetConversionCategory(System.Int32)">

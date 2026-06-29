@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-06-29T15:58:31.6510792+00:00",
+    "generatedAt": "2026-06-29T18:28:29.7013816+00:00",
     "sourceAssessmentPath": "./test-assessment.json",
     "totalWorkItemCount": 10,
     "totalEstimatedEffort": {
@@ -22,6 +22,11 @@
       },
       "notes": "Global temp table usage requires architectural review before effort can be scoped. XML/CLR features require replacement strategy selection (e.g., native PostgreSQL XML or application-layer migration) before estimates can be narrowed."
     }
+  },
+  "validationSummary": {
+    "passed": true,
+    "warningCount": 0,
+    "warnings": []
   },
   "workItems": [
     {
@@ -98,7 +103,7 @@
       "title": "[Risk 4] Convert 2 features in Ad Hoc Queries",
       "description": "The SQL Server features \u0027UPDLOCK\u0027, \u0027ROWLOCK\u0027 are used in Ad Hoc Queries and are not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
       "sqlServerPattern": "(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID",
-      "postgresEquivalent": "-- TODO: verify locking strategy; UPDLOCK replaced with FOR UPDATE\n(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p\r\n    WHERE p.ProductID = @ProductID\nFOR UPDATE",
+      "postgresEquivalent": "-- TODO: UPDLOCK removed. Row-level locking on UPDATE/DELETE is implicit in PostgreSQL\u0027s MVCC.\n-- If explicit pessimistic locking is required, use SELECT ... FOR UPDATE in a preceding\n-- statement within the same transaction, then perform the UPDATE/DELETE.\n(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p\r\n    WHERE p.ProductID = @ProductID",
       "affectedObjects": [
         {
           "name": "Ad Hoc Queries",
@@ -132,7 +137,7 @@
       "title": "[Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries",
       "description": "The SQL Server feature \u0027GLOBAL_TEMP_TABLE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
       "sqlServerPattern": "INSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
-      "postgresEquivalent": "INSERT INTO GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
+      "postgresEquivalent": "-- TODO: global temp table reference converted to regular table name.\n-- Ensure the table exists as a permanent/unlogged table with appropriate lifecycle management.\nINSERT INTO GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
       "affectedObjects": [
         {
           "name": "Ad Hoc Queries",
@@ -166,7 +171,7 @@
       "title": "[Risk 4] Convert MERGE in Ad Hoc Queries",
       "description": "The SQL Server feature \u0027MERGE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
       "sqlServerPattern": "MERGE dbo.Products AS target\r\n    USING dbo.ProductImportStaging AS source\r\n    ON target.SKU = source.SKU\r\n    WHEN MATCHED THEN\r\n        UPDATE SET\r\n            ProductName = source.ProductName,\r\n            Price = source.Price,\r\n            StockQuantity = source.StockQuantity\r\n    WHEN NOT MATCHED BY TARGET THEN\r\n        INSERT (ProductName, SKU, Price, StockQuantity)\r\n        VALUES (source.ProductName, source.SKU, source.Price, source.StockQuantity)\r\n    WHEN NOT MATCHED BY SOURCE THEN\r\n ",
-      "postgresEquivalent": "-- TODO: verify conflict target column and update columns match your schema\r\n-- Original MERGE converted to INSERT ... ON CONFLICT (upsert pattern)\r\nINSERT INTO dbo.Products AS t\r\nSELECT * FROM dbo.ProductImportStaging AS s\r\nWHERE NOT EXISTS (\r\n    SELECT 1 FROM dbo.Products WHERE target.SKU = source.SKU\r\n)\r\nON CONFLICT (SKU) DO UPDATE SET\r\n    -- TODO: list columns to update on conflict\r\n    updated_at = NOW();",
+      "postgresEquivalent": "-- TODO: verify conflict target column and update columns match your schema\r\n-- Original MERGE converted to INSERT ... ON CONFLICT (upsert pattern)\r\nINSERT INTO dbo.Products (ProductName, SKU, Price, StockQuantity)\r\nSELECT ProductName, SKU, Price, StockQuantity\r\nFROM dbo.ProductImportStaging AS source\r\nON CONFLICT (SKU) DO UPDATE SET\r\n    ProductName = EXCLUDED.ProductName,\r\n            Price = EXCLUDED.Price,\r\n            StockQuantity = EXCLUDED.StockQuantity;",
       "affectedObjects": [
         {
           "name": "Ad Hoc Queries",
@@ -200,7 +205,7 @@
       "title": "[Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries",
       "description": "The SQL Server feature \u0027GLOBAL_TEMP_TABLE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
       "sqlServerPattern": "SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC",
-      "postgresEquivalent": "SELECT * FROM GlobalOrderSummary ORDER BY OrderDate DESC",
+      "postgresEquivalent": "-- TODO: global temp table reference converted to regular table name.\n-- Ensure the table exists as a permanent/unlogged table with appropriate lifecycle management.\nSELECT * FROM GlobalOrderSummary ORDER BY OrderDate DESC",
       "affectedObjects": [
         {
           "name": "Ad Hoc Queries",
@@ -334,7 +339,7 @@
       "title": "[Risk 2] Convert 5 features in Ad Hoc Queries",
       "description": "The SQL Server features \u0027TOP\u0027, \u0027STRING_CONCAT_PLUS\u0027, \u0027ISNULL\u0027, \u0027DATEDIFF\u0027, \u0027GETDATE\u0027 are used in Ad Hoc Queries and are not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 2 (simple syntax substitution for PostgreSQL compatibility).",
       "sqlServerPattern": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
-      "postgresEquivalent": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName || \u0027 \u0027 || c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        (GETDATE(::date - MAX(o.OrderDate)::date)) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "postgresEquivalent": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName || \u0027 \u0027 || c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        (NOW()::date - MAX(o.OrderDate)::date) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
       "affectedObjects": [
         {
           "name": "Ad Hoc Queries",

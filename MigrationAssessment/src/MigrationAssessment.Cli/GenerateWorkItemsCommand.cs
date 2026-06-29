@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MigrationAssessment.Core;
+using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.WorkItems;
 using MigrationAssessment.WorkItems.Models;
 
@@ -27,6 +29,7 @@ public static class GenerateWorkItemsCommand
             builder.AddConsole();
             builder.SetMinimumLevel(LogLevel.Information);
         });
+        services.AddSingleton<IStatementObjectResolver, StatementObjectResolver>();
         services.AddSingleton<IStatementGrouper, StatementGrouper>();
         services.AddSingleton<IPriorityCalculator, PriorityCalculator>();
         services.AddSingleton<IEffortEstimator, EffortEstimator>();

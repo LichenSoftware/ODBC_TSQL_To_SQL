@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MigrationAssessment.Cli;
+using MigrationAssessment.Core;
 using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.Core.Models;
 using MigrationAssessment.Collectors;
@@ -44,6 +45,7 @@ services.AddTransient<IStatementAnalyzer, StatementAnalyzer>();
 services.AddTransient<IRiskScorer, RiskScorer>();
 services.AddTransient<IWeightedComplexityCalculator, WeightedComplexityCalculator>();
 services.AddTransient<IMigrationReadinessScorer, MigrationReadinessScorer>();
+services.AddSingleton<IStatementObjectResolver, StatementObjectResolver>();
 services.AddTransient<IObjectInventoryBuilder, ObjectInventoryBuilder>();
 services.AddTransient<ISchemaAnalyzer, SchemaAnalyzer>();
 services.AddTransient<IReportGenerator, ReportGenerator>();

@@ -102,6 +102,19 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
                     }
                     : null
             },
+            ValidationSummary = result.ValidationSummary is not null
+                ? new ValidationSummaryDto
+                {
+                    Passed = result.ValidationSummary.Passed,
+                    WarningCount = result.ValidationSummary.WarningCount,
+                    Warnings = result.ValidationSummary.Warnings.Select(w => new ValidationWarningDto
+                    {
+                        WorkItemId = w.WorkItemId,
+                        Category = w.Category,
+                        Message = w.Message
+                    }).ToList()
+                }
+                : null,
             WorkItems = orderedItems.Select(MapWorkItemToDto).ToList()
         };
     }
@@ -141,6 +154,7 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
     private sealed class WorkItemOutputDto
     {
         public required MetadataDto Metadata { get; init; }
+        public ValidationSummaryDto? ValidationSummary { get; init; }
         public required List<WorkItemDto> WorkItems { get; init; }
     }
 
@@ -191,6 +205,20 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
         public required string Name { get; init; }
         public required string Type { get; init; }
         public required int StatementCount { get; init; }
+    }
+
+    private sealed class ValidationSummaryDto
+    {
+        public required bool Passed { get; init; }
+        public required int WarningCount { get; init; }
+        public required List<ValidationWarningDto> Warnings { get; init; }
+    }
+
+    private sealed class ValidationWarningDto
+    {
+        public required string WorkItemId { get; init; }
+        public required string Category { get; init; }
+        public required string Message { get; init; }
     }
 
     #endregion

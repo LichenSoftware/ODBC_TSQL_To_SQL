@@ -26,6 +26,17 @@ public interface IWorkItemGenerator
         IReadOnlyList<ObjectInventoryEntry> objectInventory);
 
     /// <summary>
+    /// Generates work items from in-memory assessment data with both parsed object inventory
+    /// and raw database object inventory for accurate statement-to-object attribution.
+    /// </summary>
+    WorkItemResult GenerateWorkItems(
+        IReadOnlyList<AnalyzedStatement> statements,
+        FeatureDetectionResult featureDetection,
+        WorkItemConfiguration config,
+        IReadOnlyList<ObjectInventoryEntry> objectInventory,
+        DatabaseObjectInventory rawObjectInventory);
+
+    /// <summary>
     /// Generates work items from a saved assessment JSON file (standalone mode).
     /// </summary>
     Task<WorkItemResult> GenerateFromFileAsync(
