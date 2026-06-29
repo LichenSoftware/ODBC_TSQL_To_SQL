@@ -1,15 +1,15 @@
 ﻿# Migration Work Items Report
 
-**Generated:** 2026-06-15T20:19:39.9458244+00:00
+**Generated:** 2026-06-29T15:58:31.6510792+00:00
 **Source:** ./test-assessment.json
-**Total Work Items:** 11
-**Estimated Effort:** 63.97-316.8 hours
+**Total Work Items:** 10
+**Estimated Effort:** 90.18-418.6 hours
 
 ## Risk Distribution
 
 | Priority | Count |
 |----------|-------|
-| Critical | 2 |
+| Critical | 1 |
 | High | 2 |
 | Medium | 4 |
 | Low | 3 |
@@ -23,69 +23,58 @@
 
 ## Critical Priority
 
-### WI-009: [Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries
+### WI-008: [Risk 4] Convert NOLOCK in Ad Hoc Queries
 
-**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
-Found 2 occurrences across the analyzed codebase with a combined total of 2 executions recorded.
+**Description:** The SQL Server feature 'NOLOCK' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+Found 3 occurrences across the analyzed codebase with a combined total of 3 executions recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
 
 **SQL Server Pattern:**
 ```sql
-INSERT INTO ##GlobalOrderSummary
-    SELECT
-        CAST(OrderDate AS DATE),
-        COUNT(*),
-        SUM(TotalAmount)
-    FROM dbo.Orders
-    GROUP BY CAST(OrderDate AS DATE)
+SELECT
+      db_id() AS database_id,
+      c.system_type_id,
+      c.user_type_id,
+      c.is_sparse,
+      c.is_column_set,
+      c.is_filestream,
+      c.encryption_type,
+      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,
+      COUNT_BIG(*) AS [ColCount],
+      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY('Collation')) ELSE c.collation_name END AS collation_name,
+      AVG(c.max_length) AS avg_max_length
+      FROM sys.columns c WITH (NOLOCK)
+
 ```
 
 **PostgreSQL Equivalent:**
 ```sql
-Unlogged tables or application-managed shared state
+-- TODO: verify locking strategy; NOLOCK removed (PostgreSQL MVCC provides non-blocking reads)
+SELECT
+      db_id() AS database_id,
+      c.system_type_id,
+      c.user_type_id,
+      c.is_sparse,
+      c.is_column_set,
+      c.is_filestream,
+      c.encryption_type,
+      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,
+      COUNT_BIG(*) AS [ColCount],
+      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY('Collation')) ELSE c.collation_name END AS collation_name,
+      AVG(c.max_length) AS avg_max_length
+      FROM sys.columns c
+
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 2 statements
+- Ad Hoc Queries (AdHoc) — 3 statements
 
 **Acceptance Criteria:**
-1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+1. All instances of NOLOCK usage have been replaced in Ad Hoc Queries.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
-
-### WI-008: [Risk 3] Convert TEMP_TABLE in Ad Hoc Queries
-
-**Description:** The SQL Server feature 'TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
-Found 2 occurrences across the analyzed codebase with a combined total of 2 executions recorded.
-This represents a low business impact based on execution frequency.
-Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
-
-**SQL Server Pattern:**
-```sql
-(@Year int,@Month int)INSERT INTO #MonthlyStats
-    SELECT
-        o.CustomerID,
-        COUNT(*),
-        SUM(o.TotalAmount)
-    FROM dbo.Orders o
-    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month
-    GROUP BY o.CustomerID
-```
-
-**PostgreSQL Equivalent:**
-```sql
-CREATE TEMPORARY TABLE (session-scoped by default)
-```
-
-**Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 2 statements
-
-**Acceptance Criteria:**
-1. All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.
-2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
-3. Unit tests verify the converted logic handles edge cases correctly.
 
 ## High Priority
 
@@ -110,7 +99,15 @@ Risk Level: 5 (requires architectural redesign or alternative technology for Pos
 
 **PostgreSQL Equivalent:**
 ```sql
-xpath(), xmltable(), xmlparse()
+-- TODO: verify XPath expressions and namespace handling for PostgreSQL
+(@OrderID int)SELECT
+        o.OrderID,
+        (xpath('(/order/shipping/address)[1]', m.MetadataXml))[1]::text::text AS ShippingAddress,
+        (xpath('(/order/shipping/method)[1]', m.MetadataXml))[1]::text::text AS ShippingMethod,
+        xpath('/order/items', m.MetadataXml) AS ItemsXml
+    FROM dbo.Orders o
+    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID
+    WHERE o.OrderID = @OrderID
 ```
 
 **Affected Objects:**
@@ -123,9 +120,9 @@ xpath(), xmltable(), xmlparse()
 4. The alternative architecture has been reviewed and approved by the team.
 5. Integration tests confirm the replacement solution interoperates correctly with dependent systems.
 
-### WI-002: [Risk 4] Convert UPDLOCK in Ad Hoc Queries
+### WI-002: [Risk 4] Convert 2 features in Ad Hoc Queries
 
-**Description:** The SQL Server feature 'UPDLOCK' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server features 'UPDLOCK', 'ROWLOCK' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -140,38 +137,12 @@ Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
 
 **PostgreSQL Equivalent:**
 ```sql
-SELECT ... FOR UPDATE
-```
-
-**Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
-
-**Acceptance Criteria:**
-1. All instances of UPDLOCK usage have been replaced in Ad Hoc Queries.
-2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
-3. Unit tests verify the converted logic handles edge cases correctly.
-4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
-
-## Medium Priority
-
-### WI-003: [Risk 4] Convert ROWLOCK in Ad Hoc Queries
-
-**Description:** The SQL Server feature 'ROWLOCK' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
-Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
-This represents a low business impact based on execution frequency.
-Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
-
-**SQL Server Pattern:**
-```sql
+-- TODO: verify locking strategy; UPDLOCK replaced with FOR UPDATE
 (@ProductID int,@NewQuantity int)UPDATE p
     SET p.StockQuantity = @NewQuantity
-    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)
+    FROM dbo.Products p
     WHERE p.ProductID = @ProductID
-```
-
-**PostgreSQL Equivalent:**
-```sql
-PostgreSQL MVCC (row-level locking is default)
+FOR UPDATE
 ```
 
 **Affected Objects:**
@@ -183,7 +154,47 @@ PostgreSQL MVCC (row-level locking is default)
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-010: [Risk 4] Convert MERGE in Ad Hoc Queries
+## Medium Priority
+
+### WI-005: [Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries
+
+**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
+This represents a low business impact based on execution frequency.
+Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
+
+**SQL Server Pattern:**
+```sql
+INSERT INTO ##GlobalOrderSummary
+    SELECT
+        CAST(OrderDate AS DATE),
+        COUNT(*),
+        SUM(TotalAmount)
+    FROM dbo.Orders
+    GROUP BY CAST(OrderDate AS DATE)
+```
+
+**PostgreSQL Equivalent:**
+```sql
+INSERT INTO GlobalOrderSummary
+    SELECT
+        CAST(OrderDate AS DATE),
+        COUNT(*),
+        SUM(TotalAmount)
+    FROM dbo.Orders
+    GROUP BY CAST(OrderDate AS DATE)
+```
+
+**Affected Objects:**
+- Ad Hoc Queries (AdHoc) — 1 statement
+
+**Acceptance Criteria:**
+1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
+3. Unit tests verify the converted logic handles edge cases correctly.
+4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
+
+### WI-006: [Risk 4] Convert MERGE in Ad Hoc Queries
 
 **Description:** The SQL Server feature 'MERGE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
@@ -209,7 +220,16 @@ MERGE dbo.Products AS target
 
 **PostgreSQL Equivalent:**
 ```sql
-INSERT ... ON CONFLICT (UPSERT) or MERGE (PostgreSQL 15+)
+-- TODO: verify conflict target column and update columns match your schema
+-- Original MERGE converted to INSERT ... ON CONFLICT (upsert pattern)
+INSERT INTO dbo.Products AS t
+SELECT * FROM dbo.ProductImportStaging AS s
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Products WHERE target.SKU = source.SKU
+)
+ON CONFLICT (SKU) DO UPDATE SET
+    -- TODO: list columns to update on conflict
+    updated_at = NOW();
 ```
 
 **Affected Objects:**
@@ -221,7 +241,33 @@ INSERT ... ON CONFLICT (UPSERT) or MERGE (PostgreSQL 15+)
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-011: [Risk 4] Convert NOLOCK in Ad Hoc Queries
+### WI-007: [Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries
+
+**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
+This represents a low business impact based on execution frequency.
+Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
+
+**SQL Server Pattern:**
+```sql
+SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC
+```
+
+**PostgreSQL Equivalent:**
+```sql
+SELECT * FROM GlobalOrderSummary ORDER BY OrderDate DESC
+```
+
+**Affected Objects:**
+- Ad Hoc Queries (AdHoc) — 1 statement
+
+**Acceptance Criteria:**
+1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
+3. Unit tests verify the converted logic handles edge cases correctly.
+4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
+
+### WI-010: [Risk 4] Convert NOLOCK in Ad Hoc Queries
 
 **Description:** The SQL Server feature 'NOLOCK' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
@@ -242,7 +288,15 @@ SELECT
 
 **PostgreSQL Equivalent:**
 ```sql
-PostgreSQL MVCC (no locking hints needed)
+-- TODO: verify locking strategy; NOLOCK removed (PostgreSQL MVCC provides non-blocking reads)
+SELECT
+        p.ProductID,
+        p.ProductName,
+        p.StockQuantity,
+        p.Price
+    FROM dbo.Products p
+    WHERE p.StockQuantity > 0
+    ORDER BY p.StockQuantity ASC
 ```
 
 **Affected Objects:**
@@ -254,77 +308,87 @@ PostgreSQL MVCC (no locking hints needed)
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-004: [Risk 2] Convert TOP in Ad Hoc Queries
-
-**Description:** The SQL Server feature 'TOP' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
-Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
-This represents a low business impact based on execution frequency.
-Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
-
-**SQL Server Pattern:**
-```sql
-(@TopN int)SELECT TOP (@TopN)
-        c.CustomerID,
-        c.FirstName + ' ' + c.LastName AS FullName,
-        COUNT(o.OrderID) AS OrderCount,
-        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,
-        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder
-    FROM dbo.Customers c
-    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID
-    GROUP BY c.CustomerID, c.FirstName, c.LastName
-    ORDER BY TotalSpent DESC
-```
-
-**PostgreSQL Equivalent:**
-```sql
-LIMIT / OFFSET
-```
-
-**Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
-
-**Acceptance Criteria:**
-1. All instances of TOP usage have been replaced in Ad Hoc Queries.
-2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
-
 ## Low Priority
 
-### WI-005: [Risk 2] Convert ISNULL in Ad Hoc Queries
+### WI-004: [Risk 3] Convert TEMP_TABLE in Ad Hoc Queries
 
-**Description:** The SQL Server feature 'ISNULL' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
-Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
+Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
 
 **SQL Server Pattern:**
 ```sql
-(@TopN int)SELECT TOP (@TopN)
-        c.CustomerID,
-        c.FirstName + ' ' + c.LastName AS FullName,
-        COUNT(o.OrderID) AS OrderCount,
-        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,
-        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder
-    FROM dbo.Customers c
-    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID
-    GROUP BY c.CustomerID, c.FirstName, c.LastName
-    ORDER BY TotalSpent DESC
+(@Year int,@Month int)INSERT INTO #MonthlyStats
+    SELECT
+        o.CustomerID,
+        COUNT(*),
+        SUM(o.TotalAmount)
+    FROM dbo.Orders o
+    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month
+    GROUP BY o.CustomerID
 ```
 
 **PostgreSQL Equivalent:**
 ```sql
-COALESCE
+(@Year int,@Month int)INSERT INTO MonthlyStats
+    SELECT
+        o.CustomerID,
+        COUNT(*),
+        SUM(o.TotalAmount)
+    FROM dbo.Orders o
+    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month
+    GROUP BY o.CustomerID
 ```
 
 **Affected Objects:**
 - Ad Hoc Queries (AdHoc) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of ISNULL usage have been replaced in Ad Hoc Queries.
+1. All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
+3. Unit tests verify the converted logic handles edge cases correctly.
 
-### WI-006: [Risk 2] Convert DATEDIFF in Ad Hoc Queries
+### WI-009: [Risk 3] Convert 2 features in Ad Hoc Queries
 
-**Description:** The SQL Server feature 'DATEDIFF' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server features 'STRING_CONCAT_PLUS', 'TEMP_TABLE' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
+Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
+This represents a low business impact based on execution frequency.
+Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
+
+**SQL Server Pattern:**
+```sql
+SELECT
+        c.FirstName + ' ' + c.LastName AS CustomerName,
+        ms.OrderCount,
+        ms.TotalRevenue
+    FROM #MonthlyStats ms
+    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID
+    ORDER BY ms.TotalRevenue DESC
+```
+
+**PostgreSQL Equivalent:**
+```sql
+SELECT
+        c.FirstName || ' ' || c.LastName AS CustomerName,
+        ms.OrderCount,
+        ms.TotalRevenue
+    FROM MonthlyStats ms
+    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID
+    ORDER BY ms.TotalRevenue DESC
+```
+
+**Affected Objects:**
+- Ad Hoc Queries (AdHoc) — 1 statement
+
+**Acceptance Criteria:**
+1. All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
+3. Unit tests verify the converted logic handles edge cases correctly.
+
+### WI-003: [Risk 2] Convert 5 features in Ad Hoc Queries
+
+**Description:** The SQL Server features 'TOP', 'STRING_CONCAT_PLUS', 'ISNULL', 'DATEDIFF', 'GETDATE' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
@@ -345,7 +409,16 @@ Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
 
 **PostgreSQL Equivalent:**
 ```sql
-EXTRACT(EPOCH FROM ...) / AGE / date subtraction
+(@TopN int)SELECT TOP (@TopN)
+        c.CustomerID,
+        c.FirstName || ' ' || c.LastName AS FullName,
+        COUNT(o.OrderID) AS OrderCount,
+        COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent,
+        (GETDATE(::date - MAX(o.OrderDate)::date)) AS DaysSinceLastOrder
+    FROM dbo.Customers c
+    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID
+    GROUP BY c.CustomerID, c.FirstName, c.LastName
+    ORDER BY TotalSpent DESC
 ```
 
 **Affected Objects:**
@@ -353,38 +426,5 @@ EXTRACT(EPOCH FROM ...) / AGE / date subtraction
 
 **Acceptance Criteria:**
 1. All instances of DATEDIFF usage have been replaced in Ad Hoc Queries.
-2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
-
-### WI-007: [Risk 2] Convert GETDATE in Ad Hoc Queries
-
-**Description:** The SQL Server feature 'GETDATE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
-Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
-This represents a low business impact based on execution frequency.
-Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
-
-**SQL Server Pattern:**
-```sql
-(@TopN int)SELECT TOP (@TopN)
-        c.CustomerID,
-        c.FirstName + ' ' + c.LastName AS FullName,
-        COUNT(o.OrderID) AS OrderCount,
-        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,
-        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder
-    FROM dbo.Customers c
-    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID
-    GROUP BY c.CustomerID, c.FirstName, c.LastName
-    ORDER BY TotalSpent DESC
-```
-
-**PostgreSQL Equivalent:**
-```sql
-NOW() / CURRENT_TIMESTAMP
-```
-
-**Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
-
-**Acceptance Criteria:**
-1. All instances of GETDATE usage have been replaced in Ad Hoc Queries.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 
