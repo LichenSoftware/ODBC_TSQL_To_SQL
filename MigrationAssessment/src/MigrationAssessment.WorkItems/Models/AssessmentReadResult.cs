@@ -18,4 +18,7 @@ public sealed record AssessmentReadResult
 
     /// <summary>Parsed feature detection result (null when failed).</summary>
     public FeatureDetectionResult? FeatureDetection { get; init; }
+
+    /// <summary>Parsed object inventory entries (null when not present or failed).</summary>
+    public IReadOnlyList<ObjectInventoryEntry>? ObjectInventory { get; init; }
 }

@@ -12,26 +12,27 @@ public sealed class EffortEstimator : IEffortEstimator
     /// <summary>
     /// Base effort ranges indexed by risk level (index 0 unused).
     /// Each tuple is (MinHours, MaxHours) for a single statement at that risk level.
+    /// Ranges are calibrated for actionable planning: no single-item ratio exceeds 3x.
     /// </summary>
     private static readonly (double Min, double Max)[] BaseEffort =
     {
         (0, 0),       // index 0 unused
-        (0, 0.08),    // Risk 1: 0 to 5 minutes
-        (0.08, 0.5),  // Risk 2: 5 minutes to 30 minutes
-        (0.5, 4.0),   // Risk 3: 30 minutes to 4 hours
-        (4.0, 40.0),  // Risk 4: 4 hours to 40 hours
-        (40.0, 80.0)  // Risk 5: 40 hours to 80 hours
+        (0.08, 0.17), // Risk 1: 5-10 minutes (trivial rename/alias)
+        (0.25, 0.75), // Risk 2: 15-45 minutes (simple syntax substitution)
+        (1.0, 3.0),   // Risk 3: 1-3 hours (procedural rewrite)
+        (4.0, 12.0),  // Risk 4: 4-12 hours (design pattern change)
+        (12.0, 32.0)  // Risk 5: 12-32 hours (architectural redesign)
     };
 
     /// <summary>
     /// Maximum allowed ratio (max/min) per confidence level.
-    /// High ≤ 2x, Medium ≤ 4x, Low ≤ 7x.
+    /// High ≤ 1.5x, Medium ≤ 2x, Low ≤ 3x.
     /// </summary>
     private static readonly Dictionary<ConfidenceLevel, double> MaxRangeRatio = new()
     {
-        [ConfidenceLevel.High] = 2.0,
-        [ConfidenceLevel.Medium] = 4.0,
-        [ConfidenceLevel.Low] = 7.0
+        [ConfidenceLevel.High] = 1.5,
+        [ConfidenceLevel.Medium] = 2.0,
+        [ConfidenceLevel.Low] = 3.0
     };
 
     private const double ReductionFactor = 0.7;

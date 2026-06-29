@@ -1,9 +1,9 @@
 ﻿# Migration Work Items Report
 
-**Generated:** 2026-06-29T18:28:29.7013816+00:00
+**Generated:** 2026-06-29T19:21:33.5973855+00:00
 **Source:** ./test-assessment.json
 **Total Work Items:** 10
-**Estimated Effort:** 90.18-418.6 hours
+**Estimated Effort:** 50.64-140.78 hours
 
 ## Risk Distribution
 
@@ -78,9 +78,9 @@ SELECT
 
 ## High Priority
 
-### WI-001: [Risk 5] Convert XML_METHOD in Ad Hoc Queries
+### WI-001: [Risk 5] Convert XML_METHOD in sp_GetOrderShippingInfo
 
-**Description:** The SQL Server feature 'XML_METHOD' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'XML_METHOD' is used in sp_GetOrderShippingInfo and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 5 (requires architectural redesign or alternative technology for PostgreSQL migration).
@@ -111,18 +111,18 @@ Risk Level: 5 (requires architectural redesign or alternative technology for Pos
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_GetOrderShippingInfo (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of XML_METHOD usage have been replaced in Ad Hoc Queries.
+1. All instances of XML_METHOD usage have been replaced in sp_GetOrderShippingInfo.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The alternative architecture has been reviewed and approved by the team.
 5. Integration tests confirm the replacement solution interoperates correctly with dependent systems.
 
-### WI-002: [Risk 4] Convert 2 features in Ad Hoc Queries
+### WI-002: [Risk 4] Convert 2 features in sp_UpdateStockWithLock
 
-**Description:** The SQL Server features 'UPDLOCK', 'ROWLOCK' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
+**Description:** The SQL Server features 'UPDLOCK', 'ROWLOCK' are used in sp_UpdateStockWithLock and are not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -147,19 +147,19 @@ Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_UpdateStockWithLock (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of ROWLOCK usage have been replaced in Ad Hoc Queries.
+1. All instances of ROWLOCK usage have been replaced in sp_UpdateStockWithLock.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
 ## Medium Priority
 
-### WI-005: [Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries
+### WI-005: [Risk 4] Convert GLOBAL_TEMP_TABLE in sp_SharedTempReport
 
-**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in sp_SharedTempReport and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -189,17 +189,17 @@ INSERT INTO GlobalOrderSummary
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_SharedTempReport (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in sp_SharedTempReport.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-006: [Risk 4] Convert MERGE in Ad Hoc Queries
+### WI-006: [Risk 4] Convert MERGE in sp_UpsertProducts
 
-**Description:** The SQL Server feature 'MERGE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'MERGE' is used in sp_UpsertProducts and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -235,17 +235,17 @@ ON CONFLICT (SKU) DO UPDATE SET
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_UpsertProducts (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of MERGE usage have been replaced in Ad Hoc Queries.
+1. All instances of MERGE usage have been replaced in sp_UpsertProducts.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-007: [Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries
+### WI-007: [Risk 4] Convert GLOBAL_TEMP_TABLE in sp_SharedTempReport
 
-**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'GLOBAL_TEMP_TABLE' is used in sp_SharedTempReport and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -263,17 +263,17 @@ SELECT * FROM GlobalOrderSummary ORDER BY OrderDate DESC
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_SharedTempReport (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+1. All instances of GLOBAL_TEMP_TABLE usage have been replaced in sp_SharedTempReport.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
-### WI-010: [Risk 4] Convert NOLOCK in Ad Hoc Queries
+### WI-010: [Risk 4] Convert NOLOCK in sp_GetInventorySnapshot
 
-**Description:** The SQL Server feature 'NOLOCK' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'NOLOCK' is used in sp_GetInventorySnapshot and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 4 (requires design pattern changes for PostgreSQL compatibility).
@@ -304,19 +304,19 @@ SELECT
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_GetInventorySnapshot (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of NOLOCK usage have been replaced in Ad Hoc Queries.
+1. All instances of NOLOCK usage have been replaced in sp_GetInventorySnapshot.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 4. The redesigned PostgreSQL pattern handles concurrency scenarios correctly.
 
 ## Low Priority
 
-### WI-004: [Risk 3] Convert TEMP_TABLE in Ad Hoc Queries
+### WI-004: [Risk 3] Convert TEMP_TABLE in sp_BuildMonthlyReport
 
-**Description:** The SQL Server feature 'TEMP_TABLE' is used in Ad Hoc Queries and is not directly supported in PostgreSQL.
+**Description:** The SQL Server feature 'TEMP_TABLE' is used in sp_BuildMonthlyReport and is not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
@@ -346,16 +346,16 @@ Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_BuildMonthlyReport (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+1. All instances of TEMP_TABLE usage have been replaced in sp_BuildMonthlyReport.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 
-### WI-009: [Risk 3] Convert 2 features in Ad Hoc Queries
+### WI-009: [Risk 3] Convert 2 features in sp_BuildMonthlyReport
 
-**Description:** The SQL Server features 'STRING_CONCAT_PLUS', 'TEMP_TABLE' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
+**Description:** The SQL Server features 'STRING_CONCAT_PLUS', 'TEMP_TABLE' are used in sp_BuildMonthlyReport and are not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).
@@ -383,16 +383,16 @@ SELECT
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_BuildMonthlyReport (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.
+1. All instances of TEMP_TABLE usage have been replaced in sp_BuildMonthlyReport.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 3. Unit tests verify the converted logic handles edge cases correctly.
 
-### WI-003: [Risk 2] Convert 5 features in Ad Hoc Queries
+### WI-003: [Risk 2] Convert 5 features in sp_GetTopCustomers
 
-**Description:** The SQL Server features 'TOP', 'STRING_CONCAT_PLUS', 'ISNULL', 'DATEDIFF', 'GETDATE' are used in Ad Hoc Queries and are not directly supported in PostgreSQL.
+**Description:** The SQL Server features 'TOP', 'STRING_CONCAT_PLUS', 'ISNULL', 'DATEDIFF', 'GETDATE' are used in sp_GetTopCustomers and are not directly supported in PostgreSQL.
 Found 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.
 This represents a low business impact based on execution frequency.
 Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
@@ -426,9 +426,9 @@ Risk Level: 2 (simple syntax substitution for PostgreSQL compatibility).
 ```
 
 **Affected Objects:**
-- Ad Hoc Queries (AdHoc) — 1 statement
+- sp_GetTopCustomers (StoredProcedure) — 1 statement
 
 **Acceptance Criteria:**
-1. All instances of DATEDIFF usage have been replaced in Ad Hoc Queries.
+1. All instances of DATEDIFF usage have been replaced in sp_GetTopCustomers.
 2. The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.
 

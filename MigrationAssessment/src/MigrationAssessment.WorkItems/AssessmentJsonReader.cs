@@ -111,19 +111,22 @@ public sealed class AssessmentJsonReader
                     FeatureCounts = new Dictionary<string, int>(),
                     DetailedInventory = [],
                     InaccessibleFeatures = []
-                }
+                },
+                ObjectInventory = []
             };
         }
 
         // Map to domain models
         var statements = MapStatements(doc.AnalyzedStatements);
         var featureDetection = MapFeatureDetection(doc.FeatureInventory);
+        var objectInventory = MapObjectInventory(doc.ObjectInventory);
 
         return new AssessmentReadResult
         {
             Succeeded = true,
             Statements = statements,
-            FeatureDetection = featureDetection
+            FeatureDetection = featureDetection,
+            ObjectInventory = objectInventory
         };
     }
 
@@ -248,12 +251,38 @@ public sealed class AssessmentJsonReader
         };
     }
 
+    private static IReadOnlyList<ObjectInventoryEntry> MapObjectInventory(IReadOnlyList<ObjectInventoryJson>? inventory)
+    {
+        if (inventory is null || inventory.Count == 0)
+            return [];
+
+        var results = new List<ObjectInventoryEntry>(inventory.Count);
+        foreach (var item in inventory)
+        {
+            if (string.IsNullOrEmpty(item.Name) || string.IsNullOrEmpty(item.Type))
+                continue;
+
+            results.Add(new ObjectInventoryEntry
+            {
+                Name = item.Name,
+                Type = item.Type,
+                StatementCount = item.StatementCount,
+                MaxRiskScore = item.MaxRiskScore,
+                ConversionCategories = item.ConversionCategories ?? [],
+                DetectedFeatures = item.DetectedFeatures ?? []
+            });
+        }
+
+        return results;
+    }
+
     #region JSON DTOs
 
     private sealed class AssessmentJsonDocument
     {
         public IReadOnlyList<AnalyzedStatementJson>? AnalyzedStatements { get; set; }
         public IReadOnlyList<FeatureInventoryJson>? FeatureInventory { get; set; }
+        public IReadOnlyList<ObjectInventoryJson>? ObjectInventory { get; set; }
     }
 
     private sealed class AnalyzedStatementJson
@@ -269,6 +298,16 @@ public sealed class AssessmentJsonReader
     {
         public string? FeatureName { get; set; }
         public int OccurrenceCount { get; set; }
+    }
+
+    private sealed class ObjectInventoryJson
+    {
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public int StatementCount { get; set; }
+        public int MaxRiskScore { get; set; }
+        public IReadOnlyList<string>? ConversionCategories { get; set; }
+        public IReadOnlyList<string>? DetectedFeatures { get; set; }
     }
 
     #endregion

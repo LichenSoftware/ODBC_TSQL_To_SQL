@@ -269,32 +269,148 @@ public sealed class StatementGrouper : IStatementGrouper
             return map;
         }
 
-        // Fallback: use the ObjectInventoryEntry list with DDL pattern matching
-        // (legacy behavior for when raw inventory is not available)
+        // Fallback: use the ObjectInventoryEntry list with feature-based matching
+        // This is used for file-based mode where raw source texts are not available.
+        // Match each statement to the object whose detectedFeatures best overlap with
+        // the statement's features. Only match non-AdHoc entries.
         if (objectInventory is null || objectInventory.Count == 0)
         {
             return map;
         }
 
+        // Build a lookup of named objects (excluding AdHoc) by their features
+        var namedObjects = objectInventory
+            .Where(e => e.Type != "AdHoc" && e.DetectedFeatures.Count > 0)
+            .ToList();
+
+        if (namedObjects.Count == 0)
+        {
+            return map;
+        }
+
+        // Phase 1: Find candidate matches for each statement
+        var candidates = new List<(AnalyzedStatement Statement, ObjectInventoryEntry Entry, int Overlap)>();
+
         foreach (var statement in statements)
         {
-            var sqlText = statement.Source.SqlText;
-            if (string.IsNullOrWhiteSpace(sqlText))
+            if (statement.Features.Count == 0)
             {
                 continue;
             }
 
-            foreach (var entry in objectInventory)
+            var statementFeatures = new HashSet<string>(
+                statement.Features.Select(f => f.FeatureName),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Find the best matching object: the one whose detectedFeatures best match
+            ObjectInventoryEntry? bestMatch = null;
+            int bestOverlap = 0;
+
+            foreach (var entry in namedObjects)
             {
-                if (entry.Type == "AdHoc")
+                // ALL statement features must appear in the object's features
+                var allFeaturesMatch = statementFeatures
+                    .All(f => entry.DetectedFeatures.Contains(f, StringComparer.OrdinalIgnoreCase));
+
+                if (!allFeaturesMatch)
                 {
                     continue;
                 }
 
-                if (ContainsObjectDefinition(sqlText, entry.Name, entry.Type))
+                var overlap = entry.DetectedFeatures
+                    .Count(f => statementFeatures.Contains(f));
+
+                if (overlap > bestOverlap)
                 {
-                    map[statement] = (entry.Name, entry.Type);
+                    bestOverlap = overlap;
+                    bestMatch = entry;
+                }
+                else if (overlap == bestOverlap && overlap > 0 && bestMatch is not null)
+                {
+                    // Tie-break: prefer the object with fewer total features (more specific match)
+                    if (entry.DetectedFeatures.Count < bestMatch.DetectedFeatures.Count)
+                    {
+                        bestMatch = entry;
+                    }
+                }
+            }
+
+            if (bestMatch is not null && bestOverlap > 0)
+            {
+                candidates.Add((statement, bestMatch, bestOverlap));
+            }
+        }
+
+        // Phase 2: Apply statementCount cap per object, but only when
+        // the statement's features also appear in the Ad Hoc entry (meaning there's
+        // genuine ambiguity about which statements are ad hoc vs named-object).
+        // When the Ad Hoc entry does NOT contain the feature, all matching statements
+        // belong unambiguously to the named object.
+        var candidatesByObject = candidates
+            .GroupBy(c => c.Entry.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        // Find the Ad Hoc entry's features for ambiguity detection
+        var adHocEntry = objectInventory.FirstOrDefault(e => e.Type == "AdHoc");
+        var adHocFeatures = adHocEntry?.DetectedFeatures ?? (IReadOnlyList<string>)[];
+
+        foreach (var (objectName, objCandidates) in candidatesByObject)
+        {
+            var entry = objCandidates[0].Entry;
+            var cap = entry.StatementCount;
+
+            // Check if the features in these candidates also appear in Ad Hoc.
+            // If not, there's no ambiguity — all candidates belong to this object.
+            var candidateFeatures = objCandidates
+                .SelectMany(c => c.Statement.Features.Select(f => f.FeatureName))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var featureAlsoInAdHoc = candidateFeatures
+                .Any(f => adHocFeatures.Contains(f, StringComparer.OrdinalIgnoreCase));
+
+            if (!featureAlsoInAdHoc)
+            {
+                // Unambiguous: all candidates belong to this named object
+                foreach (var candidate in objCandidates)
+                {
+                    map[candidate.Statement] = (entry.Name, entry.Type);
+                }
+                continue;
+            }
+
+            // Ambiguous case: feature appears in both the named object and Ad Hoc.
+            // Apply the statementCount cap, preferring unique (rare) statements.
+            var ordered = objCandidates
+                .OrderByDescending(c => c.Overlap)
+                .ThenByDescending(c => c.Statement.RiskScore)
+                .ToList();
+
+            // Group by SQL text hash to handle identical statements
+            // Prefer groups with fewer identical copies — a statement that appears once
+            // is more likely to be from a specific named procedure than one that appears
+            // many times (which is more likely a system/diagnostic ad hoc query).
+            var groupedByText = ordered
+                .GroupBy(c => c.Statement.Source.SqlText, StringComparer.Ordinal)
+                .OrderBy(g => g.Count())       // fewer copies = more likely from named object
+                .ThenByDescending(g => g.Max(c => c.Overlap))  // higher overlap is better
+                .ThenByDescending(g => g.Max(c => c.Statement.RiskScore))
+                .ToList();
+
+            var attributed = 0;
+            foreach (var textGroup in groupedByText)
+            {
+                if (attributed >= cap)
                     break;
+
+                // How many from this text group can we attribute?
+                var remaining = cap - attributed;
+                var toAttribute = textGroup.Take(remaining).ToList();
+
+                foreach (var candidate in toAttribute)
+                {
+                    map[candidate.Statement] = (entry.Name, entry.Type);
+                    attributed++;
                 }
             }
         }

@@ -82,12 +82,13 @@
             <summary>
             Base effort ranges indexed by risk level (index 0 unused).
             Each tuple is (MinHours, MaxHours) for a single statement at that risk level.
+            Ranges are calibrated for actionable planning: no single-item ratio exceeds 3x.
             </summary>
         </member>
         <member name="F:MigrationAssessment.WorkItems.EffortEstimator.MaxRangeRatio">
             <summary>
             Maximum allowed ratio (max/min) per confidence level.
-            High ≤ 2x, Medium ≤ 4x, Low ≤ 7x.
+            High ≤ 1.5x, Medium ≤ 2x, Low ≤ 3x.
             </summary>
         </member>
         <member name="M:MigrationAssessment.WorkItems.EffortEstimator.EstimateEffort(System.Collections.Generic.IReadOnlyList{System.String},System.Int32)">
@@ -310,6 +311,9 @@
         </member>
         <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.FeatureDetection">
             <summary>Parsed feature detection result (null when failed).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.ObjectInventory">
+            <summary>Parsed object inventory entries (null when not present or failed).</summary>
         </member>
         <member name="T:MigrationAssessment.WorkItems.Models.ConfidenceLevel">
             <summary>
@@ -2026,7 +2030,7 @@
         <member name="F:MigrationAssessment.WorkItems.WorkItemValidator.MaxRatioByConfidence">
             <summary>
             Maximum effort ratio allowed for each confidence level.
-            High: ≤2x, Medium: ≤4x, Low: ≤7x.
+            High: ≤1.5x, Medium: ≤2x, Low: ≤3x.
             </summary>
         </member>
         <member name="M:MigrationAssessment.WorkItems.WorkItemValidator.Validate(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem},System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">

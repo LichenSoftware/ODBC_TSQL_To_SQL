@@ -235,7 +235,7 @@ public class WorkItemValidatorTests
     {
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.High, minHours: 1.0, maxHours: 2.0)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.High, minHours: 1.0, maxHours: 1.4)
         };
 
         var result = _validator.Validate(workItems, null);
@@ -261,10 +261,10 @@ public class WorkItemValidatorTests
     [Fact]
     public void Validate_HighConfidence_RatioExceeds2x_FlagsWarning()
     {
-        // High confidence allows ≤2x ratio. 1.0 to 2.5 is 2.5x → should flag
+        // High confidence allows ≤1.5x ratio. 1.0 to 2.0 is 2.0x → should flag
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.High, minHours: 1.0, maxHours: 2.5)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.High, minHours: 1.0, maxHours: 2.0)
         };
 
         var result = _validator.Validate(workItems, null);
@@ -273,16 +273,16 @@ public class WorkItemValidatorTests
         result.Warnings.Should().Contain(w =>
             w.WorkItemId == "WI-001" &&
             w.Category == "effort-range" &&
-            w.Message.Contains("2.0x"));
+            w.Message.Contains("1.5x"));
     }
 
     [Fact]
     public void Validate_MediumConfidence_RatioWithin4x_NoWarning()
     {
-        // Medium confidence allows ≤4x ratio. 1.0 to 3.5 is 3.5x → OK
+        // Medium confidence allows ≤2x ratio. 1.0 to 1.8 is 1.8x → OK
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Medium, minHours: 1.0, maxHours: 3.5)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Medium, minHours: 1.0, maxHours: 1.8)
         };
 
         var result = _validator.Validate(workItems, null);
@@ -293,26 +293,26 @@ public class WorkItemValidatorTests
     [Fact]
     public void Validate_MediumConfidence_RatioExceeds4x_FlagsWarning()
     {
-        // Medium confidence allows ≤4x. 1.0 to 5.0 is 5.0x → should flag
+        // Medium confidence allows ≤2x. 1.0 to 2.5 is 2.5x → should flag
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Medium, minHours: 1.0, maxHours: 5.0)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Medium, minHours: 1.0, maxHours: 2.5)
         };
 
         var result = _validator.Validate(workItems, null);
 
         result.Passed.Should().BeFalse();
         result.Warnings.Should().Contain(w =>
-            w.Category == "effort-range" && w.Message.Contains("4.0x"));
+            w.Category == "effort-range" && w.Message.Contains("2.0x"));
     }
 
     [Fact]
     public void Validate_LowConfidence_RatioWithin7x_NoWarning()
     {
-        // Low confidence allows ≤7x. 1.0 to 6.5 is 6.5x → OK
+        // Low confidence allows ≤3x. 1.0 to 2.8 is 2.8x → OK
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Low, minHours: 1.0, maxHours: 6.5)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Low, minHours: 1.0, maxHours: 2.8)
         };
 
         var result = _validator.Validate(workItems, null);
@@ -323,17 +323,17 @@ public class WorkItemValidatorTests
     [Fact]
     public void Validate_LowConfidence_RatioExceeds7x_FlagsWarning()
     {
-        // Low confidence allows ≤7x. 1.0 to 8.0 is 8.0x → should flag
+        // Low confidence allows ≤3x. 1.0 to 4.0 is 4.0x → should flag
         var workItems = new[]
         {
-            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Low, minHours: 1.0, maxHours: 8.0)
+            CreateWorkItem("WI-001", "SELECT 1", ConfidenceLevel.Low, minHours: 1.0, maxHours: 4.0)
         };
 
         var result = _validator.Validate(workItems, null);
 
         result.Passed.Should().BeFalse();
         result.Warnings.Should().Contain(w =>
-            w.Category == "effort-range" && w.Message.Contains("7.0x"));
+            w.Category == "effort-range" && w.Message.Contains("3.0x"));
     }
 
     [Fact]
@@ -474,7 +474,7 @@ public class WorkItemValidatorTests
             RiskLevel = 4,
             Priority = "High",
             PriorityScore = 200,
-            EstimatedEffort = new HourRange { MinHours = 2.0, MaxHours = 8.0 },
+            EstimatedEffort = new HourRange { MinHours = 4.0, MaxHours = 12.0 },
             ConfidenceLevel = ConfidenceLevel.Low,
             AcceptanceCriteria = new[] { "Test passes" },
             RemediationGuidance = "Review locking strategy",

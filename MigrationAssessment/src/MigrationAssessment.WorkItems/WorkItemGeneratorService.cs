@@ -223,7 +223,8 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
                 DetailedInventory = [],
                 InaccessibleFeatures = []
             },
-            config);
+            config,
+            readResult.ObjectInventory ?? []);
 
         // 4. Set SourceAssessmentPath in metadata
         result = result with

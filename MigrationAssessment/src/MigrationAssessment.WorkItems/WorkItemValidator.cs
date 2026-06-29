@@ -14,13 +14,13 @@ public sealed class WorkItemValidator
 {
     /// <summary>
     /// Maximum effort ratio allowed for each confidence level.
-    /// High: ≤2x, Medium: ≤4x, Low: ≤7x.
+    /// High: ≤1.5x, Medium: ≤2x, Low: ≤3x.
     /// </summary>
     private static readonly Dictionary<ConfidenceLevel, double> MaxRatioByConfidence = new()
     {
-        [ConfidenceLevel.High] = 2.0,
-        [ConfidenceLevel.Medium] = 4.0,
-        [ConfidenceLevel.Low] = 7.0
+        [ConfidenceLevel.High] = 1.5,
+        [ConfidenceLevel.Medium] = 2.0,
+        [ConfidenceLevel.Low] = 3.0
     };
 
     /// <summary>

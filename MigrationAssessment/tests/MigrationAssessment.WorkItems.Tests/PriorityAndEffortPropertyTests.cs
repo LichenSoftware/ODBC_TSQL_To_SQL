@@ -22,11 +22,11 @@ public class PriorityAndEffortPropertyTests
     private static readonly (double Min, double Max)[] BaseEffort =
     {
         (0, 0),       // index 0 unused
-        (0, 0.08),    // Risk 1
-        (0.08, 0.5),  // Risk 2
-        (0.5, 4.0),   // Risk 3
-        (4.0, 40.0),  // Risk 4
-        (40.0, 80.0)  // Risk 5
+        (0.08, 0.17), // Risk 1
+        (0.25, 0.75), // Risk 2
+        (1.0, 3.0),   // Risk 3
+        (4.0, 12.0),  // Risk 4
+        (12.0, 32.0)  // Risk 5
     };
 
     private const double ReductionFactor = 0.7;
@@ -303,12 +303,12 @@ public class PriorityAndEffortPropertyTests
             var rawMin = baseMin * seriesMultiplier;
             var rawMax = baseMax * seriesMultiplier;
 
-            // Confidence-based clamping: high (risk 1-2) ≤2x, medium (risk 3) ≤4x, low (risk 4-5) ≤7x
+            // Confidence-based clamping: high (risk 1-2) ≤1.5x, medium (risk 3) ≤2x, low (risk 4-5) ≤3x
             var maxRatio = riskLevel switch
             {
-                <= 2 => 2.0,
-                3 => 4.0,
-                _ => 7.0
+                <= 2 => 1.5,
+                3 => 2.0,
+                _ => 3.0
             };
 
             double expectedMin = rawMin;
@@ -457,9 +457,9 @@ public class PriorityAndEffortPropertyTests
             // Apply confidence-based clamping using max risk level
             var maxRatio = maxRisk switch
             {
-                <= 2 => 2.0,
-                3 => 4.0,
-                _ => 7.0
+                <= 2 => 1.5,
+                3 => 2.0,
+                _ => 3.0
             };
 
             double expectedMin = rawMin;
