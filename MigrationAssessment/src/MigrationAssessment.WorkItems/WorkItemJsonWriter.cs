@@ -79,7 +79,28 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
                 {
                     MinHours = result.Metadata.TotalEstimatedEffort.MinHours,
                     MaxHours = result.Metadata.TotalEstimatedEffort.MaxHours
-                }
+                },
+                ConfidenceSummary = result.Metadata.ConfidenceSummary is not null
+                    ? new ConfidenceSummaryDto
+                    {
+                        HighConfidenceHours = new HourRangeDto
+                        {
+                            MinHours = result.Metadata.ConfidenceSummary.HighConfidenceHours.MinHours,
+                            MaxHours = result.Metadata.ConfidenceSummary.HighConfidenceHours.MaxHours
+                        },
+                        MediumConfidenceHours = new HourRangeDto
+                        {
+                            MinHours = result.Metadata.ConfidenceSummary.MediumConfidenceHours.MinHours,
+                            MaxHours = result.Metadata.ConfidenceSummary.MediumConfidenceHours.MaxHours
+                        },
+                        LowConfidenceHours = new HourRangeDto
+                        {
+                            MinHours = result.Metadata.ConfidenceSummary.LowConfidenceHours.MinHours,
+                            MaxHours = result.Metadata.ConfidenceSummary.LowConfidenceHours.MaxHours
+                        },
+                        Notes = result.Metadata.ConfidenceSummary.Notes
+                    }
+                    : null
             },
             WorkItems = orderedItems.Select(MapWorkItemToDto).ToList()
         };
@@ -106,6 +127,7 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
             MinHours = item.EstimatedEffort.MinHours,
             MaxHours = item.EstimatedEffort.MaxHours
         },
+        ConfidenceLevel = item.ConfidenceLevel.ToString().ToLowerInvariant(),
         AcceptanceCriteria = item.AcceptanceCriteria.ToList(),
         RemediationGuidance = item.RemediationGuidance,
         Tags = item.Tags.ToList(),
@@ -128,6 +150,7 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
         public string? SourceAssessmentPath { get; init; }
         public required int TotalWorkItemCount { get; init; }
         public required HourRangeDto TotalEstimatedEffort { get; init; }
+        public ConfidenceSummaryDto? ConfidenceSummary { get; init; }
     }
 
     private sealed class HourRangeDto
@@ -148,10 +171,19 @@ public sealed class WorkItemJsonWriter : IWorkItemJsonWriter
         public required string Priority { get; init; }
         public required double PriorityScore { get; init; }
         public required HourRangeDto EstimatedEffort { get; init; }
+        public required string ConfidenceLevel { get; init; }
         public required List<string> AcceptanceCriteria { get; init; }
         public required string RemediationGuidance { get; init; }
         public required List<string> Tags { get; init; }
         public List<string>? RelatedWorkItemIds { get; init; }
+    }
+
+    private sealed class ConfidenceSummaryDto
+    {
+        public required HourRangeDto HighConfidenceHours { get; init; }
+        public required HourRangeDto MediumConfidenceHours { get; init; }
+        public required HourRangeDto LowConfidenceHours { get; init; }
+        public required string Notes { get; init; }
     }
 
     private sealed class AffectedObjectDto

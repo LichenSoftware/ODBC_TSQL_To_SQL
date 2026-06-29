@@ -75,12 +75,19 @@
             <summary>
             Estimates effort for work items based on risk level and statement count
             using a geometric series with a 0.7 reduction factor per additional statement.
+            Applies confidence-based range clamping to ensure estimate ratios stay within bounds.
             </summary>
         </member>
         <member name="F:MigrationAssessment.WorkItems.EffortEstimator.BaseEffort">
             <summary>
             Base effort ranges indexed by risk level (index 0 unused).
             Each tuple is (MinHours, MaxHours) for a single statement at that risk level.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.EffortEstimator.MaxRangeRatio">
+            <summary>
+            Maximum allowed ratio (max/min) per confidence level.
+            High ≤ 2x, Medium ≤ 4x, Low ≤ 7x.
             </summary>
         </member>
         <member name="M:MigrationAssessment.WorkItems.EffortEstimator.EstimateEffort(System.Collections.Generic.IReadOnlyList{System.String},System.Int32)">
@@ -91,6 +98,23 @@
         </member>
         <member name="M:MigrationAssessment.WorkItems.EffortEstimator.CalculateTotalEffort(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
             <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.DeriveConfidenceLevel(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.BuildConfidenceSummary(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.EstimateEffortRaw(System.Int32,System.Int32)">
+            <summary>
+            Calculates raw effort without confidence clamping (internal use).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.ClampRange(System.Double,System.Double,MigrationAssessment.WorkItems.Models.ConfidenceLevel)">
+            <summary>
+            Clamps the range ratio (max/min) to the allowed maximum for the given confidence level.
+            If MinHours is zero (or near zero), caps MaxHours at the allowed ratio times a small baseline.
+            </summary>
         </member>
         <member name="T:MigrationAssessment.WorkItems.IEffortEstimator">
             <summary>
@@ -114,6 +138,17 @@
         <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.CalculateTotalEffort(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
             <summary>
             Aggregates effort across all work items.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.DeriveConfidenceLevel(System.Int32)">
+            <summary>
+            Derives the confidence level for an effort estimate based on the max risk level.
+            High = risk 1–2, Medium = risk 3, Low = risk 4–5.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.BuildConfidenceSummary(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <summary>
+            Builds a confidence summary aggregating effort across all work items by confidence level.
             </summary>
         </member>
         <member name="T:MigrationAssessment.WorkItems.IPostgresConversionEngine">
@@ -263,6 +298,51 @@
         <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.FeatureDetection">
             <summary>Parsed feature detection result (null when failed).</summary>
         </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.ConfidenceLevel">
+            <summary>
+            Indicates the confidence in an effort estimate based on risk level
+            and the nature of the required conversion.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.Models.ConfidenceLevel.High">
+            <summary>
+            Risk 1–2 items with known automatic substitutions (e.g., ISNULL → COALESCE).
+            Range ratio should be ≤2x.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.Models.ConfidenceLevel.Medium">
+            <summary>
+            Risk 3 items with semi-automatic conversion patterns.
+            Range ratio should be 2–4x.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.Models.ConfidenceLevel.Low">
+            <summary>
+            Risk 4–5 items requiring design decisions, architectural changes,
+            or XML/CLR involvement. Range remains wide (4–7x).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.ConfidenceSummary">
+            <summary>
+            Aggregated effort breakdown by confidence level, providing stakeholders
+            with visibility into estimate reliability.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.ConfidenceSummary.HighConfidenceHours">
+            <summary>Sum of effort for all high-confidence items (risk 1–2, ≤2x range).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.ConfidenceSummary.MediumConfidenceHours">
+            <summary>Sum of effort for all medium-confidence items (risk 3, 2–4x range).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.ConfidenceSummary.LowConfidenceHours">
+            <summary>Sum of effort for all low-confidence items (risk 4–5, 4–7x range).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.ConfidenceSummary.Notes">
+            <summary>
+            Explanation of what would need to be true to move low-confidence items to medium,
+            or medium items to high confidence.
+            </summary>
+        </member>
         <member name="T:MigrationAssessment.WorkItems.Models.DeduplicatedGroup">
             <summary>
             Result of deduplication for a single statement group, containing the assigned ID,
@@ -399,6 +479,9 @@
         <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.EstimatedEffort">
             <summary>Estimated effort range.</summary>
         </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.ConfidenceLevel">
+            <summary>Confidence level for the effort estimate (high, medium, low).</summary>
+        </member>
         <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.AcceptanceCriteria">
             <summary>Verifiable acceptance criteria.</summary>
         </member>
@@ -453,6 +536,9 @@
         </member>
         <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.TotalEstimatedEffort">
             <summary>Aggregated effort estimate across all work items.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.ConfidenceSummary">
+            <summary>Effort breakdown by confidence level.</summary>
         </member>
         <member name="T:MigrationAssessment.WorkItems.Models.WorkItemResult">
             <summary>

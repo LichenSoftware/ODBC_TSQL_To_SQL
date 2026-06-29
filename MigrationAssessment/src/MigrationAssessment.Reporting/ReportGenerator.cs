@@ -227,6 +227,33 @@ public sealed class ReportGenerator : IReportGenerator
         var totalMaxHours = schemaConversion.MaxHours + codeMax + testMax + dataMax + perfMax;
         var totalClassification = ClassifyTotalEffort(totalMaxHours);
 
+        // Build confidence summary from code conversion breakdown
+        // High confidence: risk 1-2 (known automatic conversions) — schema + data migration are high confidence
+        // Medium confidence: risk 3 (semi-automatic) — testing is medium confidence
+        // Low confidence: risk 4-5 (requires design decisions) — performance tuning is low confidence
+        var highMin = schemaConversion.MinHours + dataMin + (risk3Count * 0.0) + 0.0;
+        var highMax = schemaConversion.MaxHours + dataMax;
+        var medMin = (double)(risk3Count * 0.5) + testMin;
+        var medMax = (double)(risk3Count * 4) + testMax;
+        var lowMin = (double)(risk4Count * 4 + risk5Count * 40) + perfMin;
+        var lowMax = (double)(risk4Count * 40 + risk5Count * 200) + perfMax;
+
+        var confidenceNotes = new List<string>();
+        if (risk5Count > 0)
+            confidenceNotes.Add("Critical-risk (Risk 5) statements require architectural replacement strategies before effort can be scoped.");
+        if (risk4Count > 0)
+            confidenceNotes.Add("High-risk (Risk 4) items require design decisions to narrow estimates.");
+        if (confidenceNotes.Count == 0)
+            confidenceNotes.Add("All items are medium or high confidence. Estimates can be further refined with spike investigations on semi-automatic conversions.");
+
+        var confidenceSummary = new EffortConfidenceSummary
+        {
+            HighConfidenceHours = new HourRange { MinHours = (int)highMin, MaxHours = (int)highMax },
+            MediumConfidenceHours = new HourRange { MinHours = (int)medMin, MaxHours = (int)medMax },
+            LowConfidenceHours = new HourRange { MinHours = (int)lowMin, MaxHours = (int)lowMax },
+            Notes = string.Join(" ", confidenceNotes)
+        };
+
         return new MigrationEffortEstimate
         {
             SchemaConversion = schemaConversion,
@@ -234,7 +261,8 @@ public sealed class ReportGenerator : IReportGenerator
             Testing = new HourRange { MinHours = testMin, MaxHours = testMax },
             DataMigration = new HourRange { MinHours = dataMin, MaxHours = dataMax },
             PerformanceTuning = new HourRange { MinHours = perfMin, MaxHours = perfMax },
-            TotalClassification = totalClassification
+            TotalClassification = totalClassification,
+            ConfidenceSummary = confidenceSummary
         };
     }
 

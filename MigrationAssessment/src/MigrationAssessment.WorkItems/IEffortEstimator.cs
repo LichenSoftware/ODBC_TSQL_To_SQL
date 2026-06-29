@@ -25,4 +25,15 @@ public interface IEffortEstimator
     /// Aggregates effort across all work items.
     /// </summary>
     HourRange CalculateTotalEffort(IReadOnlyList<WorkItem> workItems);
+
+    /// <summary>
+    /// Derives the confidence level for an effort estimate based on the max risk level.
+    /// High = risk 1–2, Medium = risk 3, Low = risk 4–5.
+    /// </summary>
+    ConfidenceLevel DeriveConfidenceLevel(int riskLevel);
+
+    /// <summary>
+    /// Builds a confidence summary aggregating effort across all work items by confidence level.
+    /// </summary>
+    ConfidenceSummary BuildConfidenceSummary(IReadOnlyList<WorkItem> workItems);
 }

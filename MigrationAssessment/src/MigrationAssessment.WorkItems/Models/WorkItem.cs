@@ -35,6 +35,9 @@ public sealed record WorkItem
     /// <summary>Estimated effort range.</summary>
     public required HourRange EstimatedEffort { get; init; }
 
+    /// <summary>Confidence level for the effort estimate (high, medium, low).</summary>
+    public required ConfidenceLevel ConfidenceLevel { get; init; }
+
     /// <summary>Verifiable acceptance criteria.</summary>
     public required IReadOnlyList<string> AcceptanceCriteria { get; init; }
 

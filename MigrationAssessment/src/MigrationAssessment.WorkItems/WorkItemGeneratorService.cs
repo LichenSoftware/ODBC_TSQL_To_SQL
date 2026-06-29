@@ -135,13 +135,15 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
 
         // 8. Build metadata and result
         var totalEffort = _effortEstimator.CalculateTotalEffort(workItems);
+        var confidenceSummary = _effortEstimator.BuildConfidenceSummary(workItems);
 
         var metadata = new WorkItemMetadata
         {
             GeneratedAt = DateTimeOffset.UtcNow,
             SourceAssessmentPath = null, // In-memory pipeline mode
             TotalWorkItemCount = workItems.Count,
-            TotalEstimatedEffort = totalEffort
+            TotalEstimatedEffort = totalEffort,
+            ConfidenceSummary = confidenceSummary
         };
 
         return new WorkItemResult
@@ -277,6 +279,9 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
         // Estimate effort using multi-feature overload
         var effort = _effortEstimator.EstimateEffort(detectedFeatures, occurrenceCount);
 
+        // Derive confidence level from the work item's max risk
+        var confidenceLevel = _effortEstimator.DeriveConfidenceLevel(riskLevel);
+
         // Build tags
         var tags = BuildTags(riskLevel, group, requiresResearch);
 
@@ -292,6 +297,7 @@ public sealed class WorkItemGeneratorService : IWorkItemGenerator
             Priority = "Medium", // Placeholder — will be overwritten by AssignPriorityLabels
             PriorityScore = dedupGroup.CombinedPriorityScore,
             EstimatedEffort = effort,
+            ConfidenceLevel = confidenceLevel,
             AcceptanceCriteria = acceptanceCriteria,
             RemediationGuidance = guidance,
             Tags = tags,

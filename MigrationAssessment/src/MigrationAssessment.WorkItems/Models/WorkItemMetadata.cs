@@ -16,4 +16,7 @@ public sealed record WorkItemMetadata
 
     /// <summary>Aggregated effort estimate across all work items.</summary>
     public required HourRange TotalEstimatedEffort { get; init; }
+
+    /// <summary>Effort breakdown by confidence level.</summary>
+    public ConfidenceSummary? ConfidenceSummary { get; init; }
 }

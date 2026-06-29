@@ -105,6 +105,7 @@ public class PriorityAndEffortPropertyTests
             Priority = "Medium",
             PriorityScore = priorityScore,
             EstimatedEffort = effort,
+            ConfidenceLevel = riskLevel <= 2 ? ConfidenceLevel.High : riskLevel == 3 ? ConfidenceLevel.Medium : ConfidenceLevel.Low,
             AcceptanceCriteria = new[] { "Criterion 1", "Criterion 2" },
             RemediationGuidance = "Replace TOP with LIMIT",
             Tags = new[] { $"risk-{riskLevel}", "query-feature", "semi-automatic" }
@@ -299,13 +300,28 @@ public class PriorityAndEffortPropertyTests
 
             var (baseMin, baseMax) = BaseEffort[riskLevel];
             var seriesMultiplier = (1.0 - Math.Pow(ReductionFactor, statementCount)) / (1.0 - ReductionFactor);
-            var expectedMin = baseMin * seriesMultiplier;
-            var expectedMax = baseMax * seriesMultiplier;
+            var rawMin = baseMin * seriesMultiplier;
+            var rawMax = baseMax * seriesMultiplier;
+
+            // Confidence-based clamping: high (risk 1-2) ≤2x, medium (risk 3) ≤4x, low (risk 4-5) ≤7x
+            var maxRatio = riskLevel switch
+            {
+                <= 2 => 2.0,
+                3 => 4.0,
+                _ => 7.0
+            };
+
+            double expectedMin = rawMin;
+            double expectedMax = rawMax;
+            if (rawMin > 0 && rawMax > 0 && rawMax / rawMin > maxRatio)
+            {
+                expectedMin = rawMax / maxRatio;
+            }
 
             result.MinHours.Should().BeApproximately(expectedMin, 1e-10,
-                $"MinHours for risk={riskLevel}, count={statementCount} should match geometric series formula");
+                $"MinHours for risk={riskLevel}, count={statementCount} should match geometric series formula with confidence clamping");
             result.MaxHours.Should().BeApproximately(expectedMax, 1e-10,
-                $"MaxHours for risk={riskLevel}, count={statementCount} should match geometric series formula");
+                $"MaxHours for risk={riskLevel}, count={statementCount} should match geometric series formula with confidence clamping");
         });
     }
 
@@ -424,20 +440,39 @@ public class PriorityAndEffortPropertyTests
             // Call the multi-feature overload
             var actual = _effortEstimator.EstimateEffort(features, statementCount);
 
-            // Compute expected: sum of per-feature efforts using each feature's risk level
-            double expectedMin = 0, expectedMax = 0;
+            // Compute expected: sum of per-feature raw efforts then apply clamping for max risk
+            double rawMin = 0, rawMax = 0;
+            int maxRisk = 1;
             foreach (var feature in features.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 var riskLevel = StatementGrouper.GetFeatureRiskLevel(feature);
-                var featureEffort = _effortEstimator.EstimateEffort(riskLevel, statementCount);
-                expectedMin += featureEffort.MinHours;
-                expectedMax += featureEffort.MaxHours;
+                if (riskLevel > maxRisk) maxRisk = riskLevel;
+
+                var (baseMin, baseMax) = BaseEffort[riskLevel];
+                var seriesMultiplier = (1.0 - Math.Pow(ReductionFactor, statementCount)) / (1.0 - ReductionFactor);
+                rawMin += baseMin * seriesMultiplier;
+                rawMax += baseMax * seriesMultiplier;
+            }
+
+            // Apply confidence-based clamping using max risk level
+            var maxRatio = maxRisk switch
+            {
+                <= 2 => 2.0,
+                3 => 4.0,
+                _ => 7.0
+            };
+
+            double expectedMin = rawMin;
+            double expectedMax = rawMax;
+            if (rawMin > 0 && rawMax > 0 && rawMax / rawMin > maxRatio)
+            {
+                expectedMin = rawMax / maxRatio;
             }
 
             actual.MinHours.Should().BeApproximately(expectedMin, 1e-10,
-                $"MinHours for {features.Count} features at count={statementCount} should equal sum of per-feature MinHours");
+                $"MinHours for {features.Count} features at count={statementCount} should match confidence-clamped sum");
             actual.MaxHours.Should().BeApproximately(expectedMax, 1e-10,
-                $"MaxHours for {features.Count} features at count={statementCount} should equal sum of per-feature MaxHours");
+                $"MaxHours for {features.Count} features at count={statementCount} should match confidence-clamped sum");
         });
     }
 

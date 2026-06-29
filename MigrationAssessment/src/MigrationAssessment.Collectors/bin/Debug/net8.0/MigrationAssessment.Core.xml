@@ -410,6 +410,17 @@
             Estimated effort for the migration broken down by category.
             </summary>
         </member>
+        <member name="P:MigrationAssessment.Core.Models.MigrationEffortEstimate.ConfidenceSummary">
+            <summary>
+            Optional confidence summary breaking down effort by confidence level.
+            Present when work item data is available to compute per-item confidence.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.EffortConfidenceSummary">
+            <summary>
+            Aggregated effort breakdown by confidence level for the assessment report.
+            </summary>
+        </member>
         <member name="T:MigrationAssessment.Core.Models.MigrationReadinessResult">
             <summary>
             Result of the migration readiness score calculation.

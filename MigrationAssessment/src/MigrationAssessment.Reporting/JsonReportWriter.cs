@@ -103,7 +103,15 @@ public sealed class JsonReportWriter : IJsonReportWriter
         return new
         {
             GeneratedAt = DateTimeOffset.UtcNow,
-            EngineVersion = version
+            EngineVersion = version,
+            ScoringMethodology = "Migration readiness score is calculated as a weighted average across all analyzed statements, " +
+                "where each statement's risk level (1-5) is determined by its most complex SQL Server feature. " +
+                "Risk 1-2 features have known direct PostgreSQL equivalents (e.g., ISNULL→COALESCE, TOP→LIMIT). " +
+                "Risk 3 features require procedural restructuring (e.g., TRY_CATCH, TEMP_TABLE). " +
+                "Risk 4-5 features require architectural redesign or have no direct equivalent (e.g., MERGE, XML_METHOD, SQL_CLR). " +
+                "Effort ranges use a geometric series model (0.7 reduction factor per repeated pattern) with confidence-based range clamping: " +
+                "high-confidence items (risk 1-2) are capped at ≤2x ratio, medium-confidence (risk 3) at ≤4x, and low-confidence (risk 4-5) at ≤7x. " +
+                "The overall readiness score ranges from 0 (all risk-5) to 100 (all risk-1), normalized by statement frequency and execution count."
         };
     }
 
@@ -210,15 +218,40 @@ public sealed class JsonReportWriter : IJsonReportWriter
 
     private static object BuildEffort(MigrationEffortEstimate effort)
     {
-        return new
+        var result = new Dictionary<string, object>
         {
-            SchemaConversion = new { effort.SchemaConversion.MinHours, effort.SchemaConversion.MaxHours },
-            CodeConversion = new { effort.CodeConversion.MinHours, effort.CodeConversion.MaxHours },
-            Testing = new { effort.Testing.MinHours, effort.Testing.MaxHours },
-            DataMigration = new { effort.DataMigration.MinHours, effort.DataMigration.MaxHours },
-            PerformanceTuning = new { effort.PerformanceTuning.MinHours, effort.PerformanceTuning.MaxHours },
-            effort.TotalClassification
+            ["schemaConversion"] = new { effort.SchemaConversion.MinHours, effort.SchemaConversion.MaxHours },
+            ["codeConversion"] = new { effort.CodeConversion.MinHours, effort.CodeConversion.MaxHours },
+            ["testing"] = new { effort.Testing.MinHours, effort.Testing.MaxHours },
+            ["dataMigration"] = new { effort.DataMigration.MinHours, effort.DataMigration.MaxHours },
+            ["performanceTuning"] = new { effort.PerformanceTuning.MinHours, effort.PerformanceTuning.MaxHours },
+            ["totalClassification"] = effort.TotalClassification
         };
+
+        if (effort.ConfidenceSummary is not null)
+        {
+            result["confidenceSummary"] = new
+            {
+                HighConfidenceHours = new
+                {
+                    effort.ConfidenceSummary.HighConfidenceHours.MinHours,
+                    effort.ConfidenceSummary.HighConfidenceHours.MaxHours
+                },
+                MediumConfidenceHours = new
+                {
+                    effort.ConfidenceSummary.MediumConfidenceHours.MinHours,
+                    effort.ConfidenceSummary.MediumConfidenceHours.MaxHours
+                },
+                LowConfidenceHours = new
+                {
+                    effort.ConfidenceSummary.LowConfidenceHours.MinHours,
+                    effort.ConfidenceSummary.LowConfidenceHours.MaxHours
+                },
+                effort.ConfidenceSummary.Notes
+            };
+        }
+
+        return result;
     }
 
     private static object? BuildSchemaAnalysis(SchemaAnalysisResult? schemaAnalysis)

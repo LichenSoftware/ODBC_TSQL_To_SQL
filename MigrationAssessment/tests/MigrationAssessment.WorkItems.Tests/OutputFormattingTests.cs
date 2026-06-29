@@ -61,6 +61,7 @@ public class OutputFormattingTests : IDisposable
                 MinHours = i * 0.5,
                 MaxHours = i * 2.0
             },
+            ConfidenceLevel = Math.Min(i + 1, 5) <= 2 ? ConfidenceLevel.High : Math.Min(i + 1, 5) == 3 ? ConfidenceLevel.Medium : ConfidenceLevel.Low,
             AcceptanceCriteria = new List<string>
             {
                 $"SQL Server construct FEATURE_{i} has been replaced",

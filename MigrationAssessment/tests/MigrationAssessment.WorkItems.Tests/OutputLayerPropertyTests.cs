@@ -66,6 +66,7 @@ public class OutputLayerPropertyTests
             Priority = ValidPriorities[Math.Min(index, ValidPriorities.Length - 1)],
             PriorityScore = priorityScore,
             EstimatedEffort = new HourRange { MinHours = 0.5, MaxHours = 4.0 },
+            ConfidenceLevel = riskLevel <= 2 ? ConfidenceLevel.High : riskLevel == 3 ? ConfidenceLevel.Medium : ConfidenceLevel.Low,
             AcceptanceCriteria = new[] { "SQL Server construct replaced", "PostgreSQL equivalent produces correct results" },
             RemediationGuidance = "Replace TOP with LIMIT clause",
             Tags = tags
