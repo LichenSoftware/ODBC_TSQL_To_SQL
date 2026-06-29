@@ -20,9 +20,52 @@
             JSON built-in functions that map to JSON_METHOD features.
             </summary>
         </member>
+        <member name="F:MigrationAssessment.Analysis.FeatureDetectionVisitor.OpenJsonFunctions">
+            <summary>
+            Functions that map to the OPENJSON feature (Risk 4).
+            </summary>
+        </member>
         <member name="F:MigrationAssessment.Analysis.FeatureDetectionVisitor.XmlMethods">
             <summary>
             XML method names that map to XML_METHOD features.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.FinalizeDetection">
+            <summary>
+            Call after visiting the complete statement to finalize detection
+            of features that require full-statement context (e.g., TOP without ORDER BY).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.QuerySpecification)">
+            <summary>
+            Detects SELECT TOP without ORDER BY (non-deterministic result set).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.OrderByClause)">
+            <summary>
+            Tracks ORDER BY presence to pair with TOP detection.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.SchemaObjectFunctionTableReference)">
+            <summary>
+            Detects table-valued functions like STRING_SPLIT
+            which appear in FROM clauses as SchemaObjectFunctionTableReference.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.OpenJsonTableReference)">
+            <summary>
+            Detects OPENJSON which has its own dedicated AST node type.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.BinaryExpression)">
+            <summary>
+            Detects string concatenation using the + operator on string expressions.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.FeatureDetectionVisitor.ExplicitVisit(Microsoft.SqlServer.TransactSql.ScriptDom.BooleanComparisonExpression)">
+            <summary>
+            Detects potential implicit type conversions in comparisons
+            (e.g., integer column compared to string literal).
             </summary>
         </member>
         <member name="T:MigrationAssessment.Analysis.MigrationReadinessScorer">

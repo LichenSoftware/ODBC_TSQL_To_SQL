@@ -18,7 +18,8 @@ internal sealed class FeatureDetectionVisitor : TSqlFragmentVisitor
     private static readonly HashSet<string> KnownFunctions = new(StringComparer.OrdinalIgnoreCase)
     {
         "GETDATE", "DATEADD", "DATEDIFF", "DATEPART",
-        "ISNULL", "CHARINDEX", "PATINDEX", "STUFF"
+        "ISNULL", "CHARINDEX", "PATINDEX", "STUFF",
+        "STRING_SPLIT"
     };
 
     /// <summary>
@@ -26,7 +27,15 @@ internal sealed class FeatureDetectionVisitor : TSqlFragmentVisitor
     /// </summary>
     private static readonly HashSet<string> JsonFunctions = new(StringComparer.OrdinalIgnoreCase)
     {
-        "JSON_VALUE", "JSON_QUERY", "OPENJSON", "JSON_MODIFY"
+        "JSON_VALUE", "JSON_QUERY", "JSON_MODIFY"
+    };
+
+    /// <summary>
+    /// Functions that map to the OPENJSON feature (Risk 4).
+    /// </summary>
+    private static readonly HashSet<string> OpenJsonFunctions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "OPENJSON"
     };
 
     /// <summary>
@@ -44,11 +53,58 @@ internal sealed class FeatureDetectionVisitor : TSqlFragmentVisitor
 
     public IReadOnlyList<DetectedFeature> DetectedFeatures => _features;
 
+    // Tracking fields for TOP_WITHOUT_ORDER detection
+    private bool _hasTopWithoutOrder;
+    private bool _hasOrderBy;
+    private TSqlFragment? _topNode;
+
+    /// <summary>
+    /// Call after visiting the complete statement to finalize detection
+    /// of features that require full-statement context (e.g., TOP without ORDER BY).
+    /// </summary>
+    public void FinalizeDetection()
+    {
+        if (_hasTopWithoutOrder && !_hasOrderBy && _topNode is not null)
+        {
+            AddFeature("TOP_WITHOUT_ORDER", FeatureCategory.QueryFeature, _topNode);
+        }
+    }
+
     #region Query Features
 
     public override void ExplicitVisit(TopRowFilter node)
     {
         AddFeature("TOP", FeatureCategory.QueryFeature, node);
+        base.ExplicitVisit(node);
+    }
+
+    /// <summary>
+    /// Detects SELECT TOP without ORDER BY (non-deterministic result set).
+    /// </summary>
+    public override void ExplicitVisit(QuerySpecification node)
+    {
+        // Check for TOP without ORDER BY at the query specification level.
+        // The OrderByClause lives on the parent QueryExpression or SelectStatement,
+        // but QuerySpecification.TopRowFilter exists directly.
+        if (node.TopRowFilter is not null)
+        {
+            // Walk up: if no ORDER BY is present in this query specification's enclosing select,
+            // flag it. We check if the node's direct OrderByClause is null/empty.
+            // Note: ORDER BY is on SelectStatement, not QuerySpecification in the ScriptDom AST.
+            // We track it and resolve later in the statement-level visit.
+            _hasTopWithoutOrder = true;
+            _topNode = node.TopRowFilter;
+        }
+
+        base.ExplicitVisit(node);
+    }
+
+    /// <summary>
+    /// Tracks ORDER BY presence to pair with TOP detection.
+    /// </summary>
+    public override void ExplicitVisit(OrderByClause node)
+    {
+        _hasOrderBy = true;
         base.ExplicitVisit(node);
     }
 
@@ -117,9 +173,17 @@ internal sealed class FeatureDetectionVisitor : TSqlFragmentVisitor
         var functionName = node.FunctionName?.Value;
         if (functionName is not null)
         {
-            if (KnownFunctions.Contains(functionName))
+            if (functionName.Equals("STRING_SPLIT", StringComparison.OrdinalIgnoreCase))
+            {
+                AddFeature("STRING_SPLIT", FeatureCategory.FunctionUsage, node);
+            }
+            else if (KnownFunctions.Contains(functionName))
             {
                 AddFeature(functionName.ToUpperInvariant(), FeatureCategory.FunctionUsage, node);
+            }
+            else if (OpenJsonFunctions.Contains(functionName))
+            {
+                AddFeature("OPENJSON", FeatureCategory.FunctionUsage, node);
             }
             else if (JsonFunctions.Contains(functionName))
             {
@@ -239,6 +303,151 @@ internal sealed class FeatureDetectionVisitor : TSqlFragmentVisitor
     {
         DetectLockingHint(node.HintKind, node);
         base.ExplicitVisit(node);
+    }
+
+    #endregion
+
+    #region Error Handling and Control Flow Features
+
+    public override void ExplicitVisit(PrintStatement node)
+    {
+        AddFeature("PRINT_STATEMENT", FeatureCategory.TransactionFeature, node);
+        base.ExplicitVisit(node);
+    }
+
+    public override void ExplicitVisit(RaiseErrorStatement node)
+    {
+        AddFeature("RAISERROR", FeatureCategory.TransactionFeature, node);
+        base.ExplicitVisit(node);
+    }
+
+    public override void ExplicitVisit(ThrowStatement node)
+    {
+        AddFeature("THROW", FeatureCategory.TransactionFeature, node);
+        base.ExplicitVisit(node);
+    }
+
+    #endregion
+
+    #region XML Features
+
+    public override void ExplicitVisit(XmlForClause node)
+    {
+        // FOR XML PATH, FOR XML AUTO, FOR XML RAW, FOR XML EXPLICIT
+        AddFeature("FOR_XML", FeatureCategory.QueryFeature, node);
+        base.ExplicitVisit(node);
+    }
+
+    #endregion
+
+    #region Table-Valued Functions
+
+    /// <summary>
+    /// Detects table-valued functions like STRING_SPLIT
+    /// which appear in FROM clauses as SchemaObjectFunctionTableReference.
+    /// </summary>
+    public override void ExplicitVisit(SchemaObjectFunctionTableReference node)
+    {
+        var functionName = node.SchemaObject?.BaseIdentifier?.Value;
+        if (functionName is not null)
+        {
+            if (functionName.Equals("STRING_SPLIT", StringComparison.OrdinalIgnoreCase))
+            {
+                AddFeature("STRING_SPLIT", FeatureCategory.FunctionUsage, node);
+            }
+            else if (functionName.Equals("OPENJSON", StringComparison.OrdinalIgnoreCase))
+            {
+                AddFeature("OPENJSON", FeatureCategory.FunctionUsage, node);
+            }
+        }
+        base.ExplicitVisit(node);
+    }
+
+    /// <summary>
+    /// Detects OPENJSON which has its own dedicated AST node type.
+    /// </summary>
+    public override void ExplicitVisit(OpenJsonTableReference node)
+    {
+        AddFeature("OPENJSON", FeatureCategory.FunctionUsage, node);
+        base.ExplicitVisit(node);
+    }
+
+    #endregion
+
+    #region String Concatenation
+
+    /// <summary>
+    /// Detects string concatenation using the + operator on string expressions.
+    /// </summary>
+    public override void ExplicitVisit(BinaryExpression node)
+    {
+        if (node.BinaryExpressionType == BinaryExpressionType.Add)
+        {
+            // Check if either side is a string literal, which indicates string concatenation
+            if (IsStringExpression(node.FirstExpression) || IsStringExpression(node.SecondExpression))
+            {
+                AddFeature("STRING_CONCAT_PLUS", FeatureCategory.FunctionUsage, node);
+            }
+        }
+        base.ExplicitVisit(node);
+    }
+
+    private static bool IsStringExpression(ScalarExpression expr)
+    {
+        return expr is StringLiteral
+            || (expr is CastCall cast && IsStringType(cast.DataType))
+            || (expr is ConvertCall convert && IsStringType(convert.DataType));
+    }
+
+    private static bool IsStringType(DataTypeReference? dataType)
+    {
+        if (dataType is SqlDataTypeReference sqlType)
+        {
+            return sqlType.SqlDataTypeOption is SqlDataTypeOption.VarChar
+                or SqlDataTypeOption.NVarChar
+                or SqlDataTypeOption.Char
+                or SqlDataTypeOption.NChar
+                or SqlDataTypeOption.Text
+                or SqlDataTypeOption.NText;
+        }
+        return false;
+    }
+
+    #endregion
+
+    #region Implicit Conversion
+
+    /// <summary>
+    /// Detects potential implicit type conversions in comparisons
+    /// (e.g., integer column compared to string literal).
+    /// </summary>
+    public override void ExplicitVisit(BooleanComparisonExpression node)
+    {
+        if (IsImplicitConversion(node.FirstExpression, node.SecondExpression))
+        {
+            AddFeature("IMPLICIT_CONVERSION", FeatureCategory.QueryFeature, node);
+        }
+        base.ExplicitVisit(node);
+    }
+
+    private static bool IsImplicitConversion(ScalarExpression left, ScalarExpression right)
+    {
+        // Detect: column/variable compared to string literal where the string looks numeric
+        // e.g., WHERE IntColumn = '123'
+        if (left is ColumnReferenceExpression && right is StringLiteral strLit)
+        {
+            return IsNumericString(strLit.Value);
+        }
+        if (right is ColumnReferenceExpression && left is StringLiteral strLit2)
+        {
+            return IsNumericString(strLit2.Value);
+        }
+        return false;
+    }
+
+    private static bool IsNumericString(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) && double.TryParse(value, out _);
     }
 
     #endregion

@@ -25,13 +25,17 @@ public class StatementGrouperPropertyTests
         ("CHARINDEX", 2), ("PATINDEX", 2), ("STUFF", 2),
         ("DATEADD", 2), ("DATEDIFF", 2), ("DATEPART", 2),
         ("OFFSET_FETCH", 2), ("STRING_CONCAT", 2),
+        ("STRING_CONCAT_PLUS", 2), ("TOP_WITHOUT_ORDER", 2),
+        ("PRINT_STATEMENT", 2), ("THROW", 2),
+        ("IMPLICIT_CONVERSION", 2), ("STRING_SPLIT", 2),
         ("TRY_CATCH", 3), ("DYNAMIC_SQL", 3), ("EXPLICIT_TRANSACTION", 3),
         ("SAVEPOINT", 3), ("TEMP_TABLE", 3), ("OUTPUT", 3),
         ("CROSS_APPLY", 3), ("OUTER_APPLY", 3), ("JSON_METHOD", 3),
-        ("IDENTITY", 3), ("CTE", 3),
+        ("IDENTITY", 3), ("CTE", 3), ("RAISERROR", 3),
         ("MERGE", 4), ("TABLE_VALUED_PARAMETER", 4), ("TABLE_VARIABLE", 4),
         ("GLOBAL_TEMP_TABLE", 4), ("NOLOCK", 4), ("ROWLOCK", 4),
         ("UPDLOCK", 4), ("PIVOT", 4), ("UNPIVOT", 4),
+        ("OPENJSON", 4), ("FOR_XML", 4),
         ("OPENQUERY", 5), ("OPENROWSET", 5), ("XML_METHOD", 5),
         ("SQL_CLR", 5), ("SERVICE_BROKER", 5), ("LINKED_SERVER", 5),
         ("REPLICATION", 5), ("FILESTREAM", 5), ("MEMORY_OPTIMIZED", 5),
@@ -179,8 +183,8 @@ public class StatementGrouperPropertyTests
     public Property MultiFeatureHighestRiskAssignment()
     {
         // Generate a statement with exactly 2 features at DIFFERENT risk levels
-        var gen = from lowIdx in Gen.Choose(0, 11)  // Risk 2 features (indices 0-11)
-                  from highIdx in Gen.Choose(12, KnownFeatures.Length - 1)  // Risk 3+ features
+        var gen = from lowIdx in Gen.Choose(0, 17)  // Risk 2 features (indices 0-17)
+                  from highIdx in Gen.Choose(18, KnownFeatures.Length - 1)  // Risk 3+ features
                   let lowFeature = KnownFeatures[lowIdx]
                   let highFeature = KnownFeatures[highIdx]
                   where lowFeature.Risk != highFeature.Risk

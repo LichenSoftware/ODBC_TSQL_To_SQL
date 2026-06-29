@@ -48,6 +48,7 @@ public sealed class StatementAnalyzer : IStatementAnalyzer
         {
             var visitor = new FeatureDetectionVisitor(statementId);
             fragment.Accept(visitor);
+            visitor.FinalizeDetection();
 
             return new StatementAnalysisResult
             {

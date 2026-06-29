@@ -22,6 +22,13 @@ public sealed partial class PostgresConversionEngine : IPostgresConversionEngine
         ["TEMP_TABLE"] = ConvertTempTable,
         ["GLOBAL_TEMP_TABLE"] = ConvertGlobalTempTable,
         ["XML_METHOD"] = ConvertXmlMethod,
+        ["STRING_CONCAT_PLUS"] = ConvertStringConcatPlus,
+        ["PRINT_STATEMENT"] = ConvertPrintStatement,
+        ["THROW"] = ConvertThrow,
+        ["RAISERROR"] = ConvertRaiserror,
+        ["STRING_SPLIT"] = ConvertStringSplit,
+        ["OPENJSON"] = ConvertOpenjson,
+        ["FOR_XML"] = ConvertForXml,
     };
 
     /// <inheritdoc />
@@ -311,6 +318,127 @@ public sealed partial class PostgresConversionEngine : IPostgresConversionEngine
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // New feature conversion functions
+    // ═══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Converts string + string to string || string.
+    /// Risk 2: Direct operator substitution.
+    /// </summary>
+    internal static string ConvertStringConcatPlus(string sql)
+    {
+        // Replace ' + ' patterns between string expressions with ||
+        // This is a heuristic — full AST-level replacement is handled by detection
+        return StringConcatPlusRegex().Replace(sql, " || ");
+    }
+
+    /// <summary>
+    /// Converts PRINT 'message' to RAISE NOTICE.
+    /// Risk 2: Direct syntax mapping.
+    /// </summary>
+    internal static string ConvertPrintStatement(string sql)
+    {
+        return PrintRegex().Replace(sql, match =>
+        {
+            var message = match.Groups["msg"].Value;
+            return $"RAISE NOTICE '%', {message}";
+        });
+    }
+
+    /// <summary>
+    /// Converts THROW to RAISE EXCEPTION.
+    /// Risk 2: Direct syntax mapping.
+    /// </summary>
+    internal static string ConvertThrow(string sql)
+    {
+        // THROW number, 'message', state → RAISE EXCEPTION 'message'
+        var result = ThrowWithArgsRegex().Replace(sql, match =>
+        {
+            var message = match.Groups["msg"].Value;
+            return $"RAISE EXCEPTION {message}";
+        });
+
+        // Bare THROW (re-throw in CATCH) → RAISE
+        if (result == sql)
+        {
+            result = ThrowBareRegex().Replace(sql, "RAISE");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Converts RAISERROR to RAISE EXCEPTION/WARNING/NOTICE.
+    /// Risk 3: Severity-based mapping.
+    /// </summary>
+    internal static string ConvertRaiserror(string sql)
+    {
+        return RaiserrorRegex().Replace(sql, match =>
+        {
+            var message = match.Groups["msg"].Value;
+            var severity = match.Groups["sev"].Value;
+            var level = int.TryParse(severity, out var sev) && sev < 16 ? "WARNING" : "EXCEPTION";
+            return $"RAISE {level} '%', {message}";
+        });
+    }
+
+    /// <summary>
+    /// Converts STRING_SPLIT to string_to_table.
+    /// Risk 2: Direct function substitution.
+    /// </summary>
+    internal static string ConvertStringSplit(string sql)
+    {
+        return StringSplitRegex().Replace(sql, match =>
+        {
+            var str = match.Groups["str"].Value;
+            var sep = match.Groups["sep"].Value;
+            return $"string_to_table({str}, {sep})";
+        });
+    }
+
+    /// <summary>
+    /// Converts OPENJSON to jsonb_each/jsonb_array_elements.
+    /// Risk 4: Requires design decisions about schema mapping.
+    /// </summary>
+    internal static string ConvertOpenjson(string sql)
+    {
+        var result = OpenjsonRegex().Replace(sql, match =>
+        {
+            var jsonExpr = match.Groups["json"].Value;
+            return $"jsonb_each({jsonExpr}::jsonb)";
+        });
+
+        if (result != sql)
+        {
+            result = "-- TODO: verify JSON structure; use jsonb_array_elements() for arrays, jsonb_to_recordset() for typed output\n" + result;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Converts FOR XML PATH/AUTO/RAW to json_agg or string_agg.
+    /// Risk 4: Pattern depends on usage context.
+    /// </summary>
+    internal static string ConvertForXml(string sql)
+    {
+        var result = ForXmlPathRegex().Replace(sql, match =>
+        {
+            return "\n-- TODO: FOR XML removed; use json_agg(row_to_json(t)) for structured output or string_agg() for concatenation";
+        });
+
+        if (result == sql)
+        {
+            result = ForXmlGenericRegex().Replace(sql, match =>
+            {
+                return "\n-- TODO: FOR XML removed; use json_agg() or xmlagg(xmlelement(...)) for equivalent output";
+            });
+        }
+
+        return result;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Helper methods
     // ═══════════════════════════════════════════════════════════════
 
@@ -412,4 +540,31 @@ public sealed partial class PostgresConversionEngine : IPostgresConversionEngine
 
     [GeneratedRegex(@"(?<col>[\w.]+)\.nodes\s*\(\s*'(?<xpath>[^']+)'\s*\)", RegexOptions.IgnoreCase)]
     private static partial Regex XmlNodesRegex();
+
+    [GeneratedRegex(@"(?<='[^']*'|\w)\s*\+\s*(?='[^']*'|\w)", RegexOptions.None)]
+    private static partial Regex StringConcatPlusRegex();
+
+    [GeneratedRegex(@"\bPRINT\s+(?<msg>[^\r\n;]+)", RegexOptions.IgnoreCase)]
+    private static partial Regex PrintRegex();
+
+    [GeneratedRegex(@"\bTHROW\s+\d+\s*,\s*(?<msg>'[^']*'|[^,]+)\s*,\s*\d+", RegexOptions.IgnoreCase)]
+    private static partial Regex ThrowWithArgsRegex();
+
+    [GeneratedRegex(@"\bTHROW\s*;", RegexOptions.IgnoreCase)]
+    private static partial Regex ThrowBareRegex();
+
+    [GeneratedRegex(@"\bRAISERROR\s*\(\s*(?<msg>'[^']*'|[^,]+)\s*,\s*(?<sev>\d+)\s*,\s*\d+[^)]*\)", RegexOptions.IgnoreCase)]
+    private static partial Regex RaiserrorRegex();
+
+    [GeneratedRegex(@"\bSTRING_SPLIT\s*\(\s*(?<str>[^,]+)\s*,\s*(?<sep>[^)]+)\s*\)", RegexOptions.IgnoreCase)]
+    private static partial Regex StringSplitRegex();
+
+    [GeneratedRegex(@"\bOPENJSON\s*\(\s*(?<json>[^)]+)\s*\)", RegexOptions.IgnoreCase)]
+    private static partial Regex OpenjsonRegex();
+
+    [GeneratedRegex(@"\bFOR\s+XML\s+PATH\s*\([^)]*\)[^;]*", RegexOptions.IgnoreCase)]
+    private static partial Regex ForXmlPathRegex();
+
+    [GeneratedRegex(@"\bFOR\s+XML\s+(?:AUTO|RAW|EXPLICIT)[^;]*", RegexOptions.IgnoreCase)]
+    private static partial Regex ForXmlGenericRegex();
 }

@@ -33,6 +33,12 @@ public sealed class StatementGrouper : IStatementGrouper
         ["DATEPART"] = 2,
         ["OFFSET_FETCH"] = 2,
         ["STRING_CONCAT"] = 2,
+        ["STRING_CONCAT_PLUS"] = 2,
+        ["TOP_WITHOUT_ORDER"] = 2,
+        ["PRINT_STATEMENT"] = 2,
+        ["THROW"] = 2,
+        ["IMPLICIT_CONVERSION"] = 2,
+        ["STRING_SPLIT"] = 2,
 
         // Risk 3
         ["TRY_CATCH"] = 3,
@@ -46,6 +52,7 @@ public sealed class StatementGrouper : IStatementGrouper
         ["JSON_METHOD"] = 3,
         ["IDENTITY"] = 3,
         ["CTE"] = 3,
+        ["RAISERROR"] = 3,
 
         // Risk 4
         ["MERGE"] = 4,
@@ -57,6 +64,8 @@ public sealed class StatementGrouper : IStatementGrouper
         ["UPDLOCK"] = 4,
         ["PIVOT"] = 4,
         ["UNPIVOT"] = 4,
+        ["OPENJSON"] = 4,
+        ["FOR_XML"] = 4,
 
         // Risk 5
         ["OPENQUERY"] = 5,

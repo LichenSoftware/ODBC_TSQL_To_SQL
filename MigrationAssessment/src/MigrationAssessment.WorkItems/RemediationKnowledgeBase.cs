@@ -117,6 +117,66 @@ public sealed class RemediationKnowledgeBase : IRemediationKnowledgeBase
             PostgresDocReference = "https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-EXTRACT"
         },
 
+        ["STRING_CONCAT_PLUS"] = new RemediationEntry
+        {
+            PostgresEquivalent = "|| (concatenation operator)",
+            RemediationSteps = "Replace string + string with string || string. Note: PostgreSQL's || operator returns NULL if any operand is NULL (unlike SQL Server's + which may concatenate with NULL depending on settings). Use CONCAT() for NULL-safe concatenation.",
+            IncompatibilityExplanation = "SQL Server uses + for both addition and string concatenation depending on operand types. PostgreSQL uses || exclusively for string concatenation. NULL handling differs: SET CONCAT_NULL_YIELDS_NULL behavior has no PostgreSQL equivalent.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/functions-string.html"
+        },
+
+        ["TOP_WITHOUT_ORDER"] = new RemediationEntry
+        {
+            PostgresEquivalent = "LIMIT N (with explicit ORDER BY for deterministic results)",
+            RemediationSteps = "Replace SELECT TOP N with SELECT ... ORDER BY column LIMIT N. Without ORDER BY, the result set is non-deterministic in both SQL Server and PostgreSQL. Add an explicit ORDER BY clause to ensure consistent results across executions.",
+            IncompatibilityExplanation = "TOP without ORDER BY returns an arbitrary subset of rows. While this works identically in PostgreSQL (LIMIT without ORDER BY), it indicates a potential bug. Add ORDER BY for deterministic pagination.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/queries-limit.html"
+        },
+
+        ["PRINT_STATEMENT"] = new RemediationEntry
+        {
+            PostgresEquivalent = "RAISE NOTICE 'message'",
+            RemediationSteps = "Replace PRINT 'message' with RAISE NOTICE '%', 'message' in PL/pgSQL. RAISE NOTICE sends output to the client's notice channel. For formatted output, use RAISE NOTICE 'format %s', variable. Note: RAISE NOTICE is only available within PL/pgSQL functions or DO blocks.",
+            IncompatibilityExplanation = "SQL Server's PRINT statement outputs messages to the client message stream. PostgreSQL uses RAISE NOTICE within PL/pgSQL for equivalent functionality. Plain SQL has no PRINT equivalent.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html"
+        },
+
+        ["THROW"] = new RemediationEntry
+        {
+            PostgresEquivalent = "RAISE EXCEPTION 'message' USING ERRCODE = 'xxxxx'",
+            RemediationSteps = "Replace THROW error_number, 'message', state with RAISE EXCEPTION 'message' USING ERRCODE = 'P0001'. For re-throwing (THROW without arguments in CATCH block), use RAISE within an EXCEPTION handler. Map SQL Server error numbers to PostgreSQL SQLSTATE codes.",
+            IncompatibilityExplanation = "SQL Server's THROW (2012+) raises an error with a number, message, and state. PostgreSQL uses RAISE EXCEPTION with SQLSTATE codes. Error numbers don't map directly between platforms.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html"
+        },
+
+        ["IMPLICIT_CONVERSION"] = new RemediationEntry
+        {
+            PostgresEquivalent = "Explicit CAST(value AS type)",
+            RemediationSteps = "Add explicit CAST() or :: type casts where SQL Server performs implicit conversion. Common cases: WHERE int_column = '123' → WHERE int_column = CAST('123' AS integer). PostgreSQL is stricter about implicit conversions and may throw errors where SQL Server silently converts.",
+            IncompatibilityExplanation = "SQL Server performs many implicit type conversions automatically (e.g., comparing INT to VARCHAR). PostgreSQL requires explicit casts in most cases and will raise type mismatch errors rather than silently converting.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-TYPE-CASTS"
+        },
+
+        ["STRING_SPLIT"] = new RemediationEntry
+        {
+            PostgresEquivalent = "string_to_table() or regexp_split_to_table()",
+            RemediationSteps = "Replace STRING_SPLIT(string, separator) with string_to_table(string, separator) (PostgreSQL 14+) or regexp_split_to_table(string, separator) for older versions. The column name changes from 'value' to the function result. For ordinal support (STRING_SPLIT with enable_ordinal), use WITH ORDINALITY.",
+            IncompatibilityExplanation = "STRING_SPLIT is SQL Server 2016+. PostgreSQL provides string_to_table() (v14+) and regexp_split_to_table() with equivalent functionality. Column naming and ordinal support differ slightly.",
+            RiskLevel = 2,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/functions-string.html"
+        },
+
         // ═══════════════════════════════════════════════════════════════
         // Risk 3: Step-by-step conversion instructions
         // ═══════════════════════════════════════════════════════════════
@@ -152,6 +212,23 @@ public sealed class RemediationKnowledgeBase : IRemediationKnowledgeBase
             RiskLevel = 3,
             RequiresArchitecturalReview = false,
             PostgresDocReference = "https://www.postgresql.org/docs/current/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN"
+        },
+
+        ["RAISERROR"] = new RemediationEntry
+        {
+            PostgresEquivalent = "RAISE EXCEPTION 'format' USING ERRCODE = 'xxxxx'",
+            RemediationSteps = """
+                1. Replace RAISERROR('message %s', severity, state, param) with RAISE EXCEPTION 'message %', param
+                2. Map severity levels: severity >= 16 → RAISE EXCEPTION, severity 10-15 → RAISE WARNING, severity < 10 → RAISE NOTICE
+                3. Replace %s/%d format specifiers with PostgreSQL % placeholders
+                4. Map SQL Server error state to PostgreSQL SQLSTATE codes using ERRCODE
+                5. For WITH NOWAIT behavior, PostgreSQL RAISE is always immediate (no buffering)
+                6. Remove WITH LOG option (use PostgreSQL logging configuration instead)
+                """,
+            IncompatibilityExplanation = "RAISERROR uses C-style format strings with severity/state parameters. PostgreSQL RAISE uses %-based formatting with named severity levels (EXCEPTION, WARNING, NOTICE) and SQLSTATE error codes.",
+            RiskLevel = 3,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html"
         },
 
         ["TEMP_TABLE"] = new RemediationEntry
@@ -354,6 +431,42 @@ public sealed class RemediationKnowledgeBase : IRemediationKnowledgeBase
             RiskLevel = 4,
             RequiresArchitecturalReview = false,
             PostgresDocReference = "https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-LATERAL"
+        },
+
+        ["OPENJSON"] = new RemediationEntry
+        {
+            PostgresEquivalent = "jsonb_each() / jsonb_array_elements() / jsonb_to_recordset()",
+            RemediationSteps = """
+                1. Replace OPENJSON(json_string) with jsonb_each(json_string::jsonb) for key-value pairs
+                2. Replace OPENJSON(json_array) for arrays with jsonb_array_elements(json_array::jsonb)
+                3. For OPENJSON with schema (WITH clause): use jsonb_to_recordset(json::jsonb) AS (col1 type1, col2 type2, ...)
+                4. Replace $.path expressions with -> and ->> operators for value extraction
+                5. Map SQL Server JSON types to PostgreSQL jsonb operators: $.key → ->>'key'
+                6. For nested JSON paths, chain -> operators: $[0].name → ->0->>'name'
+                7. Consider using jsonb_path_query() for complex JSONPath expressions (PostgreSQL 12+)
+                """,
+            IncompatibilityExplanation = "SQL Server's OPENJSON parses JSON text and returns a rowset. PostgreSQL provides jsonb_each(), jsonb_array_elements(), and jsonb_to_recordset() which require explicit schema definitions via AS clause rather than WITH clause.",
+            RiskLevel = 4,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/functions-json.html"
+        },
+
+        ["FOR_XML"] = new RemediationEntry
+        {
+            PostgresEquivalent = "json_agg() / xmlagg(xmlelement()) / string_agg()",
+            RemediationSteps = """
+                1. FOR XML PATH('') with string concatenation: Replace with string_agg(column, separator)
+                2. FOR XML PATH('element'): Replace with json_agg(row_to_json(t)) or xmlagg(xmlelement(name element, ...))
+                3. FOR XML AUTO: Replace with json_agg() for JSON output or xmlagg() for XML output
+                4. FOR XML RAW: Replace with xmlagg(xmlelement(name row, xmlattributes(col1, col2, ...)))
+                5. FOR XML PATH with ROOT: Wrap json_agg() result in json_build_object('root', ...)
+                6. For the common comma-separated list pattern (STUFF + FOR XML PATH): Use string_agg(column, ',')
+                7. Consider migrating XML output to JSON (json_agg/jsonb_agg) unless XML format is required by consumers
+                """,
+            IncompatibilityExplanation = "SQL Server's FOR XML converts rowsets to XML. PostgreSQL has no single FOR XML equivalent. The common STUFF/FOR XML PATH concatenation pattern maps to string_agg(). Structured XML output requires xmlagg() with xmlelement(). JSON alternatives (json_agg) are often preferred in PostgreSQL.",
+            RiskLevel = 4,
+            RequiresArchitecturalReview = false,
+            PostgresDocReference = "https://www.postgresql.org/docs/current/functions-json.html"
         },
 
         // ═══════════════════════════════════════════════════════════════
