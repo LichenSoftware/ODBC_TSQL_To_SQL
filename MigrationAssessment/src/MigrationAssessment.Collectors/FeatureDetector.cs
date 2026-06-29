@@ -144,15 +144,15 @@ public sealed class FeatureDetector : IFeatureDetector
         CancellationToken ct)
     {
         const string sql = """
-            SELECT 'Queue' AS object_type, name, NULL AS service_name
+            SELECT 'Queue' AS object_type, name COLLATE DATABASE_DEFAULT AS name, NULL AS service_name
             FROM sys.service_queues
             WHERE schema_id != SCHEMA_ID('sys')
             UNION ALL
-            SELECT 'Service' AS object_type, name, NULL AS service_name
+            SELECT 'Service' AS object_type, name COLLATE DATABASE_DEFAULT AS name, NULL AS service_name
             FROM sys.services
             WHERE name NOT LIKE 'http://%' AND name NOT LIKE 'InternalMailQueue%' AND name != 'ExternalMailQueue'
             UNION ALL
-            SELECT 'Contract' AS object_type, name, NULL AS service_name
+            SELECT 'Contract' AS object_type, name COLLATE DATABASE_DEFAULT AS name, NULL AS service_name
             FROM sys.service_contracts
             WHERE name NOT LIKE 'http://%' AND name != 'DEFAULT'
             """;
@@ -506,19 +506,19 @@ public sealed class FeatureDetector : IFeatureDetector
         CancellationToken ct)
     {
         const string sql = """
-            SELECT 'Catalog' AS object_type, fc.name, NULL AS table_name, NULL AS column_name
+            SELECT 'Catalog' AS object_type, fc.name COLLATE DATABASE_DEFAULT AS name, NULL AS table_name, NULL AS column_name
             FROM sys.fulltext_catalogs fc
             UNION ALL
             SELECT 'Index' AS object_type, 
-                   OBJECT_NAME(fi.object_id) AS name,
+                   OBJECT_NAME(fi.object_id) COLLATE DATABASE_DEFAULT AS name,
                    OBJECT_SCHEMA_NAME(fi.object_id) + '.' + OBJECT_NAME(fi.object_id) AS table_name,
                    NULL AS column_name
             FROM sys.fulltext_indexes fi
             UNION ALL
             SELECT 'IndexColumn' AS object_type,
-                   COL_NAME(fic.object_id, fic.column_id) AS name,
+                   COL_NAME(fic.object_id, fic.column_id) COLLATE DATABASE_DEFAULT AS name,
                    OBJECT_SCHEMA_NAME(fic.object_id) + '.' + OBJECT_NAME(fic.object_id) AS table_name,
-                   COL_NAME(fic.object_id, fic.column_id) AS column_name
+                   COL_NAME(fic.object_id, fic.column_id) COLLATE DATABASE_DEFAULT AS column_name
             FROM sys.fulltext_index_columns fic
             """;
 

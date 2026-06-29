@@ -3,6 +3,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using MigrationAssessment.Core.Interfaces;
 using MigrationAssessment.Core.Models;
+using MigrationAssessment.WorkItems;
+using MigrationAssessment.WorkItems.Models;
 
 namespace MigrationAssessment.Cli;
 
@@ -20,6 +22,8 @@ public sealed class AssessmentPipeline
     private readonly IWeightedComplexityCalculator _weightedCalculator;
     private readonly IReportGenerator _reportGenerator;
     private readonly IJsonReportWriter _jsonWriter;
+    private readonly IObjectInventoryBuilder _objectInventoryBuilder;
+    private readonly IWorkItemGenerator? _workItemGenerator;
     private readonly ILogger<AssessmentPipeline> _logger;
 
     public AssessmentPipeline(
@@ -32,7 +36,9 @@ public sealed class AssessmentPipeline
         IWeightedComplexityCalculator weightedCalculator,
         IReportGenerator reportGenerator,
         IJsonReportWriter jsonWriter,
-        ILogger<AssessmentPipeline> logger)
+        IObjectInventoryBuilder objectInventoryBuilder,
+        ILogger<AssessmentPipeline> logger,
+        IWorkItemGenerator? workItemGenerator = null)
     {
         _statementCollectors = statementCollectors;
         _metadataCollector = metadataCollector;
@@ -43,7 +49,9 @@ public sealed class AssessmentPipeline
         _weightedCalculator = weightedCalculator;
         _reportGenerator = reportGenerator;
         _jsonWriter = jsonWriter;
+        _objectInventoryBuilder = objectInventoryBuilder;
         _logger = logger;
+        _workItemGenerator = workItemGenerator;
     }
 
     /// <summary>
@@ -191,14 +199,43 @@ public sealed class AssessmentPipeline
             // 4. Generate report
             var report = _reportGenerator.GenerateReport(analyzedStatements, objectInventory, featureResult, failures);
 
+            // 4.5. Build parsed object inventory from analyzed statements + metadata
+            var parsedObjectInventory = _objectInventoryBuilder.BuildInventory(analyzedStatements, objectInventory);
+
             // 5. Write JSON output
             var writeResult = await _jsonWriter.WriteAsync(
-                report, analyzedStatements, objectInventory, featureResult, config.OutputPath, ct);
+                report, analyzedStatements, objectInventory, featureResult, config.OutputPath, ct, parsedObjectInventory);
 
             if (!writeResult.Succeeded)
             {
                 _logger.LogError("Failed to write report: {Error}", writeResult.ErrorMessage);
                 return 1;
+            }
+
+            // 6. Generate work items (optional)
+            if (config.GenerateWorkItems && _workItemGenerator is not null)
+            {
+                var workItemConfig = new WorkItemConfiguration
+                {
+                    OutputJsonPath = config.WorkItemOutputPath,
+                    MarkdownEnabled = config.WorkItemMarkdownEnabled,
+                    MarkdownOutputPath = config.WorkItemMarkdownOutputPath,
+                    MinimumRiskLevel = config.WorkItemMinRiskLevel,
+                    MaxWorkItemCount = config.WorkItemMaxCount
+                };
+
+                var workItemResult = _workItemGenerator.GenerateWorkItems(
+                    analyzedStatements, featureResult, workItemConfig, parsedObjectInventory);
+
+                if (workItemResult.Succeeded)
+                {
+                    _logger.LogInformation("Generated {Count} work items", workItemResult.Metadata.TotalWorkItemCount);
+                }
+                else
+                {
+                    _logger.LogWarning("Work item generation failed: {Error}", workItemResult.ErrorMessage);
+                    // Don't fail the pipeline — work items are optional
+                }
             }
 
             _logger.LogInformation("Assessment complete. Score: {Score}. Output: {Path}",

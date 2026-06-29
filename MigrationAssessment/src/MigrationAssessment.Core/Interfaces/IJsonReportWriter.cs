@@ -16,6 +16,7 @@ public interface IJsonReportWriter
     /// <param name="featureDetection">Server feature detection results.</param>
     /// <param name="outputPath">The file path to write the JSON output to.</param>
     /// <param name="ct">Cancellation token.</param>
+    /// <param name="parsedObjectInventory">Optional enriched object inventory built from parsed SQL.</param>
     /// <returns>A result indicating success or failure with error details.</returns>
     Task<JsonWriteResult> WriteAsync(
         AssessmentReport report,
@@ -23,7 +24,8 @@ public interface IJsonReportWriter
         DatabaseObjectInventory objectInventory,
         FeatureDetectionResult featureDetection,
         string outputPath,
-        CancellationToken ct);
+        CancellationToken ct,
+        IReadOnlyList<ObjectInventoryEntry>? parsedObjectInventory = null);
 }
 
 /// <summary>

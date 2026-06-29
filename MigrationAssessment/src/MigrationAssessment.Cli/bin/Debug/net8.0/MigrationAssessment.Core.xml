@@ -24,7 +24,7 @@
             Writes an assessment report to a JSON file matching the published schema.
             </summary>
         </member>
-        <member name="M:MigrationAssessment.Core.Interfaces.IJsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken)">
+        <member name="M:MigrationAssessment.Core.Interfaces.IJsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
             <summary>
             Serializes the assessment report and supporting data to a JSON file.
             </summary>
@@ -34,6 +34,7 @@
             <param name="featureDetection">Server feature detection results.</param>
             <param name="outputPath">The file path to write the JSON output to.</param>
             <param name="ct">Cancellation token.</param>
+            <param name="parsedObjectInventory">Optional enriched object inventory built from parsed SQL.</param>
             <returns>A result indicating success or failure with error details.</returns>
         </member>
         <member name="T:MigrationAssessment.Core.Interfaces.JsonWriteResult">
@@ -82,6 +83,24 @@
             <param name="statements">All analyzed statements.</param>
             <param name="serverFeatures">Detected server-level features.</param>
             <returns>The readiness result including score, classification, and data sufficiency.</returns>
+        </member>
+        <member name="T:MigrationAssessment.Core.Interfaces.IObjectInventoryBuilder">
+            <summary>
+            Builds the object inventory by correlating analyzed statements with known database objects
+            (from metadata collection) and parsing their source definitions to produce per-object
+            risk and feature summaries.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Core.Interfaces.IObjectInventoryBuilder.BuildInventory(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <summary>
+            Builds the enriched object inventory by correlating analyzed statements with the
+            programmable objects discovered by the metadata collector. Each object gets per-object
+            stats: statement count, max risk, conversion categories, and detected features.
+            Statements not attributable to any named object are grouped under "Ad Hoc".
+            </summary>
+            <param name="statements">The fully analyzed statements (e.g. from Query Store).</param>
+            <param name="objectInventory">The database object inventory from the metadata collector.</param>
+            <returns>A list of object inventory entries with per-object risk and feature details.</returns>
         </member>
         <member name="T:MigrationAssessment.Core.Interfaces.IReportGenerator">
             <summary>
@@ -247,6 +266,39 @@
             Configuration for an assessment pipeline run, including connection, retry, and output settings.
             </summary>
         </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.GenerateWorkItems">
+            <summary>
+            Whether to generate work items after the assessment report (opt-in). Default: false.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.WorkItemOutputPath">
+            <summary>
+            Output path for the work items JSON file. Default: "./work-items.json".
+            Only used when GenerateWorkItems is true.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.WorkItemMarkdownEnabled">
+            <summary>
+            Whether to generate a Markdown report for work items. Default: false.
+            Only used when GenerateWorkItems is true.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.WorkItemMarkdownOutputPath">
+            <summary>
+            Output path for the work items Markdown file. Default: null (uses same directory as JSON).
+            Only used when WorkItemMarkdownEnabled is true.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.WorkItemMinRiskLevel">
+            <summary>
+            Minimum risk level filter for work item generation (1-5). Default: 1 (include all).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.AssessmentConfiguration.WorkItemMaxCount">
+            <summary>
+            Maximum number of work items to generate. Default: null (no limit).
+            </summary>
+        </member>
         <member name="T:MigrationAssessment.Core.Models.AssessmentReport">
             <summary>
             The complete migration assessment report containing all sections.
@@ -356,6 +408,30 @@
             <summary>
             The final migration recommendation with reasoning and score.
             </summary>
+        </member>
+        <member name="T:MigrationAssessment.Core.Models.ObjectInventoryEntry">
+            <summary>
+            Represents a named database object identified from parsed SQL source,
+            along with aggregated risk and feature information for migration assessment.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.Name">
+            <summary>The object name (e.g., "usp_CreateOrder").</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.Type">
+            <summary>One of: StoredProcedure, View, ScalarFunction, TableValuedFunction, Trigger, AdHoc.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.StatementCount">
+            <summary>Number of SQL statements inside the object.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.MaxRiskScore">
+            <summary>Highest risk score of any statement within the object.</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.ConversionCategories">
+            <summary>Distinct conversion categories detected (e.g., "automatic", "manual").</summary>
+        </member>
+        <member name="P:MigrationAssessment.Core.Models.ObjectInventoryEntry.DetectedFeatures">
+            <summary>Flat list of all distinct SQL Server features detected across all statements in this object.</summary>
         </member>
         <member name="T:MigrationAssessment.Core.Models.ProgrammableObjectMetadata">
             <summary>

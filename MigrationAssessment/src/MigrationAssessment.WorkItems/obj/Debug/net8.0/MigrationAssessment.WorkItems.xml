@@ -1,0 +1,2012 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MigrationAssessment.WorkItems</name>
+    </assembly>
+    <members>
+        <member name="T:MigrationAssessment.WorkItems.AcceptanceCriteriaGenerator">
+            <summary>
+            Generates verifiable acceptance criteria for migration work items.
+            Always produces at least 2 criteria. Higher risk levels (3-5) receive
+            additional verification steps appropriate to their complexity.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.AcceptanceCriteriaGenerator.GenerateCriteria(System.String,System.Int32,System.String)">
+            <summary>
+            Generates acceptance criteria for a work item.
+            Always produces at least 2 criteria. Risk 4-5 get additional criteria.
+            </summary>
+            <param name="featureName">The SQL Server feature/construct name.</param>
+            <param name="riskLevel">The risk level (1-5).</param>
+            <param name="objectName">The affected database object name (or "Ad Hoc Queries").</param>
+            <returns>A list of verifiable acceptance criteria strings.</returns>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.AssessmentJsonReader">
+            <summary>
+            Reads and parses assessment JSON files produced by the Migration Assessment Engine.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.AssessmentJsonReader.ReadAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Reads and parses an assessment JSON file.
+            </summary>
+            <param name="filePath">Path to the assessment JSON file.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>A result containing parsed data or an error.</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.AssessmentJsonReader.Parse(System.String,System.String)">
+            <summary>
+            Parses assessment JSON content from a string.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.DescriptionGenerator">
+            <summary>
+            Generates plain-language work item descriptions explaining the incompatibility,
+            occurrence count, and business impact based on execution frequency.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.DescriptionGenerator.GenerateDescription(System.Collections.Generic.IReadOnlyList{System.String},System.Int32,System.Int32,System.Int64,System.String)">
+            <summary>
+            Generates a multi-line description for a work item with multiple detected features,
+            including what the SQL Server constructs are, why they are incompatible with PostgreSQL,
+            how many occurrences were found, and the business impact based on execution frequency.
+            </summary>
+            <param name="detectedFeatures">All detected SQL Server feature/construct names.</param>
+            <param name="riskLevel">The risk level (1-5).</param>
+            <param name="occurrenceCount">Number of occurrences found in the analyzed codebase.</param>
+            <param name="totalExecutionCount">Combined total executions recorded across all occurrences.</param>
+            <param name="objectName">The affected database object name, or null for ad hoc queries.</param>
+            <returns>A multi-line plain-language description.</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.DescriptionGenerator.GenerateDescription(System.String,System.Int32,System.Int32,System.Int64,System.String)">
+            <summary>
+            Generates a multi-line description for a work item including what the SQL Server
+            construct is, why it's incompatible with PostgreSQL, how many occurrences were found,
+            and the business impact based on execution frequency.
+            </summary>
+            <param name="featureName">The SQL Server feature/construct name.</param>
+            <param name="riskLevel">The risk level (1-5).</param>
+            <param name="occurrenceCount">Number of occurrences found in the analyzed codebase.</param>
+            <param name="totalExecutionCount">Combined total executions recorded across all occurrences.</param>
+            <param name="objectName">The affected database object name, or null for ad hoc queries.</param>
+            <returns>A multi-line plain-language description.</returns>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.EffortEstimator">
+            <summary>
+            Estimates effort for work items based on risk level and statement count
+            using a geometric series with a 0.7 reduction factor per additional statement.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.EffortEstimator.BaseEffort">
+            <summary>
+            Base effort ranges indexed by risk level (index 0 unused).
+            Each tuple is (MinHours, MaxHours) for a single statement at that risk level.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.EstimateEffort(System.Collections.Generic.IReadOnlyList{System.String},System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.EstimateEffort(System.Int32,System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.EffortEstimator.CalculateTotalEffort(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IEffortEstimator">
+            <summary>
+            Estimates effort for work items based on risk level and statement count
+            with a complexity reduction factor for repeated patterns.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.EstimateEffort(System.Collections.Generic.IReadOnlyList{System.String},System.Int32)">
+            <summary>
+            Estimates effort for a multi-feature work item.
+            Sums per-feature effort ranges for each distinct feature's risk level.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.EstimateEffort(System.Int32,System.Int32)">
+            <summary>
+            Calculates effort for a work item.
+            First statement uses full effort range for its risk level.
+            Each additional statement applies a 0.7 reduction factor.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IEffortEstimator.CalculateTotalEffort(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <summary>
+            Aggregates effort across all work items.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IPostgresConversionEngine">
+            <summary>
+            Converts SQL Server T-SQL patterns to syntactically correct PostgreSQL equivalents.
+            Each detected feature has a dedicated transformation function that rewrites the
+            original statement structure into valid PostgreSQL syntax.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IPostgresConversionEngine.Convert(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            Converts a SQL Server statement to its PostgreSQL equivalent based on the
+            detected features. Returns a multi-line SQL string with TODO comments where
+            human review is required.
+            </summary>
+            <param name="sqlServerPattern">The original SQL Server T-SQL statement.</param>
+            <param name="detectedFeatures">List of feature names detected in the statement.</param>
+            <returns>A syntactically correct PostgreSQL SQL snippet.</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IPostgresConversionEngine.Convert(System.String,System.String)">
+            <summary>
+            Converts a SQL Server statement for a single detected feature.
+            </summary>
+            <param name="sqlServerPattern">The original SQL Server T-SQL statement.</param>
+            <param name="featureName">The detected feature name.</param>
+            <returns>A syntactically correct PostgreSQL SQL snippet.</returns>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IPriorityCalculator">
+            <summary>
+            Calculates priority scores and assigns percentile-based priority labels.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IPriorityCalculator.CalculatePriorityScore(MigrationAssessment.WorkItems.Models.StatementGroup)">
+            <summary>
+            Calculates priority score for a statement group.
+            Score = sum of WeightedRisk across all statements in the group.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IPriorityCalculator.AssignPriorityLabels(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <summary>
+            Assigns priority labels to all work items based on percentile ranking.
+            Critical: top 10%, High: 70th-89th percentile, Medium: 30th-69th percentile, Low: below 30th percentile.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IRemediationKnowledgeBase">
+            <summary>
+            Provides remediation guidance templates for known SQL Server features.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IRemediationKnowledgeBase.GetGuidance(System.String)">
+            <summary>
+            Gets remediation guidance for a feature, including PostgreSQL equivalent.
+            Returns null if no guidance is available for the feature.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IRemediationKnowledgeBase.HasGuidance(System.String)">
+            <summary>
+            Checks if a feature has known guidance in the knowledge base.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IStatementGrouper">
+            <summary>
+            Groups analyzed statements into logical work item clusters based on
+            feature name and database object affinity.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IStatementGrouper.GroupStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,System.Int32)">
+            <summary>
+            Groups statements into work item clusters.
+            Each cluster becomes one work item.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IStatementGrouper.GroupStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,System.Int32,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
+            <summary>
+            Groups statements into work item clusters using the parsed object inventory
+            to attribute statements to their containing named objects.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IWorkItemGenerator">
+            <summary>
+            Generates structured work items from assessment results.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IWorkItemGenerator.GenerateWorkItems(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,MigrationAssessment.WorkItems.Models.WorkItemConfiguration)">
+            <summary>
+            Generates work items from in-memory assessment data (pipeline integration).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IWorkItemGenerator.GenerateWorkItems(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,MigrationAssessment.WorkItems.Models.WorkItemConfiguration,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
+            <summary>
+            Generates work items from in-memory assessment data with object inventory for object attribution.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IWorkItemGenerator.GenerateFromFileAsync(System.String,MigrationAssessment.WorkItems.Models.WorkItemConfiguration,System.Threading.CancellationToken)">
+            <summary>
+            Generates work items from a saved assessment JSON file (standalone mode).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IWorkItemJsonWriter">
+            <summary>
+            Writes work items to a JSON file conforming to the published schema.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IWorkItemJsonWriter.WriteAsync(MigrationAssessment.WorkItems.Models.WorkItemResult,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Serializes the work item result to a JSON file at the specified path.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.IWorkItemMarkdownWriter">
+            <summary>
+            Writes work items to a human-readable Markdown file.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.IWorkItemMarkdownWriter.WriteAsync(MigrationAssessment.WorkItems.Models.WorkItemResult,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generates a Markdown report from the work item result at the specified path.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.AffectedObject">
+            <summary>
+            A database object affected by a work item.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AffectedObject.Name">
+            <summary>Object name (schema.name or "Ad Hoc Queries").</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AffectedObject.Type">
+            <summary>Object type: StoredProcedure, Function, View, Trigger, AdHoc.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AffectedObject.StatementCount">
+            <summary>Number of statements within this object referencing the feature.</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.AssessmentReadResult">
+            <summary>
+            Result of reading an assessment JSON file.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.Succeeded">
+            <summary>Whether the read operation succeeded.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.ErrorMessage">
+            <summary>Error or informational message (null when succeeded with data).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.Statements">
+            <summary>Parsed analyzed statements (null when failed).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.AssessmentReadResult.FeatureDetection">
+            <summary>Parsed feature detection result (null when failed).</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.DeduplicatedGroup">
+            <summary>
+            Result of deduplication for a single statement group, containing the assigned ID,
+            primary SQL example, cross-references, and affected object details.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.Group">
+            <summary>The original statement group.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.Id">
+            <summary>Assigned unique identifier in format "WI-001".</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.PrimarySqlPattern">
+            <summary>
+            The SQL text from the highest-WeightedRisk statement, truncated to 500 characters.
+            Used as the primary example in the SQL Server pattern section.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.PrimaryStatement">
+            <summary>
+            The primary statement (highest WeightedRisk) selected as the representative example.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.CombinedPriorityScore">
+            <summary>
+            Combined priority score: sum of WeightedRisk across all statements in the group,
+            incorporating execution frequencies.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.RelatedWorkItemIds">
+            <summary>
+            IDs of related work items that share the same database object.
+            Empty if the database object appears in only one work item.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.DeduplicatedGroup.AffectedObjects">
+            <summary>
+            Affected objects with their statement counts.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.HourRange">
+            <summary>
+            A range of estimated hours (minimum to maximum) using fractional hours
+            for fine-grained effort estimation (e.g., 0.08 hours = 5 minutes).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.HourRange.MinHours">
+            <summary>Minimum estimated hours.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.HourRange.MaxHours">
+            <summary>Maximum estimated hours.</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.RemediationEntry">
+            <summary>
+            A remediation guidance entry from the knowledge base.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.PostgresEquivalent">
+            <summary>The PostgreSQL equivalent pattern/syntax</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.RemediationSteps">
+            <summary>Step-by-step remediation instructions</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.IncompatibilityExplanation">
+            <summary>Why the SQL Server construct is incompatible</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.RiskLevel">
+            <summary>Risk level this entry applies to</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.RequiresArchitecturalReview">
+            <summary>Whether this requires architectural review</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.RemediationEntry.PostgresDocReference">
+            <summary>Relevant PostgreSQL documentation area</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.StatementGroup">
+            <summary>
+            A group of related statements that will become a single work item.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.FeatureName">
+            <summary>Primary feature name (highest risk) — retained for backward compat.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.DetectedFeatures">
+            <summary>ALL features detected in statements in this group.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.DatabaseObjectName">
+            <summary>The database object containing these statements (null for ad hoc).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.DatabaseObjectType">
+            <summary>Type of the database object.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.Statements">
+            <summary>All statements in this group.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.IsServerLevelFeature">
+            <summary>Whether this is a server-level feature (from feature inventory).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.StatementGroup.MaxRiskLevel">
+            <summary>The highest risk level among grouped statements.</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.WorkItem">
+            <summary>
+            A single remediation work item ticket.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.Id">
+            <summary>Unique identifier in format "WI-001".</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.Title">
+            <summary>Title, max 120 chars: "[Risk N] Convert feature_name in object_name".</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.Description">
+            <summary>Plain-language description of the issue and business impact.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.SqlServerPattern">
+            <summary>Actual SQL excerpt demonstrating the SQL Server construct (max 500 chars).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.PostgresEquivalent">
+            <summary>PostgreSQL equivalent code example.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.AffectedObjects">
+            <summary>List of affected database objects.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.RiskLevel">
+            <summary>Risk level 1-5.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.Priority">
+            <summary>Priority label: Critical, High, Medium, Low.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.PriorityScore">
+            <summary>Numeric priority score (sum of weighted risks).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.EstimatedEffort">
+            <summary>Estimated effort range.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.AcceptanceCriteria">
+            <summary>Verifiable acceptance criteria.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.RemediationGuidance">
+            <summary>Detailed remediation guidance.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.Tags">
+            <summary>Tags for categorization and filtering.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.RelatedWorkItemIds">
+            <summary>Related work item IDs for the same database object.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.DetectedFeatures">
+            <summary>All feature names detected in this work item's statement(s).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItem.RelatedFeatures">
+            <summary>Distinct feature names for filtering (same as DetectedFeatures distinct).</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.WorkItemConfiguration">
+            <summary>
+            Configuration for work item generation.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemConfiguration.OutputJsonPath">
+            <summary>Output JSON file path. Default: "./work-items.json".</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemConfiguration.MarkdownEnabled">
+            <summary>Whether to generate Markdown output. Default: false.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemConfiguration.MarkdownOutputPath">
+            <summary>Markdown output path. Default: same directory as JSON, "work-items.md".</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemConfiguration.MinimumRiskLevel">
+            <summary>Minimum risk level filter (1-5). Default: 1 (include all).</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemConfiguration.MaxWorkItemCount">
+            <summary>Maximum work item count. Default: null (no limit).</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.WorkItemMetadata">
+            <summary>
+            Metadata about the work item generation run.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.GeneratedAt">
+            <summary>When the work items were generated.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.SourceAssessmentPath">
+            <summary>Path to the source assessment file, or null if generated from in-memory data.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.TotalWorkItemCount">
+            <summary>Total number of work items generated.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemMetadata.TotalEstimatedEffort">
+            <summary>Aggregated effort estimate across all work items.</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.WorkItemResult">
+            <summary>
+            Result of work item generation.
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemResult.WorkItems">
+            <summary>All generated work items, ordered by PriorityScore descending.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemResult.Metadata">
+            <summary>Generation metadata.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemResult.Succeeded">
+            <summary>Whether generation succeeded.</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WorkItemResult.ErrorMessage">
+            <summary>Error message if generation failed.</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.Models.WriteResult">
+            <summary>
+            Result of a write operation (JSON or Markdown output).
+            </summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WriteResult.Succeeded">
+            <summary>Whether the write operation succeeded</summary>
+        </member>
+        <member name="P:MigrationAssessment.WorkItems.Models.WriteResult.ErrorMessage">
+            <summary>Error message if the write operation failed</summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.PostgresConversionEngine">
+            <summary>
+            Converts SQL Server T-SQL patterns to syntactically correct PostgreSQL equivalents.
+            Implements per-feature transformation functions that preserve the full structure
+            of the original statement while replacing SQL Server-specific syntax.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.Convert(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.Convert(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertIsnull(System.String)">
+            <summary>
+            Converts ISNULL(expr, replacement) to COALESCE(expr, replacement).
+            Risk 2: Direct syntax mapping.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertGetdate(System.String)">
+            <summary>
+            Converts GETDATE() to NOW().
+            Risk 2: Direct syntax mapping.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertTop(System.String)">
+            <summary>
+            Converts SELECT TOP N ... to SELECT ... LIMIT N.
+            Risk 2: Direct syntax mapping.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertDatediff(System.String)">
+            <summary>
+            Converts DATEDIFF(datepart, start, end) to PostgreSQL equivalents.
+            Risk 2: Direct syntax mapping with datepart-specific logic.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertNolock(System.String)">
+            <summary>
+            Converts WITH (NOLOCK) hints by removing them (PostgreSQL MVCC handles this).
+            Risk 4: Requires understanding of locking strategy.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertUpdlock(System.String)">
+            <summary>
+            Converts WITH (UPDLOCK) to SELECT ... FOR UPDATE.
+            Risk 4: Requires review of locking strategy.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertRowlock(System.String)">
+            <summary>
+            Converts WITH (ROWLOCK) by removing it (PostgreSQL always uses row-level locking).
+            Risk 4: Requires review of locking strategy.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertMerge(System.String)">
+            <summary>
+            Converts MERGE statement to INSERT ... ON CONFLICT (PostgreSQL 15+ MERGE or upsert).
+            Risk 4: Complex conversion requiring design decisions.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertTempTable(System.String)">
+            <summary>
+            Converts local temp tables (#name) to CREATE TEMPORARY TABLE.
+            Risk 3: Session-scoping differences.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertGlobalTempTable(System.String)">
+            <summary>
+            Converts global temp tables (##name) to unlogged tables with TODO comments.
+            Risk 4: No direct equivalent; architectural decision required.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.ConvertXmlMethod(System.String)">
+            <summary>
+            Converts XML methods (.value, .query, .nodes, .exist) to PostgreSQL xpath/xmltable.
+            Risk 5: Complex conversion requiring architectural review.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.IsnullRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bISNULL\\s*\\(</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Ll] exactly 2 times.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.GetdateRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bGETDATE\\s*\\(\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Gg].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.TopWithParensRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;prefix&gt;^[\\s]*)SELECT\\s+TOP\\s*\\(\\s*(?&lt;n&gt;\\d+)\\s*\\)\\s+(?&lt;rest&gt;.+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase | RegexOptions.Singleline</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "prefix" capture group.<br/>
+                ○ Match if at the beginning of the string.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Pp].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ "n" capture group.<br/>
+                ○ Match a Unicode digit atomically at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ "rest" capture group.<br/>
+                ○ Match any character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.TopWithoutParensRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;prefix&gt;^[\\s]*)SELECT\\s+TOP\\s+(?&lt;n&gt;\\d+)\\s+(?&lt;rest&gt;.+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase | RegexOptions.Singleline</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "prefix" capture group.<br/>
+                ○ Match if at the beginning of the string.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Pp].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ "n" capture group.<br/>
+                ○ Match a Unicode digit atomically at least once.<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ "rest" capture group.<br/>
+                ○ Match any character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.DatediffRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bDATEDIFF\\s*\\(\\s*(?&lt;datepart&gt;\\w+)\\s*,\\s*(?&lt;start&gt;[^,]+)\\s*,\\s*(?&lt;end&gt;[^)]+)\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Ff] exactly 2 times.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ "datepart" capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ','.<br/>
+            ○ Match a whitespace character greedily any number of times.<br/>
+            ○ "start" capture group.<br/>
+                ○ Match a character other than ',' greedily at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ','.<br/>
+            ○ Match a whitespace character greedily any number of times.<br/>
+            ○ "end" capture group.<br/>
+                ○ Match a character other than ')' atomically at least once.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.NolockRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\s*WITH\\s*\\(\\s*NOLOCK\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Ww].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Hh].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Kk\u212A].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.UpdlockRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\s*WITH\\s*\\(\\s*UPDLOCK(?:\\s*,\\s*\\w+)*\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Ww].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Hh].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Pp].<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Kk\u212A].<br/>
+            ○ Loop greedily any number of times.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+                ○ Match ','.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+                ○ Match a word character greedily at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.RowlockRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\s*WITH\\s*\\(\\s*ROWLOCK(?:\\s*,\\s*\\w+)*\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Ww].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Hh].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Ww].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Kk\u212A].<br/>
+            ○ Loop greedily any number of times.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+                ○ Match ','.<br/>
+                ○ Match a whitespace character atomically any number of times.<br/>
+                ○ Match a word character greedily at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.MergeTargetRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>MERGE\\s+(?:INTO\\s+)?(?&lt;target&gt;[\\w.\\[\\]]+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Mm].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Gg].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ Optional (greedy).<br/>
+                ○ Match a character in the set [Ii].<br/>
+                ○ Match a character in the set [Nn].<br/>
+                ○ Match a character in the set [Tt].<br/>
+                ○ Match a character in the set [Oo].<br/>
+                ○ Match a whitespace character greedily at least once.<br/>
+            ○ "target" capture group.<br/>
+                ○ Match a character in the set [.[]\w] atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.MergeSourceRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>USING\\s+(?&lt;source&gt;[\\w.\\[\\]]+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Gg].<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ "source" capture group.<br/>
+                ○ Match a character in the set [.[]\w] atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.MergeOnRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bON\\s+(?&lt;condition&gt;[^W]+?)(?=\\s+WHEN\\b)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ "condition" capture group.<br/>
+                ○ Match a character in the set [^Ww] lazily at least once.<br/>
+            ○ Zero-width positive lookahead.<br/>
+                ○ Match a whitespace character atomically at least once.<br/>
+                ○ Match a character in the set [Ww].<br/>
+                ○ Match a character in the set [Hh].<br/>
+                ○ Match a character in the set [Ee].<br/>
+                ○ Match a character in the set [Nn].<br/>
+                ○ Match if at a word boundary.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.KeyColumnRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\w+\\.(?&lt;col&gt;\\w+)\\s*=\\s*\\w+\\.\\k&lt;col&gt;</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a word character atomically at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ "col" capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '='.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match a word character atomically at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ Match the same text as matched by the "col" capture group.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.CreateTempTableRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>CREATE\\s+TABLE\\s+#(?&lt;name&gt;\\w+)(?&lt;rest&gt;.+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase | RegexOptions.Singleline</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Bb].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match '#'.<br/>
+            ○ "name" capture group.<br/>
+                ○ Match a word character greedily at least once.<br/>
+            ○ "rest" capture group.<br/>
+                ○ Match any character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.TempTableReferenceRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;!\\w)#(?&lt;name&gt;\\w+)</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Zero-width negative lookbehind.<br/>
+                ○ Match a word character right-to-left.<br/>
+            ○ Match '#'.<br/>
+            ○ "name" capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.CreateGlobalTempTableRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>CREATE\\s+TABLE\\s+##(?&lt;name&gt;\\w+)(?&lt;rest&gt;.+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase | RegexOptions.Singleline</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Bb].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ Match the string "##".<br/>
+            ○ "name" capture group.<br/>
+                ○ Match a word character greedily at least once.<br/>
+            ○ "rest" capture group.<br/>
+                ○ Match any character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.GlobalTempTableReferenceRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;!\\w)##(?&lt;name&gt;\\w+)</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Zero-width negative lookbehind.<br/>
+                ○ Match a word character right-to-left.<br/>
+            ○ Match the string "##".<br/>
+            ○ "name" capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.XmlValueRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;col&gt;[\\w.]+)\\.value\\s*\\(\\s*'(?&lt;xpath&gt;[^']+)'\\s*,\\s*'(?&lt;type&gt;[^']+)'\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "col" capture group.<br/>
+                ○ Match a character in the set [.\w] greedily at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ Match a character in the set [Vv].<br/>
+            ○ Match a character in the set [Aa].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '\''.<br/>
+            ○ "xpath" capture group.<br/>
+                ○ Match a character other than '\'' atomically at least once.<br/>
+            ○ Match '\''.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ','.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '\''.<br/>
+            ○ "type" capture group.<br/>
+                ○ Match a character other than '\'' atomically at least once.<br/>
+            ○ Match '\''.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.XmlQueryRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;col&gt;[\\w.]+)\\.query\\s*\\(\\s*'(?&lt;xpath&gt;[^']+)'\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "col" capture group.<br/>
+                ○ Match a character in the set [.\w] greedily at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ Match a character in the set [Qq].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Yy].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '\''.<br/>
+            ○ "xpath" capture group.<br/>
+                ○ Match a character other than '\'' atomically at least once.<br/>
+            ○ Match '\''.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.XmlExistRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;col&gt;[\\w.]+)\\.exist\\s*\\(\\s*'(?&lt;xpath&gt;[^']+)'\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "col" capture group.<br/>
+                ○ Match a character in the set [.\w] greedily at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Xx].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '\''.<br/>
+            ○ "xpath" capture group.<br/>
+                ○ Match a character other than '\'' atomically at least once.<br/>
+            ○ Match '\''.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PostgresConversionEngine.XmlNodesRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;col&gt;[\\w.]+)\\.nodes\\s*\\(\\s*'(?&lt;xpath&gt;[^']+)'\\s*\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "col" capture group.<br/>
+                ○ Match a character in the set [.\w] greedily at least once.<br/>
+            ○ Match '.'.<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '\''.<br/>
+            ○ "xpath" capture group.<br/>
+                ○ Match a character other than '\'' atomically at least once.<br/>
+            ○ Match '\''.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.PriorityCalculator">
+            <summary>
+            Calculates priority scores and assigns percentile-based priority labels to work items.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PriorityCalculator.CalculatePriorityScore(MigrationAssessment.WorkItems.Models.StatementGroup)">
+            <summary>
+            Calculates priority score for a statement group.
+            Score = sum of WeightedRisk across all statements in the group.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.PriorityCalculator.AssignPriorityLabels(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.WorkItem})">
+            <summary>
+            Assigns priority labels to all work items based on percentile ranking.
+            Items are sorted by PriorityScore descending with tie-breaking by
+            risk level descending, then total statement count descending.
+            Labels: Critical (top 10%), High (70th-89th percentile),
+            Medium (30th-69th percentile), Low (below 30th percentile).
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.RemediationGuidanceGenerator">
+            <summary>
+            Generates remediation guidance for work items by looking up the feature in the
+            knowledge base and combining it with the actual assessed SQL example.
+            If no known mapping exists, indicates manual analysis is required and sets
+            the "requires-research" flag.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.RemediationGuidanceGenerator.GenerateGuidance(System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>
+            Generates remediation guidance for a work item covering multiple detected features.
+            Produces one heading section per feature with a shared SQL example at the top.
+            </summary>
+            <param name="detectedFeatures">All feature names detected in the statement group.</param>
+            <param name="primarySqlText">The actual SQL text from the highest-WeightedRisk statement (max 500 chars).</param>
+            <returns>A tuple of (guidance string, requires-research flag).</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.RemediationGuidanceGenerator.GenerateGuidance(System.String,System.String)">
+            <summary>
+            Generates remediation guidance for a single feature.
+            Delegates to the multi-feature overload.
+            </summary>
+            <param name="featureName">The SQL Server feature name.</param>
+            <param name="primarySqlText">The actual SQL text from the highest-WeightedRisk statement (max 500 chars).</param>
+            <returns>A tuple of (guidance string, requires-research flag).</returns>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.RemediationKnowledgeBase">
+            <summary>
+            Static knowledge base providing remediation guidance for known SQL Server features.
+            Entries are keyed by feature name (case-insensitive) and organized by risk level:
+            Risk 2: Direct syntax mappings, Risk 3: Step-by-step conversions,
+            Risk 4: Design pattern recommendations, Risk 5: Migration strategies.
+            Returns null for unknown features (triggers "requires-research" flag).
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.RemediationKnowledgeBase.GetGuidance(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.RemediationKnowledgeBase.HasGuidance(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.StatementGrouper">
+            <summary>
+            Groups analyzed statements into logical work item clusters based on
+            feature name and database object affinity.
+            </summary>
+        </member>
+        <member name="F:MigrationAssessment.WorkItems.StatementGrouper.FeatureRiskMap">
+            <summary>
+            Feature-to-risk-level mapping consistent with the RiskScorer in the Analysis layer.
+            Used to determine per-feature risk for the multi-feature assignment rule.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.GroupStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,System.Int32)">
+            <inheritdoc/>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.GroupStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,System.Int32,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
+            <inheritdoc/>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.ComputeHash(System.String)">
+            <summary>
+            Computes a SHA-256 hash of the SQL text and returns it as a lowercase hex string.
+            Used as the grouping key to identify identical SQL statements.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.GetFeatureRiskLevel(System.String)">
+            <summary>
+            Gets the individual risk level for a feature name using the same mapping
+            as the RiskScorer in the Analysis layer.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.BuildStatementToObjectMap(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
+            <summary>
+            Builds a mapping from each AnalyzedStatement to its containing database object info,
+            using the ObjectInventoryBuilder's results. The inventory tells us which object each
+            statement text belongs to based on DDL pattern detection.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.ContainsObjectDefinition(System.String,System.String,System.String)">
+            <summary>
+            Checks if the SQL text contains a CREATE/ALTER definition for the given object.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.StatementGrouper.CreateServerLevelGroups(MigrationAssessment.Core.Models.FeatureDetectionResult)">
+            <summary>
+            Creates server-level work item groups from FeatureDetectionResult entries
+            with occurrence count greater than zero.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.StatementGrouper.ReferenceEqualityComparer">
+            <summary>
+            Reference equality comparer for use with statement-to-object mapping.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.TitleGenerator">
+            <summary>
+            Generates work item titles in the format "[Risk N] Convert feature_name in object_name"
+            with a maximum length of 120 characters.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.TitleGenerator.GenerateTitle(System.Collections.Generic.IReadOnlyList{System.String},System.String,System.Int32)">
+            <summary>
+            Generates a title for a multi-feature work item.
+            Single feature: "[Risk N] Convert {featureName} in {objectName}"
+            Multiple features: "[Risk N] Convert {count} features in {objectName}"
+            If the total length exceeds 120 characters, the object name is truncated with "...".
+            </summary>
+            <param name="detectedFeatures">The list of detected feature names (must contain at least one).</param>
+            <param name="objectName">The database object name, or null for ad hoc queries.</param>
+            <param name="riskLevel">The risk level (1-5).</param>
+            <returns>A formatted title string of at most 120 characters.</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.TitleGenerator.GenerateTitle(System.String,System.String,System.Int32)">
+            <summary>
+            Generates a title for a single-feature work item.
+            Delegates to the multi-feature overload for consistent behavior.
+            Format: "[Risk N] Convert &lt;featureName&gt; in &lt;objectName&gt;"
+            If the total length exceeds 120 characters, the object name is truncated with "...".
+            </summary>
+            <param name="featureName">The SQL Server feature/construct name.</param>
+            <param name="objectName">The database object name, or null for ad hoc queries.</param>
+            <param name="riskLevel">The risk level (1-5).</param>
+            <returns>A formatted title string of at most 120 characters.</returns>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.WorkItemDeduplicator">
+            <summary>
+            Deduplicates statement groups by merging statements within the same database object
+            that produce identical feature names, selects the highest-WeightedRisk statement as the
+            primary example, builds cross-reference maps for shared database objects, and assigns
+            sequential unique identifiers.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.Deduplicate(System.Collections.Generic.IReadOnlyList{MigrationAssessment.WorkItems.Models.StatementGroup})">
+            <summary>
+            Deduplicates the provided statement groups, producing a list of <see cref="T:MigrationAssessment.WorkItems.Models.DeduplicatedGroup"/>
+            records with assigned IDs, primary SQL examples, combined priority scores, cross-references,
+            and affected object details.
+            </summary>
+            <param name="groups">Statement groups produced by the <see cref="T:MigrationAssessment.WorkItems.IStatementGrouper"/>.</param>
+            <returns>A deduplicated list of groups ready for further processing.</returns>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.SelectPrimaryStatement(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement})">
+            <summary>
+            Selects the statement with the highest WeightedRisk from the group.
+            If multiple statements have the same WeightedRisk, the first one encountered is used.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.TruncateSqlText(System.String)">
+            <summary>
+            Truncates SQL text to a maximum of 500 characters.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.CalculateCombinedPriorityScore(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement})">
+            <summary>
+            Calculates the combined priority score as the sum of WeightedRisk values
+            across all statements in the group. This incorporates execution frequency
+            since WeightedRisk = RiskScore × ExecutionFrequency × BusinessImportance.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.BuildAffectedObjects(MigrationAssessment.WorkItems.Models.StatementGroup)">
+            <summary>
+            Builds the list of affected objects for a statement group.
+            Each group has a single database object (or "Ad Hoc Queries" for null object name),
+            with the statement count being the number of statements in the group.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.BuildCrossReferenceMap(System.Collections.Generic.List{MigrationAssessment.WorkItems.Models.DeduplicatedGroup})">
+            <summary>
+            Builds a cross-reference map: for each database object name that appears in multiple
+            work items, records the IDs of all work items referencing that object.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.GetRelatedWorkItemIds(MigrationAssessment.WorkItems.Models.DeduplicatedGroup,System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.List{System.String}})">
+            <summary>
+            Gets the related work item IDs for a given group based on the cross-reference map.
+            Returns the IDs of other work items that share the same database object.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemDeduplicator.FormatId(System.Int32)">
+            <summary>
+            Formats a sequential number into the "WI-NNN" identifier format.
+            Uses zero-padded 3-digit minimum width.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.WorkItemGeneratorService">
+            <summary>
+            Main orchestrator that wires all work item generation components together.
+            Implements the pipeline integration entry point (in-memory data) and
+            standalone file-based entry point.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemGeneratorService.GenerateWorkItems(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,MigrationAssessment.WorkItems.Models.WorkItemConfiguration)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemGeneratorService.GenerateWorkItems(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.FeatureDetectionResult,MigrationAssessment.WorkItems.Models.WorkItemConfiguration,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemGeneratorService.GenerateFromFileAsync(System.String,MigrationAssessment.WorkItems.Models.WorkItemConfiguration,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemGeneratorService.ResolveMarkdownPath(MigrationAssessment.WorkItems.Models.WorkItemConfiguration)">
+            <summary>
+            Resolves the Markdown output path. If not specified, defaults to the same
+            directory as the JSON output with filename "work-items.md".
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemGeneratorService.CompareByPriorityDescending(MigrationAssessment.WorkItems.Models.WorkItem,MigrationAssessment.WorkItems.Models.WorkItem)">
+            <summary>
+            Compares work items for descending priority ordering with tie-breaking.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.WorkItemJsonWriter">
+            <summary>
+            Writes work items to a JSON file conforming to the published schema.
+            Uses DTOs with camelCase property naming for JSON serialization.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemJsonWriter.WriteAsync(MigrationAssessment.WorkItems.Models.WorkItemResult,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:MigrationAssessment.WorkItems.WorkItemMarkdownWriter">
+            <summary>
+            Writes work items to a human-readable Markdown file organized by priority groups.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.WorkItems.WorkItemMarkdownWriter.WriteAsync(MigrationAssessment.WorkItems.Models.WorkItemResult,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IsnullRegex_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the IsnullRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.IsnullRegex_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IsnullRegex_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IsnullRegex_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GetdateRegex_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the GetdateRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.GetdateRegex_1.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GetdateRegex_1.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GetdateRegex_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithParensRegex_2">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the TopWithParensRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithParensRegex_2.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the TopWithoutParensRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TopWithoutParensRegex_3.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DatediffRegex_4">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the DatediffRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.DatediffRegex_4.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DatediffRegex_4.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DatediffRegex_4.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NolockRegex_5">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the NolockRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.NolockRegex_5.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NolockRegex_5.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NolockRegex_5.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.UpdlockRegex_6">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the UpdlockRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.UpdlockRegex_6.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.UpdlockRegex_6.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.UpdlockRegex_6.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.RowlockRegex_7">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the RowlockRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.RowlockRegex_7.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.RowlockRegex_7.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.RowlockRegex_7.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeTargetRegex_8">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the MergeTargetRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeTargetRegex_8.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeSourceRegex_9">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the MergeSourceRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeSourceRegex_9.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeOnRegex_10">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the MergeOnRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.MergeOnRegex_10.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeOnRegex_10.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.MergeOnRegex_10.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyColumnRegex_11">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the KeyColumnRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyColumnRegex_11.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the CreateTempTableRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateTempTableRegex_12.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the TempTableReferenceRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TempTableReferenceRegex_13.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the CreateGlobalTempTableRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.CreateGlobalTempTableRegex_14.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the GlobalTempTableReferenceRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GlobalTempTableReferenceRegex_15.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlValueRegex_16">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the XmlValueRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.XmlValueRegex_16.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlValueRegex_16.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlValueRegex_16.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlQueryRegex_17">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the XmlQueryRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlQueryRegex_17.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlExistRegex_18">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the XmlExistRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.XmlExistRegex_18.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlExistRegex_18.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlExistRegex_18.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlNodesRegex_19">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the XmlNodesRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.XmlNodesRegex_19.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IndexOfNonAsciiOrAny_540BC61C82F56C7B61FF735F57AE7452DB06FAA20F47E115EDB09095BEFAF5B7(System.ReadOnlySpan{System.Char})">
+            <summary>Finds the next index of any character that matches a character in the set [.\w].</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsBoundary(System.ReadOnlySpan{System.Char},System.Int32)">
+            <summary>Determines whether the specified index is a boundary.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsWordChar(System.Char)">
+            <summary>Determines whether the character is part of the [\w] set.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPop(System.Int32[],System.Int32@,System.Int32@,System.Int32@)">
+            <summary>Pops 2 values from the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32)">
+            <summary>Pushes 1 value onto the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32)">
+            <summary>Pushes 2 values onto the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32,System.Int32)">
+            <summary>Pushes 3 values onto the backtracking stack.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_FFFFFFFFFFBF00FC01000078010000F8">
+            <summary>Supports searching for characters in or not in "\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f !\"#$%&amp;'()*+,-/:;&lt;=&gt;?@[\\]^`{|}~\u007f".</summary>
+        </member>
+    </members>
+</doc>

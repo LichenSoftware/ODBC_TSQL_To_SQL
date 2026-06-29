@@ -7,7 +7,6 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\MigrationAssessment.Analysis.Tests.deps.json
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\MigrationAssessment.Analysis.Tests.runtimeconfig.json
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\MigrationAssessment.Analysis.Tests.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\MigrationAssessment.Analysis.Tests.pdb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\Castle.Core.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\FluentAssertions.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\FsCheck.dll
@@ -127,8 +126,9 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.csproj.CoreCompileInputs.cache
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.sourcelink.json
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\Migratio.48BDC658.Up2Date
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.genruntimeconfig.cache
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\bin\Debug\net8.0\MigrationAssessment.Analysis.Tests.pdb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\refint\MigrationAssessment.Analysis.Tests.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.pdb
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\MigrationAssessment.Analysis.Tests.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\tests\MigrationAssessment.Analysis.Tests\obj\Debug\net8.0\ref\MigrationAssessment.Analysis.Tests.dll

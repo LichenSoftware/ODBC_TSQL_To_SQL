@@ -33,11 +33,12 @@ public sealed class JsonReportWriter : IJsonReportWriter
         DatabaseObjectInventory objectInventory,
         FeatureDetectionResult featureDetection,
         string outputPath,
-        CancellationToken ct)
+        CancellationToken ct,
+        IReadOnlyList<ObjectInventoryEntry>? parsedObjectInventory = null)
     {
         try
         {
-            var jsonOutput = BuildJsonOutput(report, statements, objectInventory, featureDetection);
+            var jsonOutput = BuildJsonOutput(report, statements, objectInventory, featureDetection, parsedObjectInventory);
             var json = JsonSerializer.Serialize(jsonOutput, SerializerOptions);
 
             var directory = Path.GetDirectoryName(outputPath);
@@ -80,13 +81,14 @@ public sealed class JsonReportWriter : IJsonReportWriter
         AssessmentReport report,
         IReadOnlyList<AnalyzedStatement> statements,
         DatabaseObjectInventory objectInventory,
-        FeatureDetectionResult featureDetection)
+        FeatureDetectionResult featureDetection,
+        IReadOnlyList<ObjectInventoryEntry>? parsedObjectInventory)
     {
         return new
         {
             AssessmentMetadata = BuildAssessmentMetadata(),
             ExecutiveSummary = BuildExecutiveSummary(report.Summary),
-            ObjectInventory = BuildObjectInventory(objectInventory),
+            ObjectInventory = BuildObjectInventory(objectInventory, parsedObjectInventory),
             FeatureInventory = BuildFeatureInventory(featureDetection),
             AnalyzedStatements = BuildAnalyzedStatements(statements),
             MigrationRecommendation = BuildMigrationRecommendation(report.Recommendation),
@@ -117,10 +119,32 @@ public sealed class JsonReportWriter : IJsonReportWriter
         };
     }
 
-    private static List<object> BuildObjectInventory(DatabaseObjectInventory inventory)
+    private static List<object> BuildObjectInventory(
+        DatabaseObjectInventory inventory,
+        IReadOnlyList<ObjectInventoryEntry>? parsedObjectInventory)
     {
         var items = new List<object>();
 
+        // If we have parsed object inventory (enriched per-object data), emit that
+        if (parsedObjectInventory is not null && parsedObjectInventory.Count > 0)
+        {
+            foreach (var entry in parsedObjectInventory)
+            {
+                items.Add(new
+                {
+                    entry.Name,
+                    entry.Type,
+                    entry.StatementCount,
+                    entry.MaxRiskScore,
+                    entry.ConversionCategories,
+                    entry.DetectedFeatures
+                });
+            }
+
+            return items;
+        }
+
+        // Fallback: legacy metadata-based inventory (flat list)
         foreach (var table in inventory.Tables)
         {
             items.Add(new { ObjectType = "Table", ObjectName = table.TableName, table.SchemaName });

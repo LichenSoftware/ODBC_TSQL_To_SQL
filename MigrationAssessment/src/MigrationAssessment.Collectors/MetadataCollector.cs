@@ -74,7 +74,7 @@ public sealed class MetadataCollector : IMetadataCollector
             INNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id
             LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND t.is_ms_shipped = 0
             ORDER BY s.name, t.name, c.column_id";
 
         try
@@ -151,7 +151,7 @@ public sealed class MetadataCollector : IMetadataCollector
             INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
             INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND t.is_ms_shipped = 0
               AND i.name IS NOT NULL
             ORDER BY s.name, t.name, i.name, ic.key_ordinal";
 
@@ -235,7 +235,7 @@ public sealed class MetadataCollector : IMetadataCollector
             INNER JOIN sys.index_columns ic ON ic.object_id = kc.parent_object_id AND ic.index_id = kc.unique_index_id
             INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND kc.is_ms_shipped = 0
               AND ic.is_included_column = 0
 
             UNION ALL
@@ -252,7 +252,7 @@ public sealed class MetadataCollector : IMetadataCollector
             FROM sys.check_constraints cc
             INNER JOIN sys.schemas s ON cc.schema_id = s.schema_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND cc.is_ms_shipped = 0
 
             UNION ALL
 
@@ -269,7 +269,7 @@ public sealed class MetadataCollector : IMetadataCollector
             INNER JOIN sys.schemas s ON dc.schema_id = s.schema_id
             INNER JOIN sys.columns c ON c.object_id = dc.parent_object_id AND c.column_id = dc.parent_column_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND dc.is_ms_shipped = 0
 
             ORDER BY SchemaName, TableName, ConstraintName, KeyOrdinal";
 
@@ -349,7 +349,7 @@ public sealed class MetadataCollector : IMetadataCollector
             INNER JOIN sys.columns pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fkc.parent_column_id
             INNER JOIN sys.columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND fk.is_ms_shipped = 0
             ORDER BY s.name, fk.name, fkc.constraint_column_id";
 
         try
@@ -420,7 +420,7 @@ public sealed class MetadataCollector : IMetadataCollector
             LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id
             WHERE o.type IN ('V', 'TR', 'FN', 'IF', 'TF', 'P', 'AF')
               AND s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND o.is_ms_shipped = 0
             ORDER BY s.name, o.type_desc, o.name";
 
         try
@@ -438,7 +438,7 @@ public sealed class MetadataCollector : IMetadataCollector
                 var schemaName = reader.GetString(reader.GetOrdinal("SchemaName"));
                 var objectName = reader.GetString(reader.GetOrdinal("ObjectName"));
                 var objectType = reader.GetString(reader.GetOrdinal("ObjectType"));
-                var isEncrypted = reader.GetBoolean(reader.GetOrdinal("IsEncrypted"));
+                var isEncrypted = reader.GetInt32(reader.GetOrdinal("IsEncrypted")) == 1;
                 var sourceTextOrd = reader.GetOrdinal("SourceText");
                 var sourceText = reader.IsDBNull(sourceTextOrd) ? null : reader.GetString(sourceTextOrd);
 
@@ -484,7 +484,7 @@ public sealed class MetadataCollector : IMetadataCollector
             FROM sys.synonyms syn
             INNER JOIN sys.schemas s ON syn.schema_id = s.schema_id
             WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
-              AND s.principal_id IS NULL
+              AND syn.is_ms_shipped = 0
             ORDER BY s.name, syn.name";
 
         try
@@ -516,3 +516,4 @@ public sealed class MetadataCollector : IMetadataCollector
         }
     }
 }
+

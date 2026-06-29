@@ -7,11 +7,17 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Deb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Azure.Identity.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Data.SqlClient.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Abstractions.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Binder.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.Configuration.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.Console.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Identity.Client.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Identity.Client.Extensions.Msal.dll
@@ -66,6 +72,7 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Deb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Collectors.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Core.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Reporting.dll
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.WorkItems.dll
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Core.pdb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Core.xml
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Collectors.pdb
@@ -74,6 +81,8 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Deb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Analysis.xml
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Reporting.pdb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.Reporting.xml
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.WorkItems.pdb
+C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\MigrationAssessment.WorkItems.xml
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\MigrationAssessment.Cli.csproj.AssemblyReference.cache
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\MigrationAssessment.Cli.GeneratedMSBuildEditorConfig.editorconfig
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\MigrationAssessment.Cli.AssemblyInfoInputs.cache
@@ -86,9 +95,3 @@ C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Deb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\MigrationAssessment.Cli.pdb
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\MigrationAssessment.Cli.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\obj\Debug\net8.0\ref\MigrationAssessment.Cli.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Abstractions.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Binder.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.Configuration.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Logging.Console.dll
-C:\code\ODBC_TSQL_To_SQL\MigrationAssessment\src\MigrationAssessment.Cli\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll

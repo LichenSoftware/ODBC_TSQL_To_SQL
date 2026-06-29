@@ -40,6 +40,53 @@
             Req 9.2-9.6: Deterministic score-to-classification mapping.
             </summary>
         </member>
+        <member name="T:MigrationAssessment.Analysis.ObjectInventoryBuilder">
+            <summary>
+            Builds the enriched object inventory by:
+            1. Parsing each programmable object's source text (from sys.sql_modules) to detect features and risk.
+            2. Correlating Query Store statements to their containing objects via text matching.
+            3. Grouping remaining statements under "Ad Hoc".
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.BuildInventory(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory)">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.AnalyzeObjectSource(System.String,System.String)">
+            <summary>
+            Parses the full object source text to count statements and detect features.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.CorrelateStatements(System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},System.String,System.Collections.Generic.HashSet{MigrationAssessment.Core.Models.AnalyzedStatement})">
+            <summary>
+            Attempts to correlate Query Store statements to a programmable object by checking
+            if the statement text is contained within the object's source definition.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.StripParameterPrefix(System.String)">
+            <summary>
+            Strips the Query Store parameterized prefix: (@p1 type, @p2 type)SELECT ...
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.NormalizeForComparison(System.String)">
+            <summary>
+            Normalizes SQL text for fuzzy comparison: lowercases, collapses whitespace.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.MapObjectType(System.String)">
+            <summary>
+            Maps SQL Server sys.objects.type_desc to our inventory type.
+            </summary>
+        </member>
+        <member name="M:MigrationAssessment.Analysis.ObjectInventoryBuilder.GetConversionCategory(System.Int32)">
+            <summary>
+            Maps a risk score to a conversion category.
+            </summary>
+        </member>
+        <member name="T:MigrationAssessment.Analysis.ObjectInventoryBuilder.ReferenceEqualityComparer">
+            <summary>
+            Reference equality comparer for AnalyzedStatement (record type uses value equality by default).
+            </summary>
+        </member>
         <member name="T:MigrationAssessment.Analysis.RiskScorer">
             <summary>
             Assigns a deterministic risk score (1-5) to a statement based on its detected features.

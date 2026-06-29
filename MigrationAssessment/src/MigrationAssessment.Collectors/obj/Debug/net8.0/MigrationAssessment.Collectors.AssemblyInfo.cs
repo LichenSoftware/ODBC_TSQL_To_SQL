@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MigrationAssessment.Collectors")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c20ac7f003f26a58190fee009fd807555db760c6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6883b0ced03ae3031b2439aecb35beb6038902e0")]
 [assembly: System.Reflection.AssemblyProductAttribute("MigrationAssessment.Collectors")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MigrationAssessment.Collectors")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,21 +1,260 @@
 {
   "assessmentMetadata": {
-    "generatedAt": "2026-06-14T18:28:47.3321362+00:00",
+    "generatedAt": "2026-06-22T17:41:30.078376+00:00",
     "engineVersion": "1.0.0.0"
   },
   "executiveSummary": {
-    "migrationReadinessScore": 46,
+    "migrationReadinessScore": 48,
     "classification": "High Risk",
-    "totalStatements": 14,
+    "totalStatements": 17,
     "riskDistribution": {
-      "1": 5,
+      "1": 7,
       "2": 1,
       "3": 2,
-      "4": 5,
+      "4": 6,
       "5": 1
     }
   },
-  "objectInventory": [],
+  "objectInventory": [
+    {
+      "name": "fn_FormatCustomerName",
+      "type": "ScalarFunction",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL"
+      ]
+    },
+    {
+      "name": "fn_GetCustomerTotal",
+      "type": "ScalarFunction",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL"
+      ]
+    },
+    {
+      "name": "sp_BuildMonthlyReport",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "TEMP_TABLE"
+      ]
+    },
+    {
+      "name": "sp_DynamicSearch",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "DYNAMIC_SQL"
+      ]
+    },
+    {
+      "name": "sp_GetExternalInventory",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 1,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": []
+    },
+    {
+      "name": "sp_GetInventorySnapshot",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "NOLOCK"
+      ]
+    },
+    {
+      "name": "sp_GetOrderShippingInfo",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 5,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "XML_METHOD"
+      ]
+    },
+    {
+      "name": "sp_GetTopCustomers",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "DATEDIFF",
+        "GETDATE",
+        "ISNULL",
+        "TOP"
+      ]
+    },
+    {
+      "name": "sp_ProcessOrder",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "automatic",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "EXPLICIT_TRANSACTION",
+        "TRY_CATCH"
+      ]
+    },
+    {
+      "name": "sp_SharedTempReport",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "GLOBAL_TEMP_TABLE"
+      ]
+    },
+    {
+      "name": "sp_UpdateStockWithLock",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "ROWLOCK",
+        "UPDLOCK"
+      ]
+    },
+    {
+      "name": "sp_UpsertProducts",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "MERGE"
+      ]
+    },
+    {
+      "name": "tr_OrderAudit",
+      "type": "Trigger",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "GETDATE"
+      ]
+    },
+    {
+      "name": "usp_GetTopCustomers",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "DATEDIFF",
+        "GETDATE",
+        "ISNULL",
+        "TOP"
+      ]
+    },
+    {
+      "name": "usp_UpdateInventory",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "ROWLOCK",
+        "UPDLOCK"
+      ]
+    },
+    {
+      "name": "vw_MonthlyCategoryRevenue",
+      "type": "View",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "manual"
+      ],
+      "detectedFeatures": [
+        "PIVOT"
+      ]
+    },
+    {
+      "name": "vw_OrderSummary",
+      "type": "View",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL"
+      ]
+    },
+    {
+      "name": "vw_RecentOrders",
+      "type": "View",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL",
+        "TOP"
+      ]
+    },
+    {
+      "name": "Ad Hoc",
+      "type": "AdHoc",
+      "statementCount": 3,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "automatic",
+        "manual"
+      ],
+      "detectedFeatures": [
+        "NOLOCK"
+      ]
+    }
+  ],
   "featureInventory": [
     {
       "featureName": "SQL CLR",
@@ -23,7 +262,7 @@
     },
     {
       "featureName": "Service Broker",
-      "occurrenceCount": 0
+      "occurrenceCount": 3
     },
     {
       "featureName": "Agent Jobs",
@@ -176,6 +415,30 @@
       ]
     },
     {
+      "statementText": "SELECT\n      db_id() AS database_id,\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.is_filestream,\n      c.encryption_type,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,\n      COUNT_BIG(*) AS [ColCount],\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END AS collation_name,\n      AVG(c.max_length) AS avg_max_length\n      FROM sys.columns c WITH (NOLOCK)\n      LEFT OUTER JOIN sys.objects o WITH (NOLOCK)\n      ON o.object_id = c.object_id\n      AND o.type = \u0027U\u0027\n      GROUP BY\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.encryption_type,\n      c.is_filestream,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END,\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END",
+      "riskScore": 4,
+      "weightedRisk": 4,
+      "conversionCategory": "manual",
+      "detectedFeatures": [
+        "NOLOCK",
+        "NOLOCK"
+      ]
+    },
+    {
+      "statementText": "SELECT\n      db_id() as database_id,\n      sm.[is_inlineable] AS InlineableScalarCount,\n      sm.[inline_type] AS InlineType,\n      COUNT_BIG(*) AS ScalarCount, \n      COUNT_BIG(CASE WHEN sm.[definition] LIKE \u0027%getdate%\u0027 OR \n      sm.[definition] LIKE \u0027%getutcdate%\u0027 OR \n      sm.[definition] LIKE \u0027%sysdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysutcdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysdatetimeoffset%\u0027 OR\n      sm.[definition] LIKE \u0027%CURRENT_TIMESTAMP%\u0027\n      THEN 1 \n      END) AS ScalarCountWithDate          \n      FROM    [sys].[objects] o\n      INNER JOIN    [sys].[sql_modules] sm \n      ON o.[object_id] = sm.[object_id]\n      WHERE   o.[type] = \u0027FN\u0027\n      GROUP BY \n      sm.[is_inlineable],\n      sm.[inline_type]",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
+      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": []
+    },
+    {
       "statementText": "SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC",
       "riskScore": 3,
       "weightedRisk": 3,
@@ -196,29 +459,29 @@
   ],
   "migrationRecommendation": {
     "recommendation": "Partial Migration",
-    "reasoning": "Migration readiness score of 46 indicates significant challenges. 1 critical (Risk 5) and 5 high-risk (Risk 4) statements suggest only portions of the workload can be migrated to PostgreSQL.",
-    "migrationReadinessScore": 46
+    "reasoning": "Migration readiness score of 48 indicates significant challenges. 1 critical (Risk 5) and 6 high-risk (Risk 4) statements suggest only portions of the workload can be migrated to PostgreSQL. Architectural features detected: Service Broker.",
+    "migrationReadinessScore": 48
   },
   "effort": {
     "schemaConversion": {
-      "minHours": 0,
-      "maxHours": 0
+      "minHours": 3,
+      "maxHours": 15
     },
     "codeConversion": {
-      "minHours": 61,
-      "maxHours": 408
+      "minHours": 65,
+      "maxHours": 448
     },
     "testing": {
-      "minHours": 91,
-      "maxHours": 612
+      "minHours": 97,
+      "maxHours": 672
     },
     "dataMigration": {
-      "minHours": 0,
-      "maxHours": 0
+      "minHours": 7,
+      "maxHours": 28
     },
     "performanceTuning": {
-      "minHours": 12,
-      "maxHours": 48
+      "minHours": 14,
+      "maxHours": 56
     },
     "totalClassification": "Large"
   }

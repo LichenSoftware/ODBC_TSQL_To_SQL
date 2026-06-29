@@ -21,6 +21,7 @@
     <ProjectReference Include="..\MigrationAssessment.Collectors\MigrationAssessment.Collectors.csproj" />
     <ProjectReference Include="..\MigrationAssessment.Analysis\MigrationAssessment.Analysis.csproj" />
     <ProjectReference Include="..\MigrationAssessment.Reporting\MigrationAssessment.Reporting.csproj" />
+    <ProjectReference Include="..\MigrationAssessment.WorkItems\MigrationAssessment.WorkItems.csproj" />
   </ItemGroup>
 
 </Project>

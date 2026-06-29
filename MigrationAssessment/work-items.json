@@ -1,0 +1,368 @@
+{
+  "metadata": {
+    "generatedAt": "2026-06-15T20:19:39.9458244+00:00",
+    "sourceAssessmentPath": "./test-assessment.json",
+    "totalWorkItemCount": 11,
+    "totalEstimatedEffort": {
+      "minHours": 63.96999999999999,
+      "maxHours": 316.79999999999995
+    }
+  },
+  "workItems": [
+    {
+      "id": "WI-009",
+      "title": "[Risk 4] Convert GLOBAL_TEMP_TABLE in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027GLOBAL_TEMP_TABLE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 2 occurrences across the analyzed codebase with a combined total of 2 executions recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "INSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
+      "postgresEquivalent": "Unlogged tables or application-managed shared state",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 2
+        }
+      ],
+      "riskLevel": 4,
+      "priority": "Critical",
+      "priorityScore": 8,
+      "estimatedEffort": {
+        "minHours": 6.799999999999999,
+        "maxHours": 67.99999999999999
+      },
+      "acceptanceCriteria": [
+        "All instances of GLOBAL_TEMP_TABLE usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The redesigned PostgreSQL pattern handles concurrency scenarios correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server global temp tables (##name) are visible across all sessions and auto-dropped when the last referencing session disconnects. PostgreSQL has no equivalent construct. Architectural redesign is needed based on the sharing requirements.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\nINSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nUnlogged tables or application-managed shared state\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Analyze the purpose of the global temp table: Is it for cross-session data sharing or performance?\r\n2. For cross-session sharing: Replace with an unlogged permanent table with session-aware cleanup\r\n3. Add a session_id column and cleanup trigger/scheduled job to simulate auto-cleanup\r\n4. For performance (avoiding WAL): Use UNLOGGED tables (data lost on crash but faster writes)\r\n5. For application state: Consider moving to application-level caching (Redis, etc.)\r\n6. Implement explicit lifecycle management since PostgreSQL has no auto-drop for permanent tables\r\n7. Consider using pg_temp schema references if session isolation is acceptable\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-UNLOGGED",
+      "tags": [
+        "risk-4",
+        "temporary-object",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-008",
+      "title": "[Risk 3] Convert TEMP_TABLE in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027TEMP_TABLE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 2 occurrences across the analyzed codebase with a combined total of 2 executions recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 3 (requires procedural logic changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@Year int,@Month int)INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID",
+      "postgresEquivalent": "CREATE TEMPORARY TABLE (session-scoped by default)",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 2
+        }
+      ],
+      "riskLevel": 3,
+      "priority": "Critical",
+      "priorityScore": 6,
+      "estimatedEffort": {
+        "minHours": 0.8499999999999999,
+        "maxHours": 6.799999999999999
+      },
+      "acceptanceCriteria": [
+        "All instances of TEMP_TABLE usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server local temp tables (#name) are connection-scoped and auto-cleaned. PostgreSQL temporary tables are similar but session-scoped by default. The # prefix is not used. Naming conflicts can arise if multiple calls create same-named temp tables.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@Year int,@Month int)INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nCREATE TEMPORARY TABLE (session-scoped by default)\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Replace #tableName with CREATE TEMPORARY TABLE tableName (no # prefix needed)\r\n2. Temporary tables in PostgreSQL are session-scoped by default (dropped at session end)\r\n3. Use ON COMMIT DROP or ON COMMIT DELETE ROWS for transaction-scoped behavior\r\n4. Remove any explicit DROP TABLE #tableName at procedure end (optional in PostgreSQL)\r\n5. Be aware: PostgreSQL temp tables are not visible across sessions (unlike global temp tables)\r\n6. Consider using CTEs (WITH clause) for simple intermediate results instead of temp tables\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/sql-createtable.html",
+      "tags": [
+        "risk-3",
+        "temporary-object",
+        "semi-automatic"
+      ]
+    },
+    {
+      "id": "WI-001",
+      "title": "[Risk 5] Convert XML_METHOD in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027XML_METHOD\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 5 (requires architectural redesign or alternative technology for PostgreSQL migration).",
+      "sqlServerPattern": "(@OrderID int)SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID",
+      "postgresEquivalent": "xpath(), xmltable(), xmlparse()",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 5,
+      "priority": "High",
+      "priorityScore": 5,
+      "estimatedEffort": {
+        "minHours": 40,
+        "maxHours": 80
+      },
+      "acceptanceCriteria": [
+        "All instances of XML_METHOD usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The alternative architecture has been reviewed and approved by the team.",
+        "Integration tests confirm the replacement solution interoperates correctly with dependent systems."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server XML methods (.value, .query, .nodes, .modify, .exist) use XQuery syntax integrated into T-SQL. PostgreSQL uses xpath() and xmltable() functions with standard XPath. FOR XML has no direct equivalent.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@OrderID int)SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nxpath(), xmltable(), xmlparse()\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Replace .value(\u0027xpath\u0027, \u0027type\u0027) with (xpath(\u0027xpath\u0027, xml_col))[1]::type\r\n2. Replace .query(\u0027xpath\u0027) with xpath(\u0027xpath\u0027, xml_col)\r\n3. Replace .nodes(\u0027xpath\u0027) with xmltable(\u0027xpath\u0027 PASSING xml_col COLUMNS ...)\r\n4. Replace .modify() with xmlelement/xmlforest for construction or XSLT for transforms\r\n5. Replace .exist(\u0027xpath\u0027) with (xpath_exists(\u0027xpath\u0027, xml_col))\r\n6. Replace FOR XML PATH with xmlagg(xmlelement(...)) or string_agg for simple concatenation\r\n7. For complex XML processing, consider migrating to JSON/JSONB which has better PostgreSQL support\r\n8. Test xpath namespace handling as syntax differs between platforms\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/functions-xml.html",
+      "tags": [
+        "risk-5",
+        "function-usage",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-002",
+      "title": "[Risk 4] Convert UPDLOCK in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027UPDLOCK\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID",
+      "postgresEquivalent": "SELECT ... FOR UPDATE",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 4,
+      "priority": "High",
+      "priorityScore": 4,
+      "estimatedEffort": {
+        "minHours": 4,
+        "maxHours": 40
+      },
+      "acceptanceCriteria": [
+        "All instances of UPDLOCK usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The redesigned PostgreSQL pattern handles concurrency scenarios correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server\u0027s UPDLOCK hint acquires update locks to prevent deadlocks in read-then-update patterns. PostgreSQL uses SELECT FOR UPDATE to achieve the same pessimistic locking pattern.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nSELECT ... FOR UPDATE\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Replace SELECT ... WITH (UPDLOCK) with SELECT ... FOR UPDATE\r\n2. For UPDLOCK with ROWLOCK: SELECT ... FOR UPDATE (same behavior)\r\n3. For read-then-update patterns, ensure FOR UPDATE is on the initial SELECT\r\n4. Use FOR NO KEY UPDATE if you only update non-key columns (less restrictive)\r\n5. Add NOWAIT or SKIP LOCKED if non-blocking behavior is needed\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS",
+      "tags": [
+        "risk-4",
+        "transaction-feature",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-003",
+      "title": "[Risk 4] Convert ROWLOCK in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027ROWLOCK\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID",
+      "postgresEquivalent": "PostgreSQL MVCC (row-level locking is default)",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 4,
+      "priority": "Medium",
+      "priorityScore": 4,
+      "estimatedEffort": {
+        "minHours": 4,
+        "maxHours": 40
+      },
+      "acceptanceCriteria": [
+        "All instances of ROWLOCK usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The redesigned PostgreSQL pattern handles concurrency scenarios correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server\u0027s ROWLOCK hint forces row-level lock granularity. PostgreSQL always locks at row level for DML operations \u2014 this is inherent to its MVCC design and cannot be changed to page or table granularity.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nPostgreSQL MVCC (row-level locking is default)\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Remove WITH (ROWLOCK) hints entirely\r\n2. PostgreSQL always uses row-level locking for DML operations by default\r\n3. No configuration or hints are needed to achieve row-level granularity\r\n4. For explicit row locking, use SELECT ... FOR UPDATE or FOR SHARE\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/explicit-locking.html",
+      "tags": [
+        "risk-4",
+        "transaction-feature",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-010",
+      "title": "[Risk 4] Convert MERGE in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027MERGE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "MERGE dbo.Products AS target\r\n    USING dbo.ProductImportStaging AS source\r\n    ON target.SKU = source.SKU\r\n    WHEN MATCHED THEN\r\n        UPDATE SET\r\n            ProductName = source.ProductName,\r\n            Price = source.Price,\r\n            StockQuantity = source.StockQuantity\r\n    WHEN NOT MATCHED BY TARGET THEN\r\n        INSERT (ProductName, SKU, Price, StockQuantity)\r\n        VALUES (source.ProductName, source.SKU, source.Price, source.StockQuantity)\r\n    WHEN NOT MATCHED BY SOURCE THEN\r\n ",
+      "postgresEquivalent": "INSERT ... ON CONFLICT (UPSERT) or MERGE (PostgreSQL 15\u002B)",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 4,
+      "priority": "Medium",
+      "priorityScore": 4,
+      "estimatedEffort": {
+        "minHours": 4,
+        "maxHours": 40
+      },
+      "acceptanceCriteria": [
+        "All instances of MERGE usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The redesigned PostgreSQL pattern handles concurrency scenarios correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server MERGE supports INSERT/UPDATE/DELETE in one atomic statement. PostgreSQL\u0027s INSERT ON CONFLICT handles the common upsert case. Full MERGE support is available in PostgreSQL 15\u002B, but older versions require CTE-based workarounds.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\nMERGE dbo.Products AS target\r\n    USING dbo.ProductImportStaging AS source\r\n    ON target.SKU = source.SKU\r\n    WHEN MATCHED THEN\r\n        UPDATE SET\r\n            ProductName = source.ProductName,\r\n            Price = source.Price,\r\n            StockQuantity = source.StockQuantity\r\n    WHEN NOT MATCHED BY TARGET THEN\r\n        INSERT (ProductName, SKU, Price, StockQuantity)\r\n        VALUES (source.ProductName, source.SKU, source.Price, source.StockQuantity)\r\n    WHEN NOT MATCHED BY SOURCE THEN\r\n \r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nINSERT ... ON CONFLICT (UPSERT) or MERGE (PostgreSQL 15\u002B)\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. For simple upsert (INSERT or UPDATE): Use INSERT ... ON CONFLICT (key) DO UPDATE SET ...\r\n2. For MERGE with DELETE: Use PostgreSQL 15\u002B MERGE statement or split into separate INSERT/UPDATE/DELETE with CTEs\r\n3. Map WHEN MATCHED THEN UPDATE to ON CONFLICT DO UPDATE\r\n4. Map WHEN NOT MATCHED THEN INSERT to the base INSERT\r\n5. Map WHEN MATCHED AND condition THEN DELETE requires CTE approach or MERGE (PG 15\u002B)\r\n6. Ensure conflict target columns match the MERGE join condition\r\n7. Consider using advisory locks for high-concurrency upsert scenarios\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT",
+      "tags": [
+        "risk-4",
+        "query-feature",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-011",
+      "title": "[Risk 4] Convert NOLOCK in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027NOLOCK\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 4 (requires design pattern changes for PostgreSQL compatibility).",
+      "sqlServerPattern": "SELECT\r\n        p.ProductID,\r\n        p.ProductName,\r\n        p.StockQuantity,\r\n        p.Price\r\n    FROM dbo.Products p WITH (NOLOCK)\r\n    WHERE p.StockQuantity \u003E 0\r\n    ORDER BY p.StockQuantity ASC",
+      "postgresEquivalent": "PostgreSQL MVCC (no locking hints needed)",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 4,
+      "priority": "Medium",
+      "priorityScore": 4,
+      "estimatedEffort": {
+        "minHours": 4,
+        "maxHours": 40
+      },
+      "acceptanceCriteria": [
+        "All instances of NOLOCK usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior.",
+        "Unit tests verify the converted logic handles edge cases correctly.",
+        "The redesigned PostgreSQL pattern handles concurrency scenarios correctly."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server uses lock hints to control concurrency behavior. PostgreSQL\u0027s MVCC architecture provides non-blocking reads by default. Most lock hints can simply be removed. SELECT FOR UPDATE replaces pessimistic locking needs.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\nSELECT\r\n        p.ProductID,\r\n        p.ProductName,\r\n        p.StockQuantity,\r\n        p.Price\r\n    FROM dbo.Products p WITH (NOLOCK)\r\n    WHERE p.StockQuantity \u003E 0\r\n    ORDER BY p.StockQuantity ASC\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nPostgreSQL MVCC (no locking hints needed)\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\n1. Remove WITH (NOLOCK) / WITH (ROWLOCK) / WITH (UPDLOCK) hints entirely\r\n2. PostgreSQL uses MVCC: readers never block writers and writers never block readers\r\n3. For NOLOCK (dirty read) behavior: No action needed; PostgreSQL\u0027s default READ COMMITTED provides consistent reads without blocking\r\n4. For UPDLOCK (pessimistic locking): Use SELECT ... FOR UPDATE\r\n5. For ROWLOCK: Not applicable; PostgreSQL always locks at row level\r\n6. For TABLOCK/TABLOCKX: Use LOCK TABLE ... IN EXCLUSIVE MODE (rare)\r\n7. Adjust transaction isolation level if needed: SET TRANSACTION ISOLATION LEVEL SERIALIZABLE\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/mvcc.html",
+      "tags": [
+        "risk-4",
+        "transaction-feature",
+        "manual"
+      ]
+    },
+    {
+      "id": "WI-004",
+      "title": "[Risk 2] Convert TOP in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027TOP\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 2 (simple syntax substitution for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "postgresEquivalent": "LIMIT / OFFSET",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 2,
+      "priority": "Medium",
+      "priorityScore": 2,
+      "estimatedEffort": {
+        "minHours": 0.08,
+        "maxHours": 0.5
+      },
+      "acceptanceCriteria": [
+        "All instances of TOP usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nPostgreSQL does not support the TOP keyword. The equivalent functionality is provided by the LIMIT and OFFSET clauses placed at the end of the query.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nLIMIT / OFFSET\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\nReplace SELECT TOP N with SELECT ... LIMIT N. For TOP N with ties, use FETCH FIRST N ROWS WITH TIES. For TOP with PERCENT, calculate the row count or use a window function.\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/queries-limit.html",
+      "tags": [
+        "risk-2",
+        "query-feature",
+        "automatic"
+      ]
+    },
+    {
+      "id": "WI-005",
+      "title": "[Risk 2] Convert ISNULL in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027ISNULL\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 2 (simple syntax substitution for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "postgresEquivalent": "COALESCE",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 2,
+      "priority": "Low",
+      "priorityScore": 2,
+      "estimatedEffort": {
+        "minHours": 0.08,
+        "maxHours": 0.5
+      },
+      "acceptanceCriteria": [
+        "All instances of ISNULL usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nISNULL is a SQL Server-specific function. PostgreSQL uses the ANSI-standard COALESCE function which accepts two or more arguments and returns the first non-null value.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nCOALESCE\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\nReplace ISNULL(expr, replacement) with COALESCE(expr, replacement). COALESCE is ANSI SQL standard and supports multiple fallback arguments.\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL",
+      "tags": [
+        "risk-2",
+        "query-feature",
+        "automatic"
+      ]
+    },
+    {
+      "id": "WI-006",
+      "title": "[Risk 2] Convert DATEDIFF in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027DATEDIFF\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 2 (simple syntax substitution for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "postgresEquivalent": "EXTRACT(EPOCH FROM ...) / AGE / date subtraction",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 2,
+      "priority": "Low",
+      "priorityScore": 2,
+      "estimatedEffort": {
+        "minHours": 0.08,
+        "maxHours": 0.5
+      },
+      "acceptanceCriteria": [
+        "All instances of DATEDIFF usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nSQL Server\u0027s DATEDIFF returns the count of datepart boundaries crossed between two dates. PostgreSQL has no direct equivalent; the approach varies by datepart and whether boundary-crossing or elapsed-time semantics are needed.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nEXTRACT(EPOCH FROM ...) / AGE / date subtraction\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\nReplace DATEDIFF(datepart, start, end) based on the datepart: For days: (end::date - start::date). For seconds: EXTRACT(EPOCH FROM (end - start)). For months/years: use AGE(end, start) and extract components. Create a helper function for complex datepart calculations.\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/functions-datetime.html",
+      "tags": [
+        "risk-2",
+        "query-feature",
+        "automatic"
+      ]
+    },
+    {
+      "id": "WI-007",
+      "title": "[Risk 2] Convert GETDATE in Ad Hoc Queries",
+      "description": "The SQL Server feature \u0027GETDATE\u0027 is used in Ad Hoc Queries and is not directly supported in PostgreSQL.\r\nFound 1 occurrence across the analyzed codebase with a combined total of 1 execution recorded.\r\nThis represents a low business impact based on execution frequency.\r\nRisk Level: 2 (simple syntax substitution for PostgreSQL compatibility).",
+      "sqlServerPattern": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "postgresEquivalent": "NOW() / CURRENT_TIMESTAMP",
+      "affectedObjects": [
+        {
+          "name": "Ad Hoc Queries",
+          "type": "AdHoc",
+          "statementCount": 1
+        }
+      ],
+      "riskLevel": 2,
+      "priority": "Low",
+      "priorityScore": 2,
+      "estimatedEffort": {
+        "minHours": 0.08,
+        "maxHours": 0.5
+      },
+      "acceptanceCriteria": [
+        "All instances of GETDATE usage have been replaced in Ad Hoc Queries.",
+        "The PostgreSQL equivalent produces correct results matching the original SQL Server behavior."
+      ],
+      "remediationGuidance": "## Incompatibility\r\n\r\nGETDATE() is SQL Server-specific. PostgreSQL provides NOW() and CURRENT_TIMESTAMP which return the current date and time. Note that NOW() in PostgreSQL returns the transaction start time, not wall-clock time.\r\n\r\n## Before (SQL Server)\r\n\r\n\u0060\u0060\u0060sql\r\n(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC\r\n\u0060\u0060\u0060\r\n\r\n## After (PostgreSQL)\r\n\r\n\u0060\u0060\u0060sql\r\nNOW() / CURRENT_TIMESTAMP\r\n\u0060\u0060\u0060\r\n\r\n## Remediation Steps\r\n\r\nReplace GETDATE() with NOW() or CURRENT_TIMESTAMP. Use CLOCK_TIMESTAMP() if you need the actual current time within a transaction (NOW() returns transaction start time).\r\n\r\n## Reference\r\n\r\nhttps://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT",
+      "tags": [
+        "risk-2",
+        "query-feature",
+        "automatic"
+      ]
+    }
+  ]
+}

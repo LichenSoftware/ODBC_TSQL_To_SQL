@@ -9,7 +9,7 @@
             Writes the assessment report as a JSON file matching the published schema.
             </summary>
         </member>
-        <member name="M:MigrationAssessment.Reporting.JsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken)">
+        <member name="M:MigrationAssessment.Reporting.JsonReportWriter.WriteAsync(MigrationAssessment.Core.Models.AssessmentReport,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.AnalyzedStatement},MigrationAssessment.Core.Models.DatabaseObjectInventory,MigrationAssessment.Core.Models.FeatureDetectionResult,System.String,System.Threading.CancellationToken,System.Collections.Generic.IReadOnlyList{MigrationAssessment.Core.Models.ObjectInventoryEntry})">
             <inheritdoc />
         </member>
         <member name="M:MigrationAssessment.Reporting.JsonReportWriter.GetConversionCategory(System.Int32)">
