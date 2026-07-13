@@ -1,0 +1,55 @@
+{
+  "source": {
+    "name": "fn_FormatCustomerName",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\r\nCREATE FUNCTION dbo.fn_FormatCustomerName(@FirstName NVARCHAR(100), @LastName NVARCHAR(100))\r\nRETURNS NVARCHAR(201)\r\nAS\r\nBEGIN\r\n    RETURN ISNULL(@LastName, \u0027\u0027) \u002B \u0027, \u0027 \u002B ISNULL(@FirstName, \u0027\u0027);\r\nEND;\r\n",
+    "sourceDefinitionHash": "9536b36fcc7872d16363ed77ecb7e2ce80e0af2f1747b3322be8a98003c3a8cf",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "fn_FormatCustomerName",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.fn_FormatCustomerName(\n    p_FirstName VARCHAR(100),\n    p_LastName VARCHAR(100)\n)\nRETURNS VARCHAR(201)\nLANGUAGE plpgsql\nIMMUTABLE\nAS $$\nBEGIN\n    RETURN COALESCE(p_LastName, \u0027\u0027) || \u0027, \u0027 || COALESCE(p_FirstName, \u0027\u0027);\nEND;\n$$;",
+    "confidenceScore": 0.95,
+    "assumptions": [
+      "NVARCHAR(100) mapped to VARCHAR(100) - PostgreSQL VARCHAR is Unicode-capable by default",
+      "NVARCHAR(201) mapped to VARCHAR(201) for return type",
+      "Function marked as IMMUTABLE since it has no side effects and returns consistent results for the same inputs",
+      "ISNULL() converted to COALESCE() - functionally equivalent in this context",
+      "String concatenation operator \u0027\u002B\u0027 converted to \u0027||\u0027 (PostgreSQL standard)",
+      "Parameter names prefixed with \u0027p_\u0027 to follow PostgreSQL naming conventions and avoid reserved word conflicts",
+      "Schema \u0027dbo\u0027 preserved - ensure this schema exists in PostgreSQL or adjust as needed"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Verify that VARCHAR(201) provides sufficient length for all expected customer name combinations. PostgreSQL VARCHAR has no performance penalty for larger declarations, so consider using TEXT or a larger limit if needed.",
+        "codeSection": "RETURNS VARCHAR(201)"
+      },
+      {
+        "reason": "Confirm that VARCHAR encoding matches application expectations. PostgreSQL uses database encoding (typically UTF-8) for all text types, which may handle multi-byte characters differently than SQL Server NVARCHAR.",
+        "codeSection": "p_FirstName VARCHAR(100), p_LastName VARCHAR(100)"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Character Encoding",
+        "description": "SQL Server NVARCHAR uses UTF-16 encoding while PostgreSQL VARCHAR uses the database encoding (typically UTF-8). Character length limits may behave differently with multi-byte characters."
+      },
+      {
+        "category": "Function Volatility",
+        "description": "Function marked as IMMUTABLE for optimal query optimization. This assumes the function will always return the same result for the same inputs, which is true for this string formatting function."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "COALESCE() in PostgreSQL behaves identically to ISNULL() in SQL Server for this two-argument case, returning the first non-NULL value."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-13T16:44:58.1682029+00:00",
+  "isManuallyEdited": false
+}

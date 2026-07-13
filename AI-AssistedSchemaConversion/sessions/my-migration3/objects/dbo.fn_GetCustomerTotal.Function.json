@@ -1,0 +1,60 @@
+{
+  "source": {
+    "name": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\nCREATE   FUNCTION dbo.fn_GetCustomerTotal(@CustomerID INT)\nRETURNS DECIMAL(18,2)\nAS\nBEGIN\n    DECLARE @Total DECIMAL(18,2);\n    SELECT @Total = ISNULL(SUM(TotalAmount), 0)\n    FROM dbo.Orders\n    WHERE CustomerID = @CustomerID;\n    RETURN @Total;\nEND;\n",
+    "sourceDefinitionHash": "9417862195cd3654a77aef9340ad34143c6c56dddb9b74742acb6ecd6a6803d0",
+    "dependsOn": [
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.fn_GetCustomerTotal(p_CustomerID INT)\nRETURNS DECIMAL(18,2)\nLANGUAGE plpgsql\nSTABLE\nAS $$\nDECLARE\n    v_Total DECIMAL(18,2);\nBEGIN\n    SELECT COALESCE(SUM(TotalAmount), 0)\n    INTO v_Total\n    FROM dbo.Orders\n    WHERE CustomerID = p_CustomerID;\n    \n    RETURN v_Total;\nEND;\n$$;",
+    "confidenceScore": 0.95,
+    "assumptions": [
+      "The dbo schema exists in PostgreSQL (may need to be created or changed to public)",
+      "The Orders table exists in the dbo schema with columns CustomerID and TotalAmount",
+      "TotalAmount column is numeric/decimal type compatible with SUM aggregation",
+      "Function marked as STABLE since it reads from database tables but doesn\u0027t modify data",
+      "Parameter prefixed with p_ and variable with v_ following PostgreSQL naming conventions",
+      "ISNULL mapped to COALESCE which is the PostgreSQL standard equivalent"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Verify that the dbo schema exists in PostgreSQL or change to the appropriate schema (commonly \u0027public\u0027). PostgreSQL is case-sensitive for quoted identifiers.",
+        "codeSection": "dbo schema reference"
+      },
+      {
+        "reason": "Confirm that the function only reads data and doesn\u0027t depend on session variables or configuration parameters that might change within a transaction. If it does, use VOLATILE instead.",
+        "codeSection": "STABLE volatility category"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Function Volatility",
+        "description": "SQL Server doesn\u0027t have explicit volatility categories. This function is marked STABLE (can be optimized within a query) since it reads from tables. If the function behavior depends on session settings or should not be optimized, change to VOLATILE."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "ISNULL converted to COALESCE. Both functions behave identically for this two-argument case, returning the first non-NULL value."
+      },
+      {
+        "category": "Schema Binding",
+        "description": "SQL Server\u0027s WITH SCHEMABINDING has no direct equivalent in PostgreSQL. PostgreSQL functions reference objects by name at execution time, but dependencies are tracked in system catalogs."
+      },
+      {
+        "category": "Decimal Precision",
+        "description": "DECIMAL(18,2) maps directly to PostgreSQL NUMERIC(18,2). Behavior should be identical for this precision and scale."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-13T16:45:11.1083623+00:00",
+  "isManuallyEdited": false
+}

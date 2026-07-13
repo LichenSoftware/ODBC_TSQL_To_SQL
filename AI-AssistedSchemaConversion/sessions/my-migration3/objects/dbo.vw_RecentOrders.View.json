@@ -1,0 +1,27 @@
+{
+  "source": {
+    "name": "vw_RecentOrders",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "sourceDefinition": "\r\n-- =============================================================================\r\n-- SCHEMA: Risk Level 2 - Simple translations (TOP, ISNULL, GETDATE, etc.)\r\n-- =============================================================================\r\n\r\nCREATE VIEW dbo.vw_RecentOrders AS\r\n    SELECT TOP 100\r\n        o.OrderID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        o.OrderDate,\r\n        ISNULL(o.TotalAmount, 0) AS TotalAmount\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.Customers c ON o.CustomerID = c.CustomerID\r\n    ORDER BY o.OrderDate DESC;\r\n",
+    "sourceDefinitionHash": "b16436d026b7012387d555b2bd35326da88d49916d664194473c34c9c800bd78",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "vw_RecentOrders",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "status": "converted",
+    "method": "ruleBased",
+    "generatedDdl": "CREATE OR REPLACE VIEW public.vw_recentorders AS\nSELECT \r\n o.OrderID,\r\n c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n o.OrderDate,\r\n ISNULL(o.TotalAmount, 0) AS TotalAmount\r\n FROM dbo.Orders o\r\n INNER JOIN dbo.Customers c ON o.CustomerID = c.CustomerID\r\n ORDER BY o.OrderDate DESC LIMIT 100;",
+    "confidenceScore": 1,
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-13T16:45:20.0486094+00:00",
+  "isManuallyEdited": false
+}

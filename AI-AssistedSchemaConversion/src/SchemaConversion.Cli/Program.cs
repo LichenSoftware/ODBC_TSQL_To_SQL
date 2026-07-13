@@ -37,6 +37,7 @@ public static class Program
         rootCommand.AddCommand(BuildEditCommand());
         rootCommand.AddCommand(BuildApproveCommand());
         rootCommand.AddCommand(BuildGenerateCommand());
+        rootCommand.AddCommand(BuildGenerateMappingCommand());
         rootCommand.AddCommand(BuildReportCommand());
 
         return await rootCommand.InvokeAsync(args);
@@ -132,6 +133,7 @@ public static class Program
         // Reporting
         services.AddSingleton<ConversionReportGenerator>();
         services.AddSingleton<IConversionReportGenerator>(sp => sp.GetRequiredService<ConversionReportGenerator>());
+        services.AddSingleton<ProcedureMappingGenerator>();
         services.AddSingleton<ScriptOrderResolver>();
         services.AddSingleton<ScriptGenerator>();
         services.AddSingleton<IScriptGenerator>(sp => sp.GetRequiredService<ScriptGenerator>());
@@ -684,6 +686,62 @@ public static class Program
             Console.WriteLine($"Generating DDL scripts (mode: {outputMode})...");
             await scriptGenerator.GenerateAsync(entries, options, ct);
             Console.WriteLine($"Scripts written to: {output}");
+
+            context.ExitCode = 0;
+        });
+
+        return command;
+    }
+
+    // ─── Generate Mapping Command ─────────────────────────────────────
+
+    private static Command BuildGenerateMappingCommand()
+    {
+        var sessionOption = new Option<string>("--session", "Session directory path") { IsRequired = true };
+        var outputOption = new Option<string>("--output", "Output path for the mapping JSON file") { IsRequired = true };
+
+        var command = new Command("generate-mapping",
+            "Generate a PgPassthrough procedure mapping manifest from conversion results")
+        {
+            sessionOption,
+            outputOption
+        };
+
+        command.SetHandler(async (InvocationContext context) =>
+        {
+            var session = context.ParseResult.GetValueForOption(sessionOption)!;
+            var output = context.ParseResult.GetValueForOption(outputOption)!;
+
+            var configuration = LoadConfiguration();
+            using var serviceProvider = BuildServiceProvider(configuration);
+            var logger = serviceProvider.GetRequiredService<ILogger<ConversionPipeline>>();
+            ValidateConfiguration(configuration, logger);
+
+            var ct = context.GetCancellationToken();
+            var sessionStore = serviceProvider.GetRequiredService<ConversionSessionStore>();
+            var mappingGenerator = serviceProvider.GetRequiredService<ProcedureMappingGenerator>();
+            var sessionId = Path.GetFileName(session);
+
+            var entries = await sessionStore.GetAllEntriesAsync(sessionId, ct);
+
+            Console.WriteLine($"Generating procedure mapping manifest for session: {sessionId}...");
+            var manifest = mappingGenerator.Generate(sessionId, entries);
+
+            var json = JsonSerializer.Serialize(manifest, JsonOptions);
+            var outputDir = Path.GetDirectoryName(output);
+            if (!string.IsNullOrEmpty(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+            await File.WriteAllTextAsync(output, json, ct);
+
+            Console.WriteLine($"Mapping manifest written to: {output}");
+            Console.WriteLine($"  Total mappings: {manifest.Summary.TotalMappings}");
+            Console.WriteLine($"  Converted: {manifest.Summary.Converted}");
+            Console.WriteLine($"  Flagged: {manifest.Summary.Flagged}");
+            Console.WriteLine($"  Failed: {manifest.Summary.Failed}");
+            Console.WriteLine($"  With parameters: {manifest.Summary.WithParameters}");
+            Console.WriteLine($"  No parameters: {manifest.Summary.NoParameters}");
 
             context.ExitCode = 0;
         });

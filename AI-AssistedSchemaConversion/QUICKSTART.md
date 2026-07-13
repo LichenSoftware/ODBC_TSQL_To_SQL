@@ -30,16 +30,24 @@ Converted: 23  Flagged: 0  Failed: 3
 - **Flagged** — converted but confidence < 0.7, needs manual review
 - **Failed** — could not convert, check the `errorMessage` in the object JSON
 
-## 4. Generate output scripts (optional)
+## 4. Generate PgPassthrough mapping (optional)
 
 ```
-dotnet run --project src/SchemaConversion.Cli -- generate --session ./sessions/my-migration
+dotnet run --project src/SchemaConversion.Cli -- generate-mapping --session ./sessions/my-migration --output ./output/procedure-mappings.json
 ```
 
-## 5. Generate a report (optional)
+Produces a JSON manifest documenting how each `EXEC dbo.proc_name @param` call maps to `SELECT * FROM dbo.proc_name(param)` in PostgreSQL. PgPassthrough can use this for runtime call routing.
+
+## 5. Generate output scripts (optional)
 
 ```
-dotnet run --project src/SchemaConversion.Cli -- report --session ./sessions/my-migration
+dotnet run --project src/SchemaConversion.Cli -- generate --session ./sessions/my-migration --output ./output/scripts
+```
+
+## 6. Generate a report (optional)
+
+```
+dotnet run --project src/SchemaConversion.Cli -- report --session ./sessions/my-migration --output ./output/report.json
 ```
 
 ## Tips

@@ -10,6 +10,157 @@
             with per-object details, summary statistics, and compatibility notes.
             </summary>
         </member>
+        <member name="T:SchemaConversion.Reporting.ProcedureMappingGenerator">
+            <summary>
+            Generates a procedure mapping manifest from a completed conversion session.
+            This manifest documents how T-SQL EXEC calls translate to PostgreSQL function calls,
+            and can be consumed by PgPassthrough for runtime call routing.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.Generate(System.String,System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.ConversionSessionEntry})">
+            <summary>
+            Generates the mapping manifest for all callable objects (stored procedures and functions)
+            in the session.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.ExtractTSqlParameters(System.String)">
+            <summary>
+            Extracts parameter declarations from a T-SQL CREATE PROCEDURE/FUNCTION definition.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.ExtractPostgresParameters(System.String)">
+            <summary>
+            Extracts parameter declarations from a PostgreSQL CREATE FUNCTION definition.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.TSqlParamRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(@\\w+)\\s+([\\w]+(?:\\s*\\([^)]*\\))?)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ 1st capture group.<br/>
+                ○ Match '@'.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ 2nd capture group.<br/>
+                ○ Match a word character greedily at least once.<br/>
+                ○ Optional (greedy).<br/>
+                    ○ Match a whitespace character atomically any number of times.<br/>
+                    ○ Match '('.<br/>
+                    ○ Match a character other than ')' atomically any number of times.<br/>
+                    ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.ReturnsScalarRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>RETURNS\\s+(?!TABLE|SETOF)([\\w]+(?:\\s*\\([^)]*\\))?)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Ss].<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ Zero-width negative lookahead.<br/>
+                ○ Match with 2 alternative expressions, atomically.<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match a character in the set [Tt].<br/>
+                        ○ Match a character in the set [Aa].<br/>
+                        ○ Match a character in the set [Bb].<br/>
+                        ○ Match a character in the set [Ll].<br/>
+                        ○ Match a character in the set [Ee].<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match a character in the set [Ss].<br/>
+                        ○ Match a character in the set [Ee].<br/>
+                        ○ Match a character in the set [Tt].<br/>
+                        ○ Match a character in the set [Oo].<br/>
+                        ○ Match a character in the set [Ff].<br/>
+            ○ 1st capture group.<br/>
+                ○ Match a word character greedily at least once.<br/>
+                ○ Optional (greedy).<br/>
+                    ○ Match a whitespace character atomically any number of times.<br/>
+                    ○ Match '('.<br/>
+                    ○ Match a character other than ')' atomically any number of times.<br/>
+                    ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.PgFunctionSignatureRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>FUNCTION\\s+[\\w."]+\\s*\\(([^)]*(?:\\([^)]*\\)[^)]*)*)\\)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase | RegexOptions.Singleline</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [Ff].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ Match a character in the set [".\w] greedily at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '('.<br/>
+            ○ 1st capture group.<br/>
+                ○ Match a character other than ')' greedily any number of times.<br/>
+                ○ Loop greedily any number of times.<br/>
+                    ○ Match '('.<br/>
+                    ○ Match a character other than ')' atomically any number of times.<br/>
+                    ○ Match ')'.<br/>
+                    ○ Match a character other than ')' greedily any number of times.<br/>
+            ○ Match ')'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ProcedureMappingGenerator.PgParamRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>^(?:(IN|OUT|INOUT)\\s+)?(\\w+)\\s+(.+)$</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Optional (greedy).<br/>
+                ○ 1st capture group.<br/>
+                    ○ Match with 3 alternative expressions.<br/>
+                        ○ Match a sequence of expressions.<br/>
+                            ○ Match a character in the set [Ii].<br/>
+                            ○ Match a character in the set [Nn].<br/>
+                        ○ Match a sequence of expressions.<br/>
+                            ○ Match a character in the set [Oo].<br/>
+                            ○ Match a character in the set [Uu].<br/>
+                            ○ Match a character in the set [Tt].<br/>
+                        ○ Match a sequence of expressions.<br/>
+                            ○ Match a character in the set [Ii].<br/>
+                            ○ Match a character in the set [Nn].<br/>
+                            ○ Match a character in the set [Oo].<br/>
+                            ○ Match a character in the set [Uu].<br/>
+                            ○ Match a character in the set [Tt].<br/>
+                ○ Match a whitespace character atomically at least once.<br/>
+            ○ 2nd capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            ○ Match a whitespace character greedily at least once.<br/>
+            ○ 3rd capture group.<br/>
+                ○ Match a character other than '\n' greedily at least once.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
         <member name="T:SchemaConversion.Reporting.ScriptGenerator">
             <summary>
             Produces dependency-ordered PostgreSQL DDL scripts.
@@ -57,6 +208,158 @@
             Represents a single DDL statement in the ordered output, including metadata
             about which entry it came from and whether it's a wrapper.
             </summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TSqlParamRegex_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the TSqlParamRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.TSqlParamRegex_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the ReturnsScalarRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ReturnsScalarRegex_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the PgFunctionSignatureRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgFunctionSignatureRegex_2.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgParamRegex_3">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the PgParamRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.PgParamRegex_3.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgParamRegex_3.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PgParamRegex_3.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsWordChar(System.Char)">
+            <summary>Determines whether the character is part of the [\w] set.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPop(System.Int32[],System.Int32@,System.Int32@,System.Int32@)">
+            <summary>Pops 2 values from the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32)">
+            <summary>Pushes 1 value onto the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32)">
+            <summary>Pushes 2 values onto the backtracking stack.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32,System.Int32)">
+            <summary>Pushes 3 values onto the backtracking stack.</summary>
         </member>
     </members>
 </doc>

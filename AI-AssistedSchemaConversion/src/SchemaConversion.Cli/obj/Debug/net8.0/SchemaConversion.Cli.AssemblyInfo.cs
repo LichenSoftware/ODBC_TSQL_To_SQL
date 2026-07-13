@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchemaConversion.Cli")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ea81e5c19a5ca16b712f92ce657e8eadd6efe2bc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5483edb860e1305d35f55bd597280dcafa67ccc5")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchemaConversion.Cli")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchemaConversion.Cli")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

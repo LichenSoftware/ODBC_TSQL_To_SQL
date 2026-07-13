@@ -4,5 +4,59 @@
         <name>SchemaConversion.Core</name>
     </assembly>
     <members>
+        <member name="T:SchemaConversion.Core.Models.ProcedureMappingManifest">
+            <summary>
+            Represents the complete mapping manifest for PgPassthrough,
+            documenting how T-SQL stored procedure calls translate to PostgreSQL function calls.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.OriginalName">
+            <summary>The original T-SQL qualified name (e.g., "dbo.usp_GetTopCustomers").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.PostgresName">
+            <summary>The PostgreSQL function name (e.g., "dbo.usp_GetTopCustomers").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.OriginalType">
+            <summary>The original object type in SQL Server.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.PostgresType">
+            <summary>The PostgreSQL object type (typically "function").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.CallPattern">
+            <summary>How the application should call this in PostgreSQL.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.OriginalCallPattern">
+            <summary>The original T-SQL call pattern (e.g., "EXEC dbo.usp_GetTopCustomers @TopN").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.Parameters">
+            <summary>Parameter mapping from T-SQL to PostgreSQL.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.ReturnType">
+            <summary>What the function returns in PostgreSQL.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.Confidence">
+            <summary>Conversion confidence score (0.0–1.0).</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.Status">
+            <summary>Conversion status: converted, flagged, failed.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ProcedureMapping.CompatibilityNotes">
+            <summary>Notable behavioral differences the application team should be aware of.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ParameterMapping.Original">
+            <summary>Original T-SQL parameter name (e.g., "@TopN").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ParameterMapping.Postgres">
+            <summary>PostgreSQL parameter name (e.g., "p_TopN").</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ParameterMapping.Position">
+            <summary>Positional index (1-based) for the PostgreSQL function call.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ParameterMapping.OriginalType">
+            <summary>The SQL Server data type.</summary>
+        </member>
+        <member name="P:SchemaConversion.Core.Models.ParameterMapping.PostgresType">
+            <summary>The PostgreSQL data type.</summary>
+        </member>
     </members>
 </doc>

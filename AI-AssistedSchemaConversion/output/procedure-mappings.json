@@ -1,0 +1,357 @@
+{
+  "sessionId": "my-migration",
+  "generatedAt": "2026-07-13T16:30:48.0843991+00:00",
+  "description": "Procedure-to-function mapping manifest for PgPassthrough. Documents how T-SQL EXEC calls translate to PostgreSQL SELECT * FROM function() calls.",
+  "mappings": [
+    {
+      "originalName": "dbo.fn_FormatCustomerName",
+      "postgresName": "dbo.fn_FormatCustomerName",
+      "originalType": "function",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.fn_FormatCustomerName({p_FirstName}, {LastName})",
+      "originalCallPattern": "EXEC dbo.fn_FormatCustomerName @FirstName, @LastName",
+      "parameters": [
+        {
+          "original": "@FirstName",
+          "postgres": "p_FirstName",
+          "position": 1,
+          "originalType": "NVARCHAR(100)",
+          "postgresType": "VARCHAR(100"
+        },
+        {
+          "original": "@LastName",
+          "postgres": "LastName",
+          "position": 2,
+          "originalType": "NVARCHAR(100)"
+        }
+      ],
+      "returnType": "varchar(201)",
+      "confidence": 0.95,
+      "status": "converted",
+      "compatibilityNotes": []
+    },
+    {
+      "originalName": "dbo.fn_GetCustomerTotal",
+      "postgresName": "dbo.fn_GetCustomerTotal",
+      "originalType": "function",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.fn_GetCustomerTotal({p_CustomerID})",
+      "originalCallPattern": "EXEC dbo.fn_GetCustomerTotal @CustomerID",
+      "parameters": [
+        {
+          "original": "@CustomerID",
+          "postgres": "p_CustomerID",
+          "position": 1,
+          "originalType": "INT",
+          "postgresType": "INT"
+        }
+      ],
+      "returnType": "decimal(18,2)",
+      "confidence": 0.95,
+      "status": "converted",
+      "compatibilityNotes": []
+    },
+    {
+      "originalName": "dbo.sp_BuildMonthlyReport",
+      "postgresName": "dbo.sp_BuildMonthlyReport",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_BuildMonthlyReport({p_year}, {p_month})",
+      "originalCallPattern": "EXEC dbo.sp_BuildMonthlyReport @Year, @Month",
+      "parameters": [
+        {
+          "original": "@Year",
+          "postgres": "p_year",
+          "position": 1,
+          "originalType": "INT",
+          "postgresType": "INT"
+        },
+        {
+          "original": "@Month",
+          "postgres": "p_month",
+          "position": 2,
+          "originalType": "INT",
+          "postgresType": "INT"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.92,
+      "status": "converted",
+      "compatibilityNotes": [
+        "SQL Server: EXEC dbo.sp_BuildMonthlyReport @Year=2024, @Month=1; PostgreSQL: SELECT * FROM dbo.sp_BuildMonthlyReport(2024, 1);",
+        "Converted from PROCEDURE to FUNCTION returning TABLE. This changes how the object is invoked and how results are consumed."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_DynamicSearch",
+      "postgresName": "dbo.sp_DynamicSearch",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_DynamicSearch({p_table_name}, {FilterColumn}, {FilterValue})",
+      "originalCallPattern": "EXEC dbo.sp_DynamicSearch @TableName, @FilterColumn, @FilterValue",
+      "parameters": [
+        {
+          "original": "@TableName",
+          "postgres": "p_table_name",
+          "position": 1,
+          "originalType": "NVARCHAR(128)",
+          "postgresType": "VARCHAR(128"
+        },
+        {
+          "original": "@FilterColumn",
+          "postgres": "FilterColumn",
+          "position": 2,
+          "originalType": "NVARCHAR(128)"
+        },
+        {
+          "original": "@FilterValue",
+          "postgres": "FilterValue",
+          "position": 3,
+          "originalType": "NVARCHAR(256)"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.75,
+      "status": "converted",
+      "compatibilityNotes": [
+        "SQL Server procedures can return result sets implicitly. PostgreSQL functions returning TABLE must be called in SELECT statements. Calling syntax changes from EXEC sp_DynamicSearch to SELECT * FROM sp_DynamicSearch(...) AS result."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_GetExternalInventory",
+      "postgresName": "dbo.sp_GetExternalInventory",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_GetExternalInventory()",
+      "originalCallPattern": "EXEC dbo.sp_GetExternalInventory",
+      "parameters": [],
+      "returnType": "table",
+      "confidence": 0.65,
+      "status": "flagged",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_GetExternalInventory\u0027 to \u0027SELECT * FROM dbo.sp_GetExternalInventory(...)\u0027"
+      ]
+    },
+    {
+      "originalName": "dbo.sp_GetInventorySnapshot",
+      "postgresName": "dbo.sp_GetInventorySnapshot",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_GetInventorySnapshot()",
+      "originalCallPattern": "EXEC dbo.sp_GetInventorySnapshot",
+      "parameters": [],
+      "returnType": "table",
+      "confidence": 0.85,
+      "status": "converted",
+      "compatibilityNotes": [
+        "SQL Server stored procedure returns result set implicitly. PostgreSQL requires explicit FUNCTION with RETURNS TABLE or SETOF. Calling syntax changes from EXEC sp_GetInventorySnapshot to SELECT * FROM sp_GetInventorySnapshot()"
+      ]
+    },
+    {
+      "originalName": "dbo.sp_GetOrderShippingInfo",
+      "postgresName": "dbo.sp_GetOrderShippingInfo",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_GetOrderShippingInfo({p_OrderID})",
+      "originalCallPattern": "EXEC dbo.sp_GetOrderShippingInfo @OrderID",
+      "parameters": [
+        {
+          "original": "@OrderID",
+          "postgres": "p_OrderID",
+          "position": 1,
+          "originalType": "INT",
+          "postgresType": "INTEGER"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.75,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_GetOrderShippingInfo\u0027 to \u0027SELECT * FROM dbo.sp_GetOrderShippingInfo(...)\u0027",
+        "SQL Server stored procedure returns result set implicitly. PostgreSQL requires explicit RETURNS TABLE definition and RETURN QUERY statement. Calling code must be updated to SELECT FROM the function instead of EXEC."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_GetTopCustomers",
+      "postgresName": "dbo.sp_GetTopCustomers",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_GetTopCustomers({p_TopN})",
+      "originalCallPattern": "EXEC dbo.sp_GetTopCustomers @TopN",
+      "parameters": [
+        {
+          "original": "@TopN",
+          "postgres": "p_TopN",
+          "position": 1,
+          "originalType": "INT",
+          "postgresType": "INT DEFAULT 10"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.85,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_GetTopCustomers\u0027 to \u0027SELECT * FROM dbo.sp_GetTopCustomers(...)\u0027",
+        "SQL Server procedure returns result set implicitly. PostgreSQL requires explicit RETURNS TABLE definition. Calling code must be updated to SELECT FROM function instead of EXEC procedure."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_ProcessOrder",
+      "postgresName": "dbo.sp_ProcessOrder",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_ProcessOrder({CustomerID}, {ProductID}, {Quantity}, {OrderID})",
+      "originalCallPattern": "EXEC dbo.sp_ProcessOrder @CustomerID, @ProductID, @Quantity, @OrderID",
+      "parameters": [
+        {
+          "original": "@CustomerID",
+          "postgres": "CustomerID",
+          "position": 1,
+          "originalType": "INT"
+        },
+        {
+          "original": "@ProductID",
+          "postgres": "ProductID",
+          "position": 2,
+          "originalType": "INT"
+        },
+        {
+          "original": "@Quantity",
+          "postgres": "Quantity",
+          "position": 3,
+          "originalType": "INT"
+        },
+        {
+          "original": "@OrderID",
+          "postgres": "OrderID",
+          "position": 4,
+          "originalType": "INT"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.92,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_ProcessOrder\u0027 to \u0027SELECT * FROM dbo.sp_ProcessOrder(...)\u0027",
+        "SQL Server OUTPUT parameters become INOUT parameters in PostgreSQL procedures. Callers must provide a variable even if the initial value is not used. Consider creating a wrapper function if the calling interface needs to remain unchanged."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_SharedTempReport",
+      "postgresName": "dbo.sp_SharedTempReport",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_SharedTempReport()",
+      "originalCallPattern": "EXEC dbo.sp_SharedTempReport",
+      "parameters": [],
+      "returnType": "table",
+      "confidence": 0.75,
+      "status": "converted",
+      "compatibilityNotes": [
+        "SQL Server: EXEC dbo.sp_SharedTempReport; PostgreSQL: SELECT * FROM dbo.sp_SharedTempReport(); The calling syntax changes from procedure execution to function invocation."
+      ]
+    },
+    {
+      "originalName": "dbo.sp_UpdateStockWithLock",
+      "postgresName": "dbo.sp_UpdateStockWithLock",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_UpdateStockWithLock({ProductID}, {NewQuantity})",
+      "originalCallPattern": "EXEC dbo.sp_UpdateStockWithLock @ProductID, @NewQuantity",
+      "parameters": [
+        {
+          "original": "@ProductID",
+          "postgres": "ProductID",
+          "position": 1,
+          "originalType": "INT"
+        },
+        {
+          "original": "@NewQuantity",
+          "postgres": "NewQuantity",
+          "position": 2,
+          "originalType": "INT"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.85,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_UpdateStockWithLock\u0027 to \u0027SELECT * FROM dbo.sp_UpdateStockWithLock(...)\u0027"
+      ]
+    },
+    {
+      "originalName": "dbo.sp_UpsertProducts",
+      "postgresName": "dbo.sp_UpsertProducts",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.sp_UpsertProducts()",
+      "originalCallPattern": "EXEC dbo.sp_UpsertProducts",
+      "parameters": [],
+      "returnType": "table",
+      "confidence": 0.85,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.sp_UpsertProducts\u0027 to \u0027SELECT * FROM dbo.sp_UpsertProducts(...)\u0027"
+      ]
+    },
+    {
+      "originalName": "dbo.usp_GetTopCustomers",
+      "postgresName": "dbo.usp_GetTopCustomers",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.usp_GetTopCustomers({p_TopN})",
+      "originalCallPattern": "EXEC dbo.usp_GetTopCustomers @TopN",
+      "parameters": [
+        {
+          "original": "@TopN",
+          "postgres": "p_TopN",
+          "position": 1,
+          "originalType": "INT",
+          "postgresType": "INT"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.9,
+      "status": "converted",
+      "compatibilityNotes": [
+        "SQL Server procedure returns an implicit result set; PostgreSQL function must be called with SELECT * FROM or used in a FROM clause."
+      ]
+    },
+    {
+      "originalName": "dbo.usp_UpdateInventory",
+      "postgresName": "dbo.usp_UpdateInventory",
+      "originalType": "stored_procedure",
+      "postgresType": "function",
+      "callPattern": "SELECT * FROM dbo.usp_UpdateInventory({ProductID}, {NewQuantity})",
+      "originalCallPattern": "EXEC dbo.usp_UpdateInventory @ProductID, @NewQuantity",
+      "parameters": [
+        {
+          "original": "@ProductID",
+          "postgres": "ProductID",
+          "position": 1,
+          "originalType": "INT"
+        },
+        {
+          "original": "@NewQuantity",
+          "postgres": "NewQuantity",
+          "position": 2,
+          "originalType": "INT"
+        }
+      ],
+      "returnType": "table",
+      "confidence": 0.85,
+      "status": "converted",
+      "compatibilityNotes": [
+        "Call changes from \u0027EXEC dbo.usp_UpdateInventory\u0027 to \u0027SELECT * FROM dbo.usp_UpdateInventory(...)\u0027"
+      ]
+    }
+  ],
+  "summary": {
+    "totalMappings": 14,
+    "converted": 13,
+    "flagged": 1,
+    "failed": 0,
+    "noParameters": 4,
+    "withParameters": 10
+  }
+}
