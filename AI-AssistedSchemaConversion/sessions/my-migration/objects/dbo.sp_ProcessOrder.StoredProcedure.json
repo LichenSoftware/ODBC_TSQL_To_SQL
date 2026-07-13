@@ -1,0 +1,80 @@
+{
+  "source": {
+    "name": "sp_ProcessOrder",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\n-- =============================================================================\r\n-- SCHEMA: Risk Level 3 - Procedural changes (TRY/CATCH, dynamic SQL, temp tables)\r\n-- =============================================================================\r\n\r\nCREATE PROCEDURE dbo.sp_ProcessOrder\r\n    @CustomerID INT,\r\n    @ProductID INT,\r\n    @Quantity INT,\r\n    @OrderID INT OUTPUT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    BEGIN TRY\r\n        BEGIN TRANSACTION;\r\n\r\n        -- Check stock\r\n        DECLARE @CurrentStock INT;\r\n        SELECT @CurrentStock = StockQuantity FROM dbo.Products WHERE ProductID = @ProductID;\r\n\r\n        IF @CurrentStock \u003C @Quantity\r\n            THROW 50001, \u0027Insufficient stock\u0027, 1;\r\n\r\n        -- Create order\r\n        DECLARE @Price DECIMAL(10,2);\r\n        SELECT @Price = Price FROM dbo.Products WHERE ProductID = @ProductID;\r\n\r\n        INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)\r\n        VALUES (@CustomerID, @Price * @Quantity, \u0027Processing\u0027);\r\n\r\n        SET @OrderID = SCOPE_IDENTITY();\r\n\r\n        INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)\r\n        VALUES (@OrderID, @ProductID, @Quantity, @Price);\r\n\r\n        -- Update stock\r\n        UPDATE dbo.Products\r\n        SET StockQuantity = StockQuantity - @Quantity\r\n        WHERE ProductID = @ProductID;\r\n\r\n        COMMIT TRANSACTION;\r\n    END TRY\r\n    BEGIN CATCH\r\n        IF @@TRANCOUNT \u003E 0\r\n            ROLLBACK TRANSACTION;\r\n\r\n        THROW;\r\n    END CATCH;\r\nEND;\r\n",
+    "sourceDefinitionHash": "437e06e87913ebd0b62ab6640f4836ab7078b09bd85e5acea53b1fd0d1e7f9d4",
+    "dependsOn": [
+      "dbo.OrderItems",
+      "dbo.Orders",
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "sp_ProcessOrder",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE PROCEDURE dbo.sp_ProcessOrder(\n    p_CustomerID INT,\n    p_ProductID INT,\n    p_Quantity INT,\n    INOUT p_OrderID INT\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_CurrentStock INT;\n    v_Price DECIMAL(10,2);\nBEGIN\n    -- Check stock\n    SELECT StockQuantity INTO v_CurrentStock \n    FROM dbo.Products \n    WHERE ProductID = p_ProductID;\n\n    IF v_CurrentStock \u003C p_Quantity THEN\n        RAISE EXCEPTION SQLSTATE \u002750001\u0027 USING MESSAGE = \u0027Insufficient stock\u0027;\n    END IF;\n\n    -- Create order\n    SELECT Price INTO v_Price \n    FROM dbo.Products \n    WHERE ProductID = p_ProductID;\n\n    INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)\n    VALUES (p_CustomerID, v_Price * p_Quantity, \u0027Processing\u0027)\n    RETURNING OrderID INTO p_OrderID;\n\n    INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)\n    VALUES (p_OrderID, p_ProductID, p_Quantity, v_Price);\n\n    -- Update stock\n    UPDATE dbo.Products\n    SET StockQuantity = StockQuantity - p_Quantity\n    WHERE ProductID = p_ProductID;\n\n    -- Transaction is automatically committed if no exception occurs\nEXCEPTION\n    WHEN OTHERS THEN\n        -- Transaction is automatically rolled back on exception\n        RAISE;\nEND;\n$$;",
+    "confidenceScore": 0.92,
+    "assumptions": [
+      "The dbo schema exists in PostgreSQL or will be created",
+      "Tables dbo.Products, dbo.Orders, and dbo.OrderItems exist with compatible column definitions",
+      "OrderID column in dbo.Orders table has a default value (SERIAL, IDENTITY, or sequence)",
+      "The OUTPUT parameter @OrderID is converted to INOUT parameter p_OrderID in PostgreSQL",
+      "PostgreSQL procedures automatically handle transaction boundaries - explicit BEGIN/COMMIT removed as procedures run in caller\u0027s transaction context",
+      "Custom SQLSTATE \u002750001\u0027 is used to preserve the error code from SQL Server THROW statement",
+      "INT type mapping is direct (both support 4-byte integers)",
+      "DECIMAL(10,2) maps directly to PostgreSQL DECIMAL(10,2)"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "If no row is found, PostgreSQL will raise NO_DATA_FOUND exception. Consider adding error handling or using SELECT ... INTO STRICT for explicit control, or check for NULL if the behavior should differ.",
+        "codeSection": "SELECT StockQuantity INTO v_CurrentStock FROM dbo.Products WHERE ProductID = p_ProductID"
+      },
+      {
+        "reason": "Same as above - verify behavior when ProductID does not exist. May want to add explicit NULL checks or exception handling.",
+        "codeSection": "SELECT Price INTO v_Price FROM dbo.Products WHERE ProductID = p_ProductID"
+      },
+      {
+        "reason": "SQL Server OUTPUT parameters map to INOUT in PostgreSQL procedures. Verify that callers can handle this parameter mode. The parameter must be provided in the call even if initially NULL.",
+        "codeSection": "INOUT p_OrderID INT"
+      },
+      {
+        "reason": "PostgreSQL procedures run within the caller\u0027s transaction context. If this procedure is called from outside a transaction, it will auto-commit. If called within a transaction, it participates in that transaction. Verify this matches the expected behavior.",
+        "codeSection": "Transaction handling"
+      },
+      {
+        "reason": "Custom SQLSTATE codes in PostgreSQL should follow the pattern where codes starting with letters A-H or 0-4 are reserved. Using \u002750001\u0027 is acceptable but verify error handling in calling applications can handle this SQLSTATE.",
+        "codeSection": "RAISE EXCEPTION SQLSTATE \u002750001\u0027"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Transaction Control",
+        "description": "PostgreSQL procedures participate in the caller\u0027s transaction. Unlike SQL Server where BEGIN TRANSACTION creates a new transaction scope, PostgreSQL procedures cannot start autonomous transactions (unless using COMMIT/ROLLBACK in procedures with PostgreSQL 11\u002B, but this changes semantics significantly)."
+      },
+      {
+        "category": "Output Parameters",
+        "description": "SQL Server OUTPUT parameters become INOUT parameters in PostgreSQL procedures. Callers must provide a variable even if the initial value is not used. Consider creating a wrapper function if the calling interface needs to remain unchanged."
+      },
+      {
+        "category": "Error Handling",
+        "description": "SQL Server\u0027s @@TRANCOUNT check is removed as PostgreSQL handles transaction rollback automatically on exceptions within procedures. The EXCEPTION block will catch all errors and re-raise them."
+      },
+      {
+        "category": "Identity/Sequence Values",
+        "description": "SQL Server\u0027s SCOPE_IDENTITY() is replaced with RETURNING clause in INSERT statement. This is more reliable and PostgreSQL-idiomatic. Ensure the OrderID column has a default value (SERIAL or IDENTITY)."
+      },
+      {
+        "category": "SET NOCOUNT ON",
+        "description": "This SQL Server directive has no direct equivalent in PostgreSQL and is not needed. PostgreSQL procedures do not return row counts by default in the same way."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:31:07.5598512+00:00",
+  "isManuallyEdited": false
+}

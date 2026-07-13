@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SchemaConversion.Orchestration</name>
+    </assembly>
+    <members>
+        <member name="T:SchemaConversion.Orchestration.AuditLogWriter">
+            <summary>
+            Append-only JSON Lines audit log writer with file rotation.
+            Writes one JSON object per line to audit-{seq}.jsonl files.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.AuditLogWriter.#ctor(System.String,Microsoft.Extensions.Logging.ILogger{SchemaConversion.Orchestration.AuditLogWriter},System.Int64)">
+            <summary>
+            Creates a new AuditLogWriter.
+            </summary>
+            <param name="auditDirectory">Base directory for audit log files.</param>
+            <param name="logger">Logger instance.</param>
+            <param name="maxFileSizeBytes">Maximum file size before rotation. Defaults to 50MB.</param>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.AuditLogWriter.AuditLogRecord">
+            <summary>
+            Internal record for serializing audit entries with string timestamp.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.ConversionPipeline">
+            <summary>
+            Orchestrates the full schema conversion workflow:
+            extract → session → change detect → dependency order → classify → convert → persist → report.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionPipeline.ExecuteAsync(SchemaConversion.Core.Options.ConversionPipelineOptions,System.Threading.CancellationToken)">
+            <summary>
+            Executes the full conversion pipeline.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionPipeline.ProcessSingleObjectAsync(SchemaConversion.Core.Models.SchemaObject,SchemaConversion.Core.Options.ConversionPipelineOptions,SchemaConversion.Core.Options.ConversionContext,System.Threading.CancellationToken)">
+            <summary>
+            Processes a single schema object: classify → convert (with fallback) → persist.
+            Errors are isolated per-object.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionPipeline.HandleCycleAsync(System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.SchemaObject},SchemaConversion.Core.Options.ConversionPipelineOptions,System.Threading.CancellationToken)">
+            <summary>
+            Handles circular dependencies by creating placeholder stubs first,
+            then converting the objects with CREATE OR REPLACE semantics.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionPipeline.GeneratePlaceholderStub(SchemaConversion.Core.Models.SchemaObject)">
+            <summary>
+            Generates a minimal placeholder stub DDL for circular dependency resolution.
+            The actual object will be created later with CREATE OR REPLACE.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.ConversionPipelineResult">
+            <summary>
+            Result of a full conversion pipeline execution.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.ConversionSessionStore">
+            <summary>
+            Directory-based persistence for conversion sessions.
+            Each session is a directory containing session.json metadata and per-object JSON files.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionSessionStore.ReadFileWithRetryAsync(System.String,System.Threading.CancellationToken,System.Int32,System.Int32)">
+            <summary>
+            Reads a file with retry logic to handle transient file lock contention on Windows
+            (e.g., antivirus, indexing services, or delayed handle release).
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ConversionSessionStore.WriteFileWithRetryAsync(System.String,System.String,System.Threading.CancellationToken,System.Int32,System.Int32)">
+            <summary>
+            Writes a file with retry logic to handle transient file lock contention on Windows.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.ObjectClassifier">
+            <summary>
+            Classifies schema objects to determine whether they should be processed by
+            the rule-based converter or the AI-assisted converter.
+            </summary>
+        </member>
+        <member name="F:SchemaConversion.Orchestration.ObjectClassifier.SqlServerViewKeywords">
+            <summary>
+            SQL Server-specific keywords in view definitions that indicate the view
+            cannot be converted by simple rule-based translation.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.ObjectClassifier.ClassifyView(SchemaConversion.Core.Models.SchemaObject)">
+            <summary>
+            Views are rule-based by default, but get promoted to AI-assisted if their
+            source definition contains SQL Server-specific keywords that cannot be
+            translated by simple rules.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.PathValidator">
+            <summary>
+            Validates path segments to prevent directory traversal attacks.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.PathValidator.SessionIdPattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[a-zA-Z0-9\\-_]+$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [-0-9A-Z_a-z] atomically at least once.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.PathValidator.FileNameSegmentPattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[a-zA-Z0-9\\-_.]+$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [-.0-9A-Z_a-z] atomically at least once.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.PathValidator.ValidateSessionId(System.String)">
+            <summary>
+            Validates a session ID. Must be alphanumeric + hyphen + underscore only.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.PathValidator.ValidateNameSegment(System.String,System.String)">
+            <summary>
+            Validates a schema name or object name for use in file paths.
+            Must not contain path separators or traversal sequences.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.PathValidator.ValidateResolvedPath(System.String,System.String)">
+            <summary>
+            Validates that a resolved path is within the expected base directory.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Orchestration.SessionChangeDetector">
+            <summary>
+            Compares source definition SHA-256 hashes between current extraction and stored session
+            to identify new or modified objects that need (re)processing.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.SessionChangeDetector.GetObjectsRequiringProcessing(System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.SchemaObject},System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.ConversionSessionEntry},SchemaConversion.Core.Models.ConversionFilters)">
+            <summary>
+            Identifies objects that require processing: new objects or objects whose source hash has changed.
+            Objects marked as ManuallyReviewed are excluded from automatic reprocessing.
+            </summary>
+            <param name="currentObjects">Currently extracted schema objects from source.</param>
+            <param name="existingEntries">Previously stored session entries.</param>
+            <param name="filters">Optional filter criteria to apply.</param>
+            <returns>List of objects that need to be processed.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.SessionIdPattern_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the SessionIdPattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.SessionIdPattern_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.SessionIdPattern_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.SessionIdPattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the FileNameSegmentPattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.FileNameSegmentPattern_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_20FF03FEFFFF87FEFFFF07">
+            <summary>Supports searching for characters in or not in "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_60FF03FEFFFF87FEFFFF07">
+            <summary>Supports searching for characters in or not in "-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,65 @@
+{
+  "source": {
+    "name": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\nCREATE   FUNCTION dbo.fn_GetCustomerTotal(@CustomerID INT)\nRETURNS DECIMAL(18,2)\nAS\nBEGIN\n    DECLARE @Total DECIMAL(18,2);\n    SELECT @Total = ISNULL(SUM(TotalAmount), 0)\n    FROM dbo.Orders\n    WHERE CustomerID = @CustomerID;\n    RETURN @Total;\nEND;\n",
+    "sourceDefinitionHash": "9417862195cd3654a77aef9340ad34143c6c56dddb9b74742acb6ecd6a6803d0",
+    "dependsOn": [
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.fn_GetCustomerTotal(p_CustomerID INT)\nRETURNS DECIMAL(18,2)\nLANGUAGE plpgsql\nSTABLE\nAS $$\nDECLARE\n    v_Total DECIMAL(18,2);\nBEGIN\n    SELECT COALESCE(SUM(TotalAmount), 0)\n    INTO v_Total\n    FROM dbo.Orders\n    WHERE CustomerID = p_CustomerID;\n    \n    RETURN v_Total;\nEND;\n$$;",
+    "confidenceScore": 0.95,
+    "assumptions": [
+      "The dbo schema exists in PostgreSQL (create if needed)",
+      "The Orders table exists in the dbo schema with columns CustomerID and TotalAmount",
+      "TotalAmount column is numeric type compatible with DECIMAL(18,2)",
+      "Function marked as STABLE since it reads from database tables but doesn\u0027t modify data",
+      "ISNULL converted to COALESCE which is the PostgreSQL equivalent",
+      "Parameter prefixed with p_ to follow PostgreSQL naming conventions and avoid conflicts",
+      "Local variable prefixed with v_ to follow PostgreSQL naming conventions"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Verify that the function should be STABLE. If Orders table data changes frequently within a transaction and consistent reads are required, confirm this is the correct volatility level.",
+        "codeSection": "STABLE"
+      },
+      {
+        "reason": "Ensure the dbo schema and Orders table exist in PostgreSQL. PostgreSQL is case-sensitive with quoted identifiers, so verify schema and table naming conventions.",
+        "codeSection": "dbo.Orders"
+      },
+      {
+        "reason": "Confirm that DECIMAL(18,2) precision and scale are sufficient for the business requirements. PostgreSQL DECIMAL is equivalent to NUMERIC.",
+        "codeSection": "DECIMAL(18,2)"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Function Volatility",
+        "description": "PostgreSQL requires explicit volatility classification (IMMUTABLE/STABLE/VOLATILE). This function is marked STABLE because it reads from tables. SQL Server doesn\u0027t have this concept but uses schema binding and determinism hints."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "ISNULL converted to COALESCE. Both functions behave identically for this use case, returning 0 when SUM returns NULL."
+      },
+      {
+        "category": "Schema Qualification",
+        "description": "PostgreSQL schemas work differently than SQL Server. Ensure the dbo schema exists or adjust to use the appropriate schema (public is default)."
+      },
+      {
+        "category": "Parameter Naming",
+        "description": "Added p_ prefix to parameter name following PostgreSQL conventions to avoid potential conflicts with column names in queries."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:30.6941594+00:00",
+  "isManuallyEdited": false
+}

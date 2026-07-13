@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "wo9QkVJOVWo=",
+  "success": true,
+  "projectFilePath": "C:\\code\\ODBC_TSQL_To_SQL\\AI-AssistedSchemaConversion\\src\\SchemaConversion.AiEngine\\SchemaConversion.AiEngine.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.bedrockruntime\\3.7.414\\awssdk.bedrockruntime.3.7.414.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.core\\3.7.402.13\\awssdk.core.3.7.402.13.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\8.0.0\\microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.3\\microsoft.extensions.logging.abstractions.8.0.3.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.25\\microsoft.aspnetcore.app.ref.8.0.25.nupkg.sha512"
+  ],
+  "logs": []
+}

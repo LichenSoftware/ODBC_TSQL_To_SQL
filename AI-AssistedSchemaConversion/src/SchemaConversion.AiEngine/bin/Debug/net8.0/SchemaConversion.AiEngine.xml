@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SchemaConversion.AiEngine</name>
+    </assembly>
+    <members>
+        <member name="T:SchemaConversion.AiEngine.AiConverterService">
+            <summary>
+            Implements IAiConverter by coordinating PromptManager, BedrockClient, and AiResponseParser.
+            Writes audit log entries for every attempt and applies confidence threshold checks.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.AiConverterService.ConvertAsync(SchemaConversion.Core.Models.SchemaObject,SchemaConversion.Core.Options.ConversionContext,System.Threading.CancellationToken)">
+            <summary>
+            Converts a schema object using AI-assisted conversion via Amazon Bedrock.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.AiEngine.AiResponseParser">
+            <summary>
+            Parses and validates the structured JSON response from the AI model.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.AiResponseParser.Parse(System.String)">
+            <summary>
+            Parses the raw AI response text into a structured result.
+            Returns a failure result if the response is malformed or missing required fields.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.AiEngine.AiParseResult">
+            <summary>
+            Result of parsing an AI response. Either contains a parsed response or a failure reason.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.AiEngine.AiParsedResponse">
+            <summary>
+            Parsed and validated AI response data.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.AiEngine.BedrockClient">
+            <summary>
+            Communicates with Amazon Bedrock using the InvokeModel API.
+            Implements exponential backoff retry on throttling, server errors, timeouts, and malformed responses.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.BedrockClient.InvokeModelAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Invokes the Bedrock model with the given prompt and returns the raw response text.
+            Retries with exponential backoff on transient failures.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.AiEngine.PromptManager">
+            <summary>
+            Loads versioned prompt templates from a directory, parses YAML frontmatter,
+            and constructs full prompts by injecting placeholders.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.PromptManager.GetTemplateVersion(System.String)">
+            <summary>
+            Gets the version string for a given template category.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.PromptManager.BuildPrompt(System.String,System.Collections.Generic.Dictionary{System.String,System.String})">
+            <summary>
+            Builds a full prompt by selecting the template for the given category
+            and injecting the provided placeholders.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.AiEngine.PromptManager.GetAvailableCategories">
+            <summary>
+            Gets all loaded template categories.
+            </summary>
+        </member>
+    </members>
+</doc>

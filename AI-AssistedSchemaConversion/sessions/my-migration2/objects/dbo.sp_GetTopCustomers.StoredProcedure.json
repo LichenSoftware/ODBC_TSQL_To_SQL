@@ -1,0 +1,78 @@
+{
+  "source": {
+    "name": "sp_GetTopCustomers",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_GetTopCustomers\r\n    @TopN INT = 10\r\nAS\r\nBEGIN\r\n    SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC;\r\nEND;\r\n",
+    "sourceDefinitionHash": "f721bd224c32213f8d83fb9e7f5ebacb13700e1c65b952ec22cdc5c287c79500",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "sp_GetTopCustomers",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_GetTopCustomers(\n    p_TopN INT DEFAULT 10\n)\nRETURNS TABLE (\n    CustomerID INT,\n    FullName VARCHAR,\n    OrderCount BIGINT,\n    TotalSpent NUMERIC,\n    DaysSinceLastOrder INT\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT \n        c.CustomerID,\n        c.FirstName || \u0027 \u0027 || c.LastName AS FullName,\n        COUNT(o.OrderID) AS OrderCount,\n        COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent,\n        EXTRACT(DAY FROM (CURRENT_TIMESTAMP - MAX(o.OrderDate)))::INT AS DaysSinceLastOrder\n    FROM dbo.Customers c\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\n    ORDER BY TotalSpent DESC\n    LIMIT p_TopN;\nEND;\n$$;",
+    "confidenceScore": 0.85,
+    "assumptions": [
+      "The \u0027dbo\u0027 schema exists in PostgreSQL database",
+      "CustomerID column is of type INT in both Customers and Orders tables",
+      "FirstName and LastName are VARCHAR or TEXT types",
+      "TotalAmount is a numeric type (NUMERIC, DECIMAL, or similar)",
+      "OrderDate is a DATE or TIMESTAMP type",
+      "The procedure returns a result set, so converted to a FUNCTION returning TABLE",
+      "Parameter renamed from @TopN to p_TopN following PostgreSQL naming conventions"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Verify the actual data type of CustomerID in the Customers and Orders tables. It may be BIGINT, SERIAL, or another integer type.",
+        "codeSection": "CustomerID INT"
+      },
+      {
+        "reason": "VARCHAR without length specified. Consider using TEXT or VARCHAR with explicit length based on FirstName and LastName column definitions.",
+        "codeSection": "FullName VARCHAR"
+      },
+      {
+        "reason": "Verify the actual data type and precision of TotalAmount column in Orders table. May need NUMERIC(precision, scale) or DECIMAL.",
+        "codeSection": "TotalSpent NUMERIC"
+      },
+      {
+        "reason": "DATEDIFF conversion assumes OrderDate is DATE or TIMESTAMP. If OrderDate is DATE type, consider using (CURRENT_DATE - MAX(o.OrderDate))::INT for cleaner syntax. Result may differ if time components are involved.",
+        "codeSection": "EXTRACT(DAY FROM (CURRENT_TIMESTAMP - MAX(o.OrderDate)))::INT"
+      },
+      {
+        "reason": "Ensure the calling application expects a function instead of a procedure and can handle the TABLE return type.",
+        "codeSection": "LIMIT p_TopN"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Return Type",
+        "description": "SQL Server procedure returns result set implicitly. PostgreSQL function must be called with SELECT * FROM dbo.sp_GetTopCustomers(10) instead of EXEC dbo.sp_GetTopCustomers 10."
+      },
+      {
+        "category": "String Concatenation",
+        "description": "SQL Server uses \u002B operator for string concatenation, PostgreSQL uses || operator. NULL handling differs: SQL Server returns NULL if any operand is NULL, PostgreSQL CONCAT function handles NULLs but || does not."
+      },
+      {
+        "category": "Date Calculation",
+        "description": "DATEDIFF(DAY, ...) in SQL Server vs EXTRACT(DAY FROM interval) in PostgreSQL may produce different results when time components are involved. SQL Server DATEDIFF counts date boundaries crossed, PostgreSQL EXTRACT returns the day component of the interval."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "ISNULL converted to COALESCE. Both functions behave similarly for two arguments, but COALESCE is SQL standard."
+      },
+      {
+        "category": "TOP vs LIMIT",
+        "description": "SQL Server TOP clause converted to PostgreSQL LIMIT. Both produce equivalent results when used with ORDER BY."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:19.7774857+00:00",
+  "isManuallyEdited": false
+}

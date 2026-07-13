@@ -1,0 +1,15 @@
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\bin\Release\net8.0\SchemaConversion.Core.deps.json
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\bin\Release\net8.0\SchemaConversion.Core.dll
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\bin\Release\net8.0\SchemaConversion.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\bin\Release\net8.0\SchemaConversion.Core.xml
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.csproj.AssemblyReference.cache
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.AssemblyInfoInputs.cache
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.AssemblyInfo.cs
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.csproj.CoreCompileInputs.cache
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.sourcelink.json
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.dll
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\refint\SchemaConversion.Core.dll
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.xml
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\SchemaConversion.Core.pdb
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Core\obj\Release\net8.0\ref\SchemaConversion.Core.dll

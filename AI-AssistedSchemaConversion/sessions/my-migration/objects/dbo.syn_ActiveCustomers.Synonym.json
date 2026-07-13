@@ -1,0 +1,28 @@
+{
+  "source": {
+    "name": "syn_ActiveCustomers",
+    "schemaName": "dbo",
+    "objectType": "synonym",
+    "sourceDefinition": "",
+    "sourceDefinitionHash": "",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "syn_ActiveCustomers",
+    "schemaName": "dbo",
+    "objectType": "synonym",
+    "status": "failed",
+    "method": "aiAssisted",
+    "assumptions": [],
+    "reviewFlags": [
+      {
+        "reason": "AI conversion failed: Response parsing failed after 3 attempts: Response validation failed: \u0027ddl\u0027 is required and must be non-empty"
+      }
+    ],
+    "compatibilityNotes": [],
+    "promptTemplateVersion": "1.0.0",
+    "errorMessage": "Response parsing failed after 3 attempts: Response validation failed: \u0027ddl\u0027 is required and must be non-empty"
+  },
+  "convertedAt": "2026-07-11T18:30:18.4841406+00:00",
+  "isManuallyEdited": false
+}

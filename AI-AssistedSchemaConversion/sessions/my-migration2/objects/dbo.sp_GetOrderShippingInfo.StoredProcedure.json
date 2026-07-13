@@ -1,0 +1,69 @@
+{
+  "source": {
+    "name": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_GetOrderShippingInfo\r\n    @OrderID INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID;\r\nEND;\r\n",
+    "sourceDefinitionHash": "3030d5e798c08757bc2dfe07a2f6022aa5484e4c57e08f258ab1ba0d6dd9f6b7",
+    "dependsOn": [
+      "dbo.OrderMetadata",
+      "dbo.Orders",
+      "dbo.query",
+      "dbo.value"
+    ]
+  },
+  "result": {
+    "objectName": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_GetOrderShippingInfo(\n    p_OrderID INTEGER\n)\nRETURNS TABLE (\n    OrderID INTEGER,\n    ShippingAddress VARCHAR(500),\n    ShippingMethod VARCHAR(100),\n    ItemsXml XML\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        o.OrderID,\n        (xpath(\u0027/order/shipping/address/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(500) AS ShippingAddress,\n        (xpath(\u0027/order/shipping/method/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(100) AS ShippingMethod,\n        (xpath(\u0027/order/items\u0027, m.MetadataXml))[1] AS ItemsXml\n    FROM dbo.Orders o\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\n    WHERE o.OrderID = p_OrderID;\nEND;\n$$;",
+    "confidenceScore": 0.75,
+    "assumptions": [
+      "The MetadataXml column in OrderMetadata table is of type XML in PostgreSQL",
+      "The dbo schema exists in PostgreSQL database",
+      "SQL Server\u0027s .value() method maps to PostgreSQL\u0027s xpath() function with array indexing",
+      "SQL Server\u0027s .query() method maps to PostgreSQL\u0027s xpath() function",
+      "XPath expressions return text nodes that need to be cast to TEXT then to VARCHAR",
+      "The procedure returns a result set, so it\u0027s converted to a FUNCTION returning TABLE",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (PostgreSQL doesn\u0027t send row counts by default in functions)",
+      "Parameter name prefixed with p_ to follow PostgreSQL naming conventions and avoid conflicts"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "XPath conversion from SQL Server\u0027s .value() method requires careful testing. The xpath() function returns an array, and [1] gets the first element. Verify that the XPath expressions produce the expected results and handle NULL cases appropriately.",
+        "codeSection": "(xpath(\u0027/order/shipping/address/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(500)"
+      },
+      {
+        "reason": "SQL Server\u0027s .query() method returns XML fragments. PostgreSQL\u0027s xpath() returns an XML array. Verify that returning the first element [1] produces the desired XML structure. May need xmlelement() or other XML functions for exact compatibility.",
+        "codeSection": "(xpath(\u0027/order/items\u0027, m.MetadataXml))[1]"
+      },
+      {
+        "reason": "Ensure the MetadataXml column is defined as XML type in PostgreSQL. If it\u0027s stored as TEXT, additional casting with ::XML will be required.",
+        "codeSection": "MetadataXml column type"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "XML Processing",
+        "description": "SQL Server\u0027s XQuery methods (.value(), .query()) have different syntax than PostgreSQL\u0027s xpath() function. PostgreSQL xpath() returns arrays of XML nodes, requiring array indexing and explicit casting."
+      },
+      {
+        "category": "Return Type",
+        "description": "Converted from PROCEDURE to FUNCTION returning TABLE. Callers must use SELECT * FROM dbo.sp_GetOrderShippingInfo(order_id) instead of EXEC dbo.sp_GetOrderShippingInfo @OrderID = order_id."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "If XPath expressions don\u0027t match any nodes, PostgreSQL returns an empty array. Accessing [1] on an empty array returns NULL, which should match SQL Server behavior when .value() finds no match."
+      },
+      {
+        "category": "SET NOCOUNT",
+        "description": "PostgreSQL functions don\u0027t send row count messages by default, so SET NOCOUNT ON behavior is implicit and the statement is omitted."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:18.1379485+00:00",
+  "isManuallyEdited": false
+}

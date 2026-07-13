@@ -1,0 +1,66 @@
+{
+  "source": {
+    "name": "sp_GetExternalInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_GetExternalInventory\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- This references a linked server pattern that the feature detector will find\r\n    -- In a real environment this would query a remote server\r\n    DECLARE @SQL NVARCHAR(MAX) = N\u0027\r\n        SELECT * FROM OPENQUERY(RemoteWarehouse,\r\n            \u0027\u0027SELECT ProductCode, AvailableStock FROM Inventory WHERE AvailableStock \u003E 0\u0027\u0027)\u0027;\r\n\r\n    -- Just print for testing - actual execution would fail without the linked server\r\n    PRINT @SQL;\r\nEND;\r\n",
+    "sourceDefinitionHash": "69ecdbcdc62243fd19cfc25de152f71abf3fe7bf135fae6026aa3128a455a067",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "sp_GetExternalInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "flagged",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE PROCEDURE dbo.sp_GetExternalInventory()\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_sql TEXT;\nBEGIN\n    -- This references a linked server pattern that the feature detector will find\n    -- In PostgreSQL, use postgres_fdw (Foreign Data Wrapper) or dblink for remote queries\n    -- Example with postgres_fdw:\n    -- SELECT * FROM remote_warehouse_inventory WHERE AvailableStock \u003E 0\n    \n    v_sql := \u0027\n        SELECT * FROM dblink(\u0027\u0027RemoteWarehouse\u0027\u0027,\n            \u0027\u0027SELECT ProductCode, AvailableStock FROM Inventory WHERE AvailableStock \u003E 0\u0027\u0027)\n        AS t(ProductCode TEXT, AvailableStock INTEGER)\u0027;\n\n    -- Convert PRINT to RAISE NOTICE for testing\n    RAISE NOTICE \u0027%\u0027, v_sql;\nEND;\n$$;",
+    "confidenceScore": 0.65,
+    "assumptions": [
+      "The procedure does not return a result set, only prints SQL for testing purposes, so converted to PostgreSQL PROCEDURE",
+      "NVARCHAR(MAX) mapped to TEXT in PostgreSQL",
+      "PRINT statement converted to RAISE NOTICE",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (PostgreSQL doesn\u0027t send row counts by default in procedures)",
+      "OPENQUERY linked server syntax mapped to dblink() function as the closest PostgreSQL equivalent",
+      "The actual remote query execution is commented as it would require proper Foreign Data Wrapper (postgres_fdw) or dblink configuration",
+      "Column types in dblink result set (ProductCode TEXT, AvailableStock INTEGER) are assumed based on common patterns"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Linked server functionality requires manual setup in PostgreSQL. Must choose between postgres_fdw (recommended for PostgreSQL-to-PostgreSQL) or dblink extension. Connection strings and server configuration need to be established separately.",
+        "codeSection": "dblink(\u0027RemoteWarehouse\u0027, \u0027SELECT ProductCode, AvailableStock FROM Inventory WHERE AvailableStock \u003E 0\u0027)"
+      },
+      {
+        "reason": "The column definitions and data types for the remote query result must be explicitly defined in PostgreSQL dblink. Verify actual column types from the remote Inventory table.",
+        "codeSection": "AS t(ProductCode TEXT, AvailableStock INTEGER)"
+      },
+      {
+        "reason": "PRINT was converted to RAISE NOTICE. If this procedure is called from application code expecting specific output handling, the client-side code may need adjustment.",
+        "codeSection": "RAISE NOTICE \u0027%\u0027, v_sql"
+      },
+      {
+        "reason": "AI confidence (0.65) is below threshold (0.70)"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Remote Server Access",
+        "description": "SQL Server OPENQUERY with linked servers has no direct equivalent. PostgreSQL requires either postgres_fdw (Foreign Data Wrapper) for PostgreSQL servers, or dblink extension for ad-hoc queries. Both require prior configuration of server connections and user mappings."
+      },
+      {
+        "category": "Dynamic SQL Execution",
+        "description": "The original procedure builds but does not execute the dynamic SQL. If execution is needed, PostgreSQL requires EXECUTE with proper result handling, and dblink requires explicit column type definitions in the query."
+      },
+      {
+        "category": "Output Messages",
+        "description": "PRINT statements become RAISE NOTICE in PostgreSQL. Client applications must handle NOTICE messages differently than SQL Server\u0027s PRINT output."
+      },
+      {
+        "category": "Extension Requirements",
+        "description": "Using dblink requires the dblink extension to be installed: CREATE EXTENSION IF NOT EXISTS dblink; Alternatively, postgres_fdw is built-in but requires CREATE SERVER and CREATE USER MAPPING setup."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:23.2245164+00:00",
+  "isManuallyEdited": false
+}

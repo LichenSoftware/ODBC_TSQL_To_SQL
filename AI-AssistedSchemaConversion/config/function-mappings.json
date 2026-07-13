@@ -1,0 +1,164 @@
+{
+  "mappings": [
+    {
+      "sqlServerFunction": "GETDATE",
+      "postgresExpression": "CURRENT_TIMESTAMP",
+      "argCount": 0
+    },
+    {
+      "sqlServerFunction": "SYSDATETIME",
+      "postgresExpression": "CURRENT_TIMESTAMP",
+      "argCount": 0
+    },
+    {
+      "sqlServerFunction": "GETUTCDATE",
+      "postgresExpression": "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')",
+      "argCount": 0
+    },
+    {
+      "sqlServerFunction": "ISNULL",
+      "postgresExpression": "COALESCE({0}, {1})",
+      "argCount": 2
+    },
+    {
+      "sqlServerFunction": "LEN",
+      "postgresExpression": "LENGTH({0})",
+      "argCount": 1
+    },
+    {
+      "sqlServerFunction": "CHARINDEX",
+      "postgresExpression": "POSITION({0} IN {1})",
+      "argCount": 2
+    },
+    {
+      "sqlServerFunction": "NEWID",
+      "postgresExpression": "gen_random_uuid()",
+      "argCount": 0
+    },
+    {
+      "sqlServerFunction": "COALESCE",
+      "postgresExpression": "COALESCE({args})",
+      "argCount": -1,
+      "notes": "Variable argument count, pass through directly"
+    },
+    {
+      "sqlServerFunction": "STUFF",
+      "postgresExpression": "OVERLAY({0} PLACING {3} FROM {1} FOR {2})",
+      "argCount": 4
+    },
+    {
+      "sqlServerFunction": "STRING_AGG",
+      "postgresExpression": "STRING_AGG({0}, {1})",
+      "argCount": 2
+    },
+    {
+      "sqlServerFunction": "ISNUMERIC",
+      "postgresExpression": "({0} ~ '^[+-]?([0-9]*[.])?[0-9]+$')",
+      "argCount": 1,
+      "notes": "ISNUMERIC returns 1/0; this regex pattern approximates numeric detection. May need refinement for currency symbols and scientific notation."
+    },
+    {
+      "sqlServerFunction": "SCOPE_IDENTITY",
+      "postgresExpression": "lastval()",
+      "argCount": 0
+    },
+    {
+      "sqlServerFunction": "@@IDENTITY",
+      "postgresExpression": "lastval()",
+      "argCount": 0,
+      "notes": "@@IDENTITY returns last identity across all scopes; lastval() is session-scoped."
+    },
+    {
+      "sqlServerFunction": "@@ROWCOUNT",
+      "postgresExpression": null,
+      "argCount": 0,
+      "notes": "No direct equivalent. Use GET DIAGNOSTICS row_count = ROW_COUNT in PL/pgSQL context.",
+      "requiresProceduralContext": true,
+      "proceduralPattern": "GET DIAGNOSTICS {variable} = ROW_COUNT"
+    },
+    {
+      "sqlServerFunction": "OBJECT_ID",
+      "postgresExpression": "to_regclass({0})::oid",
+      "argCount": 1,
+      "notes": "Approximate mapping using PostgreSQL catalog lookup."
+    },
+    {
+      "sqlServerFunction": "DB_NAME",
+      "postgresExpression": "current_database()",
+      "argCount": 0
+    }
+  ],
+  "datePatterns": [
+    {
+      "sqlServerFunction": "DATEDIFF",
+      "argCount": 3,
+      "description": "DATEDIFF(datepart, startdate, enddate) → date subtraction with EXTRACT",
+      "partMappings": {
+        "YEAR": "EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1})",
+        "QUARTER": "(EXTRACT(YEAR FROM {2}) * 4 + EXTRACT(QUARTER FROM {2})) - (EXTRACT(YEAR FROM {1}) * 4 + EXTRACT(QUARTER FROM {1}))",
+        "MONTH": "(EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1})) * 12 + EXTRACT(MONTH FROM {2}) - EXTRACT(MONTH FROM {1})",
+        "DAY": "EXTRACT(DAY FROM ({2}::timestamp - {1}::timestamp))",
+        "HOUR": "EXTRACT(EPOCH FROM ({2}::timestamp - {1}::timestamp)) / 3600",
+        "MINUTE": "EXTRACT(EPOCH FROM ({2}::timestamp - {1}::timestamp)) / 60",
+        "SECOND": "EXTRACT(EPOCH FROM ({2}::timestamp - {1}::timestamp))",
+        "WEEK": "EXTRACT(DAY FROM ({2}::timestamp - {1}::timestamp)) / 7"
+      }
+    },
+    {
+      "sqlServerFunction": "DATEADD",
+      "argCount": 3,
+      "description": "DATEADD(datepart, number, date) → interval arithmetic",
+      "partMappings": {
+        "YEAR": "{2} + INTERVAL '{1} years'",
+        "QUARTER": "{2} + INTERVAL '{1} months' * 3",
+        "MONTH": "{2} + INTERVAL '{1} months'",
+        "DAY": "{2} + INTERVAL '{1} days'",
+        "HOUR": "{2} + INTERVAL '{1} hours'",
+        "MINUTE": "{2} + INTERVAL '{1} minutes'",
+        "SECOND": "{2} + INTERVAL '{1} seconds'",
+        "WEEK": "{2} + INTERVAL '{1} weeks'"
+      }
+    }
+  ],
+  "convertPatterns": {
+    "description": "CONVERT(target_type, expression, style_code) mappings",
+    "typeOnly": "CAST({1} AS {0})",
+    "withStyleCode": "TO_CHAR({1}, '{format}')",
+    "toDateWithStyleCode": "TO_DATE({1}, '{format}')",
+    "toTimestampWithStyleCode": "TO_TIMESTAMP({1}, '{format}')"
+  },
+  "castPatterns": {
+    "description": "CAST(expression AS type) → CAST(expression AS mapped_type)",
+    "pattern": "CAST({0} AS {1})"
+  },
+  "styleCodes": {
+    "101": {
+      "format": "MM/DD/YYYY",
+      "toCharPattern": "MM/DD/YYYY"
+    },
+    "103": {
+      "format": "DD/MM/YYYY",
+      "toCharPattern": "DD/MM/YYYY"
+    },
+    "104": {
+      "format": "DD.MM.YYYY",
+      "toCharPattern": "DD.MM.YYYY"
+    },
+    "110": {
+      "format": "MM-DD-YYYY",
+      "toCharPattern": "MM-DD-YYYY"
+    },
+    "120": {
+      "format": "YYYY-MM-DD HH:MI:SS",
+      "toCharPattern": "YYYY-MM-DD HH24:MI:SS"
+    },
+    "121": {
+      "format": "YYYY-MM-DD HH:MI:SS.MS",
+      "toCharPattern": "YYYY-MM-DD HH24:MI:SS.MS"
+    },
+    "126": {
+      "format": "YYYY-MM-DDTHH:MI:SS",
+      "toCharPattern": "YYYY-MM-DD\"T\"HH24:MI:SS"
+    }
+  }
+}

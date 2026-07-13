@@ -1,0 +1,64 @@
+{
+  "source": {
+    "name": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\nCREATE   PROCEDURE dbo.usp_UpdateInventory\n    @ProductID INT,\n    @NewQuantity INT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    UPDATE p\n    SET p.StockQuantity = @NewQuantity\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\n    WHERE p.ProductID = @ProductID;\nEND;\n",
+    "sourceDefinitionHash": "f866d5ecae05dd932d0592fffc2190ac89849214f3640e4b87dc4c6207b9b32f",
+    "dependsOn": [
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE PROCEDURE dbo.usp_UpdateInventory(\n    p_ProductID INT,\n    p_NewQuantity INT\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- SET NOCOUNT ON equivalent: PostgreSQL doesn\u0027t send row counts by default in procedures\n    \n    UPDATE dbo.Products p\n    SET StockQuantity = p_NewQuantity\n    WHERE p.ProductID = p_ProductID\n    FOR UPDATE; -- Equivalent to UPDLOCK, ROWLOCK for row-level locking\n    \nEND;\n$$;",
+    "confidenceScore": 0.85,
+    "assumptions": [
+      "The schema \u0027dbo\u0027 exists in PostgreSQL or will be created",
+      "The Products table exists with columns ProductID and StockQuantity",
+      "INT type mapping is appropriate for both ProductID and NewQuantity",
+      "Row-level locking behavior with FOR UPDATE is acceptable replacement for WITH (UPDLOCK, ROWLOCK)",
+      "Parameter naming convention changed from @ParamName to p_ParamName to follow PostgreSQL best practices",
+      "SET NOCOUNT ON is not needed as PostgreSQL procedures don\u0027t return row counts by default"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "SQL Server\u0027s WITH (UPDLOCK, ROWLOCK) hint provides update lock during SELECT. PostgreSQL\u0027s FOR UPDATE in UPDATE statement locks rows being updated. The locking semantics differ: SQL Server hint prevents other transactions from reading locked rows with certain isolation levels, while PostgreSQL\u0027s default behavior allows reads. Consider if additional locking strategy or isolation level changes are needed.",
+        "codeSection": "FOR UPDATE"
+      },
+      {
+        "reason": "PostgreSQL UPDATE syntax differs from SQL Server. The alias \u0027p\u0027 is used differently. Verify the UPDATE statement works correctly with the target PostgreSQL version and table structure.",
+        "codeSection": "UPDATE statement with table alias"
+      },
+      {
+        "reason": "Parameters renamed from @ProductID to p_ProductID to avoid confusion with column names in WHERE clause. Ensure calling applications are updated to match new parameter names if using named parameter syntax.",
+        "codeSection": "Parameter naming"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Locking Behavior",
+        "description": "SQL Server\u0027s WITH (UPDLOCK, ROWLOCK) hint and PostgreSQL\u0027s row locking have different semantics. SQL Server\u0027s UPDLOCK prevents other transactions from acquiring shared locks, while PostgreSQL\u0027s FOR UPDATE only blocks conflicting locks. The default isolation levels also differ (READ COMMITTED in both, but implementation varies)."
+      },
+      {
+        "category": "Transaction Context",
+        "description": "SQL Server stored procedures run in implicit transactions by default. PostgreSQL procedures can control transactions explicitly. This procedure will run within the caller\u0027s transaction context if one exists, or in autocommit mode otherwise."
+      },
+      {
+        "category": "SET NOCOUNT ON",
+        "description": "SQL Server\u0027s SET NOCOUNT ON suppresses \u0027rows affected\u0027 messages. PostgreSQL procedures don\u0027t return row counts to clients by default, so this is implicitly handled."
+      },
+      {
+        "category": "Error Handling",
+        "description": "The original procedure has no explicit error handling. PostgreSQL will raise exceptions on errors by default. Consider adding EXCEPTION blocks if specific error handling is needed."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:31:10.0169731+00:00",
+  "isManuallyEdited": false
+}

@@ -1,0 +1,64 @@
+{
+  "source": {
+    "name": "sp_SharedTempReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_SharedTempReport\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    CREATE TABLE ##GlobalOrderSummary (\r\n        OrderDate DATE,\r\n        TotalOrders INT,\r\n        TotalRevenue DECIMAL(12,2)\r\n    );\r\n\r\n    INSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE);\r\n\r\n    SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC;\r\n\r\n    DROP TABLE ##GlobalOrderSummary;\r\nEND;\r\n",
+    "sourceDefinitionHash": "a971b9c77808c9fa2e529674ccb21f8d31e2f9fef547636134108f0ca92538b6",
+    "dependsOn": [
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "sp_SharedTempReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_SharedTempReport()\nRETURNS TABLE (\n    OrderDate DATE,\n    TotalOrders INT,\n    TotalRevenue DECIMAL(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- PostgreSQL uses local temporary tables instead of global temp tables\n    -- The temp table is session-scoped and will be dropped automatically\n    CREATE TEMP TABLE IF NOT EXISTS temp_global_order_summary (\n        OrderDate DATE,\n        TotalOrders INT,\n        TotalRevenue DECIMAL(12,2)\n    ) ON COMMIT DROP;\n\n    -- Clear any existing data if table already exists\n    DELETE FROM temp_global_order_summary;\n\n    INSERT INTO temp_global_order_summary\n    SELECT\n        CAST(OrderDate AS DATE),\n        COUNT(*)::INT,\n        SUM(TotalAmount)\n    FROM dbo.Orders\n    GROUP BY CAST(OrderDate AS DATE);\n\n    RETURN QUERY\n    SELECT \n        t.OrderDate,\n        t.TotalOrders,\n        t.TotalRevenue\n    FROM temp_global_order_summary t\n    ORDER BY t.OrderDate DESC;\n\n    -- Temp table will be dropped automatically at transaction end\n    -- or we can drop explicitly\n    DROP TABLE IF EXISTS temp_global_order_summary;\nEND;\n$$;",
+    "confidenceScore": 0.75,
+    "assumptions": [
+      "Converted global temporary table (##GlobalOrderSummary) to local temporary table (temp_global_order_summary) as PostgreSQL does not have true global temporary tables",
+      "The procedure returns a result set, so converted to a FUNCTION returning TABLE",
+      "Assumed dbo.Orders table exists with OrderDate and TotalAmount columns",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (PostgreSQL functions don\u0027t return row counts by default)",
+      "Used ON COMMIT DROP for temp table to ensure cleanup, though explicit DROP is also included",
+      "Assumed the function will be called in a way that consumes the result set immediately"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Global temporary tables (##) in SQL Server are visible across sessions, but PostgreSQL temp tables are session-scoped only. If cross-session visibility is required, consider using a permanent application table with session tracking or advisory locks.",
+        "codeSection": "CREATE TEMP TABLE IF NOT EXISTS temp_global_order_summary"
+      },
+      {
+        "reason": "Verify that the calling application can handle a function returning a table instead of a procedure with a result set. The calling syntax will change from EXEC to SELECT * FROM.",
+        "codeSection": "RETURN QUERY SELECT ... FROM temp_global_order_summary"
+      },
+      {
+        "reason": "Verify that the dbo schema exists in PostgreSQL and contains the Orders table with the expected columns (OrderDate, TotalAmount). PostgreSQL is case-sensitive with quoted identifiers.",
+        "codeSection": "FROM dbo.Orders"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Temporary Table Scope",
+        "description": "SQL Server\u0027s ##GlobalOrderSummary is visible across all sessions until the creating session ends. PostgreSQL temp tables are session-local only. If multi-session access is needed, use a regular table with session identifiers or implement application-level coordination."
+      },
+      {
+        "category": "Calling Convention",
+        "description": "SQL Server: EXEC dbo.sp_SharedTempReport; PostgreSQL: SELECT * FROM dbo.sp_SharedTempReport(); The calling syntax changes from procedure execution to function invocation."
+      },
+      {
+        "category": "Transaction Behavior",
+        "description": "The temp table with ON COMMIT DROP will be dropped at transaction commit. If called outside a transaction block, it drops immediately after the function completes. The explicit DROP may be redundant but ensures cleanup."
+      },
+      {
+        "category": "Result Set Handling",
+        "description": "SQL Server procedures can return multiple result sets and have OUT parameters. PostgreSQL functions return a single result set. The conversion maintains single result set behavior."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:48.8264478+00:00",
+  "isManuallyEdited": false
+}

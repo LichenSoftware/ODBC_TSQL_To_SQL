@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SchemaConversion.Core/SchemaConversion.Core.csproj" />
+    <Project Path="src/SchemaConversion.Extraction/SchemaConversion.Extraction.csproj" />
+    <Project Path="src/SchemaConversion.RuleEngine/SchemaConversion.RuleEngine.csproj" />
+    <Project Path="src/SchemaConversion.AiEngine/SchemaConversion.AiEngine.csproj" />
+    <Project Path="src/SchemaConversion.Orchestration/SchemaConversion.Orchestration.csproj" />
+    <Project Path="src/SchemaConversion.Reporting/SchemaConversion.Reporting.csproj" />
+    <Project Path="src/SchemaConversion.Cli/SchemaConversion.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SchemaConversion.Core.Tests/SchemaConversion.Core.Tests.csproj" />
+    <Project Path="tests/SchemaConversion.Extraction.Tests/SchemaConversion.Extraction.Tests.csproj" />
+    <Project Path="tests/SchemaConversion.RuleEngine.Tests/SchemaConversion.RuleEngine.Tests.csproj" />
+    <Project Path="tests/SchemaConversion.AiEngine.Tests/SchemaConversion.AiEngine.Tests.csproj" />
+    <Project Path="tests/SchemaConversion.Orchestration.Tests/SchemaConversion.Orchestration.Tests.csproj" />
+    <Project Path="tests/SchemaConversion.Reporting.Tests/SchemaConversion.Reporting.Tests.csproj" />
+  </Folder>
+</Solution>

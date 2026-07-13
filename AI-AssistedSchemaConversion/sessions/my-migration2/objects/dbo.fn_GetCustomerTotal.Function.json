@@ -1,0 +1,60 @@
+{
+  "source": {
+    "name": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\nCREATE   FUNCTION dbo.fn_GetCustomerTotal(@CustomerID INT)\nRETURNS DECIMAL(18,2)\nAS\nBEGIN\n    DECLARE @Total DECIMAL(18,2);\n    SELECT @Total = ISNULL(SUM(TotalAmount), 0)\n    FROM dbo.Orders\n    WHERE CustomerID = @CustomerID;\n    RETURN @Total;\nEND;\n",
+    "sourceDefinitionHash": "9417862195cd3654a77aef9340ad34143c6c56dddb9b74742acb6ecd6a6803d0",
+    "dependsOn": [
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.fn_GetCustomerTotal(p_CustomerID INT)\nRETURNS DECIMAL(18,2)\nLANGUAGE plpgsql\nSTABLE\nAS $$\nDECLARE\n    v_Total DECIMAL(18,2);\nBEGIN\n    SELECT COALESCE(SUM(TotalAmount), 0)\n    INTO v_Total\n    FROM dbo.Orders\n    WHERE CustomerID = p_CustomerID;\n    \n    RETURN v_Total;\nEND;\n$$;",
+    "confidenceScore": 0.95,
+    "assumptions": [
+      "The dbo schema exists in PostgreSQL (may need to be created or changed to public)",
+      "The Orders table exists in the dbo schema with columns CustomerID and TotalAmount",
+      "TotalAmount column is numeric/decimal type compatible with SUM aggregation",
+      "Function marked as STABLE since it reads from database tables but doesn\u0027t modify data",
+      "Parameter prefixed with p_ and variable with v_ following PostgreSQL naming conventions",
+      "ISNULL converted to COALESCE which is the PostgreSQL equivalent"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Verify that the dbo schema exists in PostgreSQL or change to appropriate schema (typically \u0027public\u0027). PostgreSQL is case-sensitive for quoted identifiers.",
+        "codeSection": "dbo schema reference"
+      },
+      {
+        "reason": "Confirm that DECIMAL(18,2) precision and scale meet business requirements. PostgreSQL DECIMAL is equivalent to NUMERIC.",
+        "codeSection": "DECIMAL(18,2) precision"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Function Volatility",
+        "description": "Marked as STABLE (reads database, doesn\u0027t modify). SQL Server has no direct equivalent to PostgreSQL\u0027s volatility categories, but this affects query optimization."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "ISNULL converted to COALESCE. Both functions behave identically for this use case, returning 0 when SUM is NULL."
+      },
+      {
+        "category": "Schema Binding",
+        "description": "SQL Server\u0027s WITH SCHEMABINDING has no direct PostgreSQL equivalent. PostgreSQL functions reference objects by name at execution time."
+      },
+      {
+        "category": "Language",
+        "description": "Converted to PL/pgSQL (LANGUAGE plpgsql). This is the standard procedural language for PostgreSQL, equivalent to T-SQL."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:07.7982478+00:00",
+  "isManuallyEdited": false
+}

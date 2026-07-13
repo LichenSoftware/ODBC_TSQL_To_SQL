@@ -1,0 +1,163 @@
+# Implementation Plan: AI-Assisted Schema Conversion
+
+## Overview
+
+This implementation plan covers the build-out of the AI-Assisted Schema Conversion application across 12 tasks. Tasks are ordered by dependency — Core models/interfaces first, then extraction, rule engine, AI engine, orchestration, reporting, CLI, and finally integration testing. Each task produces a buildable increment.
+
+## Tasks
+
+- [x] 1. Create Solution Structure and Core Project
+  - Create `AI-AssistedSchemaConversion/SchemaConversion.slnx` solution file with project references for all 7 src projects and 6 test projects
+  - Create `src/SchemaConversion.Core/SchemaConversion.Core.csproj` targeting net8.0 with nullable enabled, implicit usings, TreatWarningsAsErrors, and Microsoft.Extensions.Logging.Abstractions 8.0.3
+  - Create `Models/SchemaObjectType.cs` enum (Table, View, StoredProcedure, Function, Trigger, Index, Constraint, Sequence, UserDefinedType, Synonym, Schema, Permission)
+  - Create `Models/ConversionStatus.cs` enum (Pending, Converted, Flagged, Failed, OutOfScope, ManuallyReviewed)
+  - Create `Models/ConversionMethod.cs` enum (RuleBased, AiAssisted, Manual)
+  - Create `Models/SchemaObject.cs` record (Name, SchemaName, ObjectType, SourceDefinition, SourceDefinitionHash, DependsOn)
+  - Create `Models/ConversionResult.cs` record (ObjectName, SchemaName, ObjectType, Status, Method, GeneratedDdl, WrapperDdl, ConfidenceScore, Assumptions, ReviewFlags, CompatibilityNotes, PromptTemplateVersion, ErrorMessage)
+  - Create `Models/ManualReviewFlag.cs`, `CompatibilityNote.cs`, `ConversionSessionEntry.cs`, `AuditLogEntry.cs`, `ConversionReport.cs`, `ClassificationResult.cs`, `DependencyOrderResult.cs`, `TypeMappingRule.cs`, `FunctionMappingRule.cs`
+  - Create all interfaces: `ISchemaExtractor`, `IObjectClassifier`, `IRuleBasedConverter`, `IAiConverter`, `IConversionSessionStore`, `IAuditLogWriter`, `IConversionReportGenerator`, `IScriptGenerator`
+  - Create option classes: `SchemaExtractionOptions`, `ConversionContext`, `ConversionPipelineOptions`, `ScriptGenerationOptions`, `BedrockClientOptions`
+  - Verify project builds with `dotnet build`
+
+- [x] 2. Create Configuration Files and Mapping Rulesets
+  - Create `config/type-mappings.json` with all SQL Server to PostgreSQL type mappings from Requirement 18 (INT→INTEGER, TINYINT→SMALLINT+CHECK, MONEY→NUMERIC(19,4), DATETIME2→TIMESTAMP with precision, BIT→BOOLEAN, UNIQUEIDENTIFIER→UUID, etc.)
+  - Create `config/function-mappings.json` with all function mappings from Requirement 19 (GETDATE→CURRENT_TIMESTAMP, ISNULL→COALESCE, LEN→LENGTH, NEWID→gen_random_uuid(), DATEDIFF/DATEADD patterns, CONVERT style codes)
+  - Create `config/schema-mappings.json` with default mappings (dbo→public, others map to same name)
+  - Create `config/prompts/stored-procedure.v1.0.0.md` with YAML frontmatter and prompt template for procedure/function conversion
+  - Create `config/prompts/function.v1.0.0.md`, `trigger.v1.0.0.md`, `complex-object.v1.0.0.md`, `view.v1.0.0.md` prompt templates
+  - Create `appsettings.json` with Bedrock, Conversion, AuditLog, and Output configuration sections
+
+- [x] 3. Implement Schema Extraction Project
+  - Create `src/SchemaConversion.Extraction/SchemaConversion.Extraction.csproj` with dependencies on Core, Microsoft.Data.SqlClient, Microsoft.SqlServer.TransactSql.ScriptDom
+  - Implement `SqlServerSchemaExtractor` (queries sys.objects, sys.columns, sys.types, sys.sql_modules, sys.sql_expression_dependencies)
+  - Implement `DdlFileSchemaExtractor` (parses .sql files via ScriptDom, extracts objects, computes SHA-256 hashes, infers dependencies)
+  - Implement `DependencyGraphBuilder` with topological sort (Kahn's algorithm) and cycle detection (Tarjan's SCC)
+  - Implement path validation to prevent traversal attacks on DDL file inputs
+  - Ensure connection strings are never logged or persisted
+  - Verify project builds with `dotnet build`
+
+- [x] 4. Implement Rule Engine — Type Mapper, Function Mapper, and Expression Translator
+  - Create `src/SchemaConversion.RuleEngine/SchemaConversion.RuleEngine.csproj` with dependencies on Core, ScriptDom, Configuration, System.Text.Json
+  - Implement `TypeMapper` (loads type-mappings.json, MapType method with precision/scale propagation, maxPrecision cap, TINYINT CHECK constraint)
+  - Implement `FunctionMapper` (loads function-mappings.json, MapFunction method, CONVERT style code handling, returns null for unmapped functions)
+  - Implement `ExpressionTranslator` (walks ScriptDom expression AST, applies TypeMapper + FunctionMapper, handles + to || translation, TOP to LIMIT, returns CannotTranslate for unmapped constructs)
+  - Implement startup validation for both mapping configuration files
+  - Verify project builds with `dotnet build`
+
+- [x] 5. Implement Rule Engine — Table, Constraint, and Index Converters
+  - Implement `TableConverter` (parses CREATE TABLE via ScriptDom, applies TypeMapper per column, converts IDENTITY to GENERATED BY DEFAULT AS IDENTITY, handles DEFAULT via ExpressionTranslator with AI fallback, handles computed columns, applies Schema_Mapping_Table)
+  - Implement `ConstraintConverter` (PRIMARY KEY, FOREIGN KEY with ON DELETE/UPDATE defaulting to NO ACTION, UNIQUE, CHECK via ExpressionTranslator with AI fallback)
+  - Implement `IndexConverter` (standard, unique, filtered/partial, clustered with compatibility note, INCLUDE columns)
+  - Implement TINYINT CHECK constraint auto-generation
+  - Verify converters produce correct PostgreSQL DDL for representative inputs
+
+- [x] 6. Implement Rule Engine — Sequence, View, Schema, Type, Synonym, and Permission Converters
+  - Implement `SequenceConverter` (preserves data type, start, increment, min, max, cycle, cache)
+  - Implement `ViewConverter` (translates SELECT body via ExpressionTranslator, preserves column aliases, WITH CHECK OPTION, omits SCHEMABINDING with note, falls back to AI on untranslatable expressions)
+  - Implement `SchemaConverter` (generates CREATE SCHEMA IF NOT EXISTS, applies Schema_Mapping_Table)
+  - Implement `UserDefinedTypeConverter` (alias types to DOMAIN, table types to composite TYPE, CLR types flagged)
+  - Implement `SynonymConverter` (synonyms to views)
+  - Implement `PermissionConverter` (GRANT/REVOKE conversion, DENY flagged with ManualReviewFlag)
+  - Implement `RuleBasedConverterRouter` (dispatches to correct converter by SchemaObjectType, implements IRuleBasedConverter)
+  - Verify all converters build and produce valid output
+
+- [x] 7. Implement AI Engine — Bedrock Client, Prompt Manager, and AI Converter Service
+  - Create `src/SchemaConversion.AiEngine/SchemaConversion.AiEngine.csproj` with dependencies on Core, AWSSDK.BedrockRuntime, Configuration, Logging, System.Text.Json
+  - Implement `BedrockClient` (InvokeModelAsync, standard AWS credential chain, configurable ModelId/Temperature/MaxOutputTokens/Timeout, exponential backoff retry on 429/5xx/timeout/malformed, configuration validation at construction)
+  - Implement `PromptManager` (loads templates from directory, parses YAML frontmatter for version/category, BuildPrompt with placeholder injection, validates templates at startup)
+  - Implement `AiResponseParser` (deserializes JSON response, validates required fields ddl/confidence/assumptions/reviewAreas, returns parse failure for malformed responses)
+  - Implement `AiConverterService` (implements IAiConverter, coordinates PromptManager→BedrockClient→AiResponseParser, writes to IAuditLogWriter, applies confidence threshold, manages retry lifecycle)
+  - Ensure no credentials or sensitive data in logs
+  - Verify project builds with `dotnet build`
+
+- [x] 8. Implement Orchestration — Session Store, Audit Log Writer, and Change Detection
+  - Create `src/SchemaConversion.Orchestration/SchemaConversion.Orchestration.csproj` with dependencies on Core, Logging, System.Text.Json
+  - Implement `ConversionSessionStore` (directory-based persistence: session.json metadata, objects/{schema}.{name}.{type}.json per entry, LoadOrCreateAsync, SaveEntryAsync, GetEntryAsync, GetAllEntriesAsync)
+  - Implement `AuditLogWriter` (append-only JSON Lines to audit-{seq}.jsonl, file rotation on MaxFileSizeBytes, UTC timestamps with ms precision, no sensitive data)
+  - Implement `SessionChangeDetector` (compares SHA-256 hashes, identifies new/modified objects, respects filter criteria)
+  - Implement path traversal validation for all file operations
+  - Verify session round-trip: save entry, load back, assert equality
+
+- [x] 9. Implement Orchestration — Conversion Pipeline and Object Classifier
+  - Implement `ObjectClassifier` (classifies by object type, syntax-scans views for SQL Server keywords, supports manual override via force-ai/force-rules)
+  - Implement `ConversionPipeline` (full workflow: extract → session → change detect → dependency order → classify → convert → persist → report, fallback from rules to AI, parallel processing with SemaphoreSlim, progress reporting)
+  - Implement circular dependency handling (placeholder stubs + CREATE OR REPLACE)
+  - Implement per-object error isolation (catch, mark Failed, continue)
+  - Verify pipeline processes test objects through full flow with mocked dependencies
+
+- [x] 10. Implement Reporting — Report Generator and Script Generator
+  - Create `src/SchemaConversion.Reporting/SchemaConversion.Reporting.csproj` with dependencies on Core, Logging, System.Text.Json
+  - Implement `ConversionReportGenerator` (aggregates entries into ConversionReport JSON: per-object details, summary stats, progress percentage, compatibility notes, flagged objects list)
+  - Implement `ScriptOrderResolver` (orders DDL by category: schemas → types → sequences → tables → indexes → functions → triggers → views → wrappers → permissions → comments, respects intra-category dependencies)
+  - Implement `ScriptGenerator` (output modes: consolidated/per-schema/per-type/per-object, includes comments, uses IF NOT EXISTS / CREATE OR REPLACE, writes to output directory)
+  - Verify report JSON matches documented schema and scripts are dependency-ordered
+
+- [x] 11. Implement CLI Host and Commands
+  - Create `src/SchemaConversion.Cli/SchemaConversion.Cli.csproj` as Exe with dependencies on all src projects, DI, Configuration.Json, Logging.Console, System.CommandLine
+  - Implement `Program.cs` with DI setup, configuration loading, logging, root command
+  - Implement `extract` command (--connection or --files, --output, calls ISchemaExtractor, creates session)
+  - Implement `convert` command (--session, --schema, --type, --objects, --force-ai, --force-rules, --concurrency, executes pipeline with progress)
+  - Implement `rerun` command (--session, --objects, re-converts specified objects)
+  - Implement `review` command (--session, --flagged-only, displays conversion results)
+  - Implement `edit` command (--session, --object, --file, persists manual edit)
+  - Implement `approve` command (--session, --objects or --all, marks objects approved)
+  - Implement `generate` command (--session, --output, --mode, produces DDL scripts)
+  - Implement `report` command (--session, --output, produces JSON report)
+  - Implement startup configuration validation (mappings files, prompt templates)
+  - Verify CLI builds, runs, and displays help for each command
+
+- [x] 12. Integration Testing and End-to-End Validation
+  - Create `tests/SchemaConversion.RuleEngine.Tests/` with xUnit tests for TypeMapper (all 16 type mappings, precision handling, TINYINT CHECK), FunctionMapper (all function mappings, style codes, unmapped returns null), ExpressionTranslator (string concat, TOP, nested functions, AI fallback), TableConverter (full table with IDENTITY, defaults, computed columns), IndexConverter (standard, unique, filtered, clustered)
+  - Create `tests/SchemaConversion.AiEngine.Tests/` with tests for PromptManager (template loading, version extraction), AiResponseParser (valid/malformed response handling), BedrockClient retry logic (mock HTTP 429/500/timeout sequences)
+  - Create `tests/SchemaConversion.Orchestration.Tests/` with tests for ObjectClassifier routing, SessionChangeDetector hash comparison, ConversionPipeline flow with mocked dependencies
+  - Create `tests/SchemaConversion.Extraction.Tests/` with tests for DependencyGraphBuilder (linear chain, diamond, cycle detection via Tarjan's)
+  - Create `tests/SchemaConversion.Reporting.Tests/` with tests for report JSON structure and script ordering
+  - Create end-to-end integration test: feed sample DDL script through full pipeline with mocked Bedrock, verify session files, audit log, report JSON, and output script ordering
+  - Verify all tests pass with `dotnet test`
+
+## Task Dependency Graph
+
+```json
+{
+  "waves": [
+    {
+      "wave": 1,
+      "tasks": [1, 2],
+      "description": "Foundation: Core models/interfaces and configuration files"
+    },
+    {
+      "wave": 2,
+      "tasks": [3, 4, 7, 8, 10],
+      "description": "Infrastructure: Extraction, Rule Engine base, AI Engine, Orchestration session/audit, Reporting"
+    },
+    {
+      "wave": 3,
+      "tasks": [5, 6],
+      "description": "Rule Engine converters: Table/Constraint/Index and remaining converters"
+    },
+    {
+      "wave": 4,
+      "tasks": [9],
+      "description": "Orchestration pipeline: depends on extraction, all converters, AI engine, and session store"
+    },
+    {
+      "wave": 5,
+      "tasks": [11],
+      "description": "CLI host: depends on all src projects"
+    },
+    {
+      "wave": 6,
+      "tasks": [12],
+      "description": "Integration testing: depends on all implementation tasks"
+    }
+  ]
+}
+```
+
+## Notes
+
+- All projects target .NET 8 with nullable reference types enabled, implicit usings, and TreatWarningsAsErrors.
+- Follow the same coding patterns as the sibling MigrationAssessment solution (async/await, CancellationToken propagation, ILogger injection, record types for DTOs).
+- The AWSSDK.BedrockRuntime NuGet package should be pinned to a specific version at time of implementation.
+- Microsoft.SqlServer.TransactSql.ScriptDom is available as a NuGet package (161.x+) and does not require SQL Server to be installed.
+- System.CommandLine is in pre-release; pin to latest stable preview version available.

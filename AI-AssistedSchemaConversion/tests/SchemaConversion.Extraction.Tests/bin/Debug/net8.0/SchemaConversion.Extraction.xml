@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SchemaConversion.Extraction</name>
+    </assembly>
+    <members>
+        <member name="T:SchemaConversion.Extraction.DdlFileSchemaExtractor">
+            <summary>
+            Extracts schema objects from .sql DDL files using the ScriptDom T-SQL parser.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Extraction.DdlFileSchemaExtractor.ValidateFilePath(System.String)">
+            <summary>
+            Validates a file path to prevent directory traversal attacks.
+            Rejects paths containing ".." segments or rooted paths outside a reasonable scope.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Extraction.DdlFileSchemaExtractor.ObjectReferenceVisitor">
+            <summary>
+            AST visitor that collects all named object references from a T-SQL fragment.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Extraction.DependencyGraphBuilder">
+            <summary>
+            Builds a dependency graph from schema objects and provides topological ordering
+            with cycle detection.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Extraction.DependencyGraphBuilder.GetProcessingOrder(System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.SchemaObject})">
+            <summary>
+            Returns objects in dependency order (dependencies first).
+            If cycles exist, returns the cycle members separately in the Cycles collection.
+            Uses Kahn's algorithm for topological sort and Tarjan's SCC for cycle detection.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Extraction.DependencyGraphBuilder.TopologicalSort(System.Collections.Generic.List{System.String},System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.List{System.String}},System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.List{System.String}},System.Collections.Generic.HashSet{System.String})">
+            <summary>
+            Topological sort using Kahn's algorithm.
+            Excludes nodes that are part of cycles.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Extraction.DependencyGraphBuilder.FindCycles(System.Collections.Generic.List{System.String},System.Collections.Generic.Dictionary{System.String,System.Collections.Generic.List{System.String}})">
+            <summary>
+            Finds strongly connected components (cycles) using Tarjan's algorithm.
+            Returns only SCCs with more than one node (true cycles).
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Extraction.SqlServerSchemaExtractor">
+            <summary>
+            Extracts schema objects from a live SQL Server instance by querying system catalog views.
+            </summary>
+        </member>
+    </members>
+</doc>

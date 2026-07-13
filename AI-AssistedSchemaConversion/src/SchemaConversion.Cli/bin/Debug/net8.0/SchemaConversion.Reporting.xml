@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SchemaConversion.Reporting</name>
+    </assembly>
+    <members>
+        <member name="T:SchemaConversion.Reporting.ConversionReportGenerator">
+            <summary>
+            Aggregates conversion session entries into a structured JSON report
+            with per-object details, summary statistics, and compatibility notes.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Reporting.ScriptGenerator">
+            <summary>
+            Produces dependency-ordered PostgreSQL DDL scripts.
+            Supports multiple output modes: consolidated, per-schema, per-type, per-object.
+            Uses IF NOT EXISTS / CREATE OR REPLACE patterns and includes comments.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Reporting.ScriptOrderResolver">
+            <summary>
+            Reorders converted DDL statements based on the dependency graph and category ordering.
+            Order: schemas → types → sequences → tables → indexes → functions → triggers → views → wrappers → permissions → comments.
+            Respects intra-category dependencies.
+            </summary>
+        </member>
+        <member name="F:SchemaConversion.Reporting.ScriptOrderResolver.CategoryOrder">
+            <summary>
+            Category order matching the design specification:
+            1. CREATE SCHEMA
+            2. CREATE DOMAIN / CREATE TYPE (user-defined types)
+            3. CREATE SEQUENCE
+            4. CREATE TABLE (with constraints inline)
+            5. CREATE INDEX
+            6. CREATE FUNCTION / CREATE PROCEDURE
+            7. CREATE TRIGGER (after trigger functions)
+            8. CREATE VIEW
+            9. Wrapper objects (functions/views for compatibility)
+            10. GRANT / REVOKE (permissions)
+            11. COMMENT ON (extended properties)
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ScriptOrderResolver.Resolve(System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.ConversionSessionEntry})">
+            <summary>
+            Orders entries by category, then respects intra-category dependencies.
+            Entries with wrapper DDL are separated and placed in the wrapper category (order 8).
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Reporting.ScriptOrderResolver.GetIntraCategoryOrder(SchemaConversion.Reporting.OrderedScriptEntry,System.Collections.Generic.IReadOnlyList{SchemaConversion.Core.Models.ConversionSessionEntry})">
+            <summary>
+            Computes an intra-category dependency order.
+            Objects that depend on others within the same category are placed after their dependencies.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Reporting.OrderedScriptEntry">
+            <summary>
+            Represents a single DDL statement in the ordered output, including metadata
+            about which entry it came from and whether it's a wrapper.
+            </summary>
+        </member>
+    </members>
+</doc>

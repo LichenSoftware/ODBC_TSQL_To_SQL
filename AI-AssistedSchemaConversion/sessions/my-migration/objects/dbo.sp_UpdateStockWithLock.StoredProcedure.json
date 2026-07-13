@@ -1,0 +1,65 @@
+{
+  "source": {
+    "name": "sp_UpdateStockWithLock",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\n\r\nCREATE PROCEDURE dbo.sp_UpdateStockWithLock\r\n    @ProductID INT,\r\n    @NewQuantity INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    UPDATE dbo.Products\r\n    SET StockQuantity = @NewQuantity\r\n    WHERE ProductID = @ProductID;\r\nEND;\r\n\r\n",
+    "sourceDefinitionHash": "692c326ba1b2eb44b79f4efe8a5518fec815d2266e19c250f2df4afb13f7fdee",
+    "dependsOn": [
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "sp_UpdateStockWithLock",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE PROCEDURE dbo.sp_UpdateStockWithLock(\n    p_ProductID INT,\n    p_NewQuantity INT\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- SET NOCOUNT ON equivalent: PostgreSQL doesn\u0027t send row counts by default in procedures\n    \n    UPDATE dbo.Products\n    SET StockQuantity = p_NewQuantity\n    WHERE ProductID = p_ProductID;\n    \nEND;\n$$;",
+    "confidenceScore": 0.85,
+    "assumptions": [
+      "The \u0027dbo\u0027 schema exists in PostgreSQL database, or schema-qualified names will be adjusted",
+      "The Products table exists with columns ProductID and StockQuantity",
+      "INT type maps directly to PostgreSQL INTEGER (4-byte integer)",
+      "Parameter names prefixed with \u0027p_\u0027 to follow PostgreSQL naming conventions and avoid reserved word conflicts",
+      "SET NOCOUNT ON behavior is not needed in PostgreSQL as procedures don\u0027t return row counts to clients by default",
+      "The procedure name includes \u0027WithLock\u0027 but no explicit locking hints (WITH UPDLOCK, ROWLOCK, etc.) were present in the original code",
+      "Default transaction isolation level is acceptable; no explicit locking strategy was specified in source"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "The procedure name suggests locking behavior (\u0027WithLock\u0027), but the original SQL Server code contains no explicit locking hints (UPDLOCK, ROWLOCK, TABLOCKX, etc.). Review whether row-level locking, SELECT FOR UPDATE, or specific isolation levels are required in PostgreSQL.",
+        "codeSection": "UPDATE dbo.Products SET StockQuantity = @NewQuantity WHERE ProductID = @ProductID"
+      },
+      {
+        "reason": "Verify that the \u0027dbo\u0027 schema exists in PostgreSQL or adjust to the appropriate schema (e.g., \u0027public\u0027). PostgreSQL schema naming conventions may differ from SQL Server.",
+        "codeSection": "Schema qualification: dbo.Products"
+      },
+      {
+        "reason": "Parameter names changed from @ProductID to p_ProductID to follow PostgreSQL conventions. Ensure calling applications are updated if they use named parameter syntax.",
+        "codeSection": "Procedure parameters"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Transaction Control",
+        "description": "PostgreSQL procedures can control transactions with COMMIT/ROLLBACK, but this procedure doesn\u0027t explicitly manage transactions. It will run within the caller\u0027s transaction context. SQL Server stored procedures behave similarly unless they contain explicit transaction control."
+      },
+      {
+        "category": "Locking Behavior",
+        "description": "PostgreSQL uses MVCC (Multi-Version Concurrency Control) by default, which differs from SQL Server\u0027s locking model. The UPDATE statement will acquire a row-level lock automatically, but concurrent behavior may differ. Consider using SELECT FOR UPDATE if pessimistic locking is required before the update."
+      },
+      {
+        "category": "SET NOCOUNT",
+        "description": "PostgreSQL procedures do not return row count messages to clients by default, so SET NOCOUNT ON is unnecessary. This is a behavioral difference that typically requires no action."
+      },
+      {
+        "category": "Error Handling",
+        "description": "No error handling exists in the original procedure. PostgreSQL will raise exceptions on errors (e.g., constraint violations) and rollback the transaction automatically unless caught with an EXCEPTION block."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:31:04.4868707+00:00",
+  "isManuallyEdited": false
+}

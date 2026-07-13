@@ -1,0 +1,64 @@
+{
+  "source": {
+    "name": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\nCREATE   PROCEDURE dbo.usp_UpdateInventory\n    @ProductID INT,\n    @NewQuantity INT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    UPDATE p\n    SET p.StockQuantity = @NewQuantity\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\n    WHERE p.ProductID = @ProductID;\nEND;\n",
+    "sourceDefinitionHash": "f866d5ecae05dd932d0592fffc2190ac89849214f3640e4b87dc4c6207b9b32f",
+    "dependsOn": [
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE PROCEDURE dbo.usp_UpdateInventory(\n    p_ProductID INT,\n    p_NewQuantity INT\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- SET NOCOUNT ON equivalent: PostgreSQL doesn\u0027t send row counts by default in procedures\n    \n    UPDATE dbo.Products p\n    SET StockQuantity = p_NewQuantity\n    WHERE p.ProductID = p_ProductID\n    FOR UPDATE; -- Equivalent to UPDLOCK, ROWLOCK for row-level locking\nEND;\n$$;",
+    "confidenceScore": 0.85,
+    "assumptions": [
+      "The schema \u0027dbo\u0027 exists in PostgreSQL or will be created",
+      "The Products table exists with columns ProductID and StockQuantity",
+      "INT type mapping is appropriate for both ProductID and NewQuantity",
+      "FOR UPDATE clause provides equivalent locking behavior to UPDLOCK, ROWLOCK",
+      "No result set is returned, so PROCEDURE is appropriate instead of FUNCTION",
+      "Parameter names prefixed with p_ to avoid ambiguity with column names in WHERE clause"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "SQL Server\u0027s WITH (UPDLOCK, ROWLOCK) hint and PostgreSQL\u0027s FOR UPDATE have similar but not identical locking semantics. FOR UPDATE locks rows during SELECT, but in UPDATE context, PostgreSQL automatically locks rows. The FOR UPDATE clause in UPDATE is non-standard syntax and may need to be removed or the locking strategy reconsidered based on concurrency requirements.",
+        "codeSection": "FOR UPDATE"
+      },
+      {
+        "reason": "Parameter names were prefixed with p_ to follow PostgreSQL conventions and avoid ambiguity in the WHERE clause. Verify that calling applications can handle the parameter name change, or consider if a wrapper is needed.",
+        "codeSection": "Parameter naming: p_ProductID vs @ProductID"
+      },
+      {
+        "reason": "The UPDATE statement uses table alias \u0027p\u0027 in the SET clause which is valid in SQL Server but PostgreSQL syntax differs slightly. Verify the converted syntax works correctly.",
+        "codeSection": "UPDATE statement"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Locking Behavior",
+        "description": "SQL Server\u0027s UPDLOCK and ROWLOCK hints provide specific locking granularity. PostgreSQL\u0027s row-level locking is automatic during UPDATE operations. The FOR UPDATE clause is typically used with SELECT statements. In this UPDATE context, PostgreSQL will automatically acquire row-level locks, but the isolation level and lock wait behavior may differ from SQL Server."
+      },
+      {
+        "category": "Transaction Control",
+        "description": "SET NOCOUNT ON in SQL Server suppresses row count messages. PostgreSQL procedures don\u0027t send row counts to clients by default, so no equivalent is needed. However, GET DIAGNOSTICS can be used if row counts need to be captured programmatically."
+      },
+      {
+        "category": "Table Hints",
+        "description": "SQL Server table hints (WITH clause) are not directly supported in PostgreSQL. Locking and query optimization are handled differently through isolation levels, explicit locking clauses, and the query planner."
+      },
+      {
+        "category": "Parameter Naming",
+        "description": "PostgreSQL does not use @ prefix for parameters. Parameters are referenced by name directly, which can cause ambiguity with column names. Best practice is to use a naming convention (e.g., p_ prefix) to distinguish parameters from columns."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:51.3157243+00:00",
+  "isManuallyEdited": false
+}

@@ -1,0 +1,187 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SchemaConversion.RuleEngine</name>
+    </assembly>
+    <members>
+        <member name="T:SchemaConversion.RuleEngine.ExpressionTranslator">
+            <summary>
+            Translates T-SQL expressions to PostgreSQL by walking the ScriptDom AST.
+            Applies TypeMapper for CAST/CONVERT type arguments and FunctionMapper for function calls.
+            Handles string concatenation (+ → ||) and TOP to LIMIT translation.
+            Returns CannotTranslate for unmapped constructs to signal AI fallback.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.ExpressionTranslator.#ctor(SchemaConversion.RuleEngine.TypeMapper,SchemaConversion.RuleEngine.FunctionMapper,Microsoft.Extensions.Logging.ILogger{SchemaConversion.RuleEngine.ExpressionTranslator})">
+            <summary>
+            Initializes a new instance of <see cref="T:SchemaConversion.RuleEngine.ExpressionTranslator"/>.
+            </summary>
+            <param name="typeMapper">Type mapper for CAST/CONVERT type resolution.</param>
+            <param name="functionMapper">Function mapper for function call translation.</param>
+            <param name="logger">Logger instance for diagnostics.</param>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.ExpressionTranslator.Translate(System.String)">
+            <summary>
+            Translates a T-SQL expression string to its PostgreSQL equivalent.
+            </summary>
+            <param name="tsqlExpression">The T-SQL expression to translate.</param>
+            <returns>A <see cref="T:SchemaConversion.RuleEngine.Models.TranslationResult"/> indicating success or failure.</returns>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.ExpressionTranslator.TranslateSelect(System.String)">
+            <summary>
+            Translates a SELECT statement that may contain TOP, converting it to use LIMIT.
+            </summary>
+            <param name="tsqlSelect">The T-SQL SELECT statement.</param>
+            <returns>A <see cref="T:SchemaConversion.RuleEngine.Models.TranslationResult"/> indicating success or failure.</returns>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.ExpressionTranslator.TopClauseVisitor">
+            <summary>
+            Visitor that locates TOP clauses in SELECT statements.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.FunctionMapper">
+            <summary>
+            Maps SQL Server functions to PostgreSQL equivalents using configuration from function-mappings.json.
+            Handles CONVERT with style codes, DATEDIFF/DATEADD patterns, and variable argument counts.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.FunctionMapper.#ctor(System.String,Microsoft.Extensions.Logging.ILogger{SchemaConversion.RuleEngine.FunctionMapper})">
+            <summary>
+            Initializes a new instance of <see cref="T:SchemaConversion.RuleEngine.FunctionMapper"/> by loading mappings from the specified JSON file.
+            </summary>
+            <param name="configFilePath">Path to the function-mappings.json configuration file.</param>
+            <param name="logger">Logger instance for diagnostics.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown when the configuration file is missing, malformed, or contains invalid entries.</exception>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.FunctionMapper.MapFunction(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            Maps a SQL Server function call to its PostgreSQL equivalent expression.
+            </summary>
+            <param name="functionName">The SQL Server function name (e.g., "GETDATE", "ISNULL", "DATEDIFF").</param>
+            <param name="args">The function arguments as translated expression strings.</param>
+            <returns>The PostgreSQL expression string, or null if no mapping exists (signals AI fallback needed).</returns>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.FunctionMappingConfig">
+            <summary>
+            Root configuration model for function-mappings.json deserialization.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.FunctionMappingEntry">
+            <summary>
+            A single function mapping entry.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.DatePatternEntry">
+            <summary>
+            Date pattern entry for DATEDIFF/DATEADD.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.ConvertPatternsEntry">
+            <summary>
+            CONVERT pattern configuration.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.CastPatternsEntry">
+            <summary>
+            CAST pattern configuration.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.StyleCodeEntry">
+            <summary>
+            Style code entry for CONVERT date formatting.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.TranslationResult">
+            <summary>
+            Result of translating a T-SQL expression to PostgreSQL.
+            Either contains a successful translation or a reason why translation failed.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TranslationResult.TranslatedExpression">
+            <summary>
+            The translated PostgreSQL expression. Null if translation failed.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TranslationResult.CannotTranslateReason">
+            <summary>
+            The reason translation could not be completed. Null if translation succeeded.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TranslationResult.IsSuccess">
+            <summary>
+            Whether the translation was successful.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.Models.TranslationResult.Success(System.String)">
+            <summary>
+            Creates a successful translation result.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.Models.TranslationResult.CannotTranslate(System.String)">
+            <summary>
+            Creates a failed translation result indicating AI fallback is needed.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.TypeMappingConfig">
+            <summary>
+            Root configuration model for type-mappings.json deserialization.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.TypeMappingEntry">
+            <summary>
+            A single entry in the type-mappings.json file.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.Models.TypeMappingResult">
+            <summary>
+            Result of mapping a SQL Server type to a PostgreSQL type.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TypeMappingResult.MappedType">
+            <summary>
+            The mapped PostgreSQL type string (e.g., "NUMERIC(18,2)", "SMALLINT").
+            Null if the type requires manual review and has no direct mapping.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TypeMappingResult.AdditionalConstraint">
+            <summary>
+            Optional CHECK constraint text to be added to the column definition.
+            Contains {column} placeholder that must be replaced with the actual column name.
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TypeMappingResult.RequiresManualReview">
+            <summary>
+            Whether the mapping requires manual review (e.g., HIERARCHYID, GEOGRAPHY).
+            </summary>
+        </member>
+        <member name="P:SchemaConversion.RuleEngine.Models.TypeMappingResult.CompatibilityNote">
+            <summary>
+            Compatibility note for types that don't have a direct equivalent.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.RuleEngine.TypeMapper">
+            <summary>
+            Maps SQL Server data types to PostgreSQL equivalents using configuration from type-mappings.json.
+            Handles precision/scale propagation, maxPrecision capping, and additional constraint generation.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.TypeMapper.#ctor(System.String,Microsoft.Extensions.Logging.ILogger{SchemaConversion.RuleEngine.TypeMapper})">
+            <summary>
+            Initializes a new instance of <see cref="T:SchemaConversion.RuleEngine.TypeMapper"/> by loading mappings from the specified JSON file.
+            </summary>
+            <param name="configFilePath">Path to the type-mappings.json configuration file.</param>
+            <param name="logger">Logger instance for diagnostics.</param>
+            <exception cref="T:System.InvalidOperationException">Thrown when the configuration file is missing, malformed, or contains invalid entries.</exception>
+        </member>
+        <member name="M:SchemaConversion.RuleEngine.TypeMapper.MapType(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Maps a SQL Server type to its PostgreSQL equivalent.
+            </summary>
+            <param name="sqlServerType">The SQL Server type name (e.g., "INT", "NVARCHAR", "DATETIME2").</param>
+            <param name="precision">Optional precision value for numeric/datetime types.</param>
+            <param name="scale">Optional scale value for numeric types.</param>
+            <param name="length">Optional length for string/binary types. Use -1 for MAX.</param>
+            <returns>A <see cref="T:SchemaConversion.RuleEngine.Models.TypeMappingResult"/> containing the mapped type and any additional constraints.</returns>
+        </member>
+    </members>
+</doc>

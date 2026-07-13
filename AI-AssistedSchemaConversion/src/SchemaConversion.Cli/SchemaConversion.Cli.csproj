@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SchemaConversion.Core\SchemaConversion.Core.csproj" />
+    <ProjectReference Include="..\SchemaConversion.Extraction\SchemaConversion.Extraction.csproj" />
+    <ProjectReference Include="..\SchemaConversion.RuleEngine\SchemaConversion.RuleEngine.csproj" />
+    <ProjectReference Include="..\SchemaConversion.AiEngine\SchemaConversion.AiEngine.csproj" />
+    <ProjectReference Include="..\SchemaConversion.Orchestration\SchemaConversion.Orchestration.csproj" />
+    <ProjectReference Include="..\SchemaConversion.Reporting\SchemaConversion.Reporting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+</Project>

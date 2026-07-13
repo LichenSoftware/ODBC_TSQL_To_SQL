@@ -1,0 +1,76 @@
+{
+  "source": {
+    "name": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_BuildMonthlyReport\r\n    @Year INT,\r\n    @Month INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- Temp table usage\r\n    CREATE TABLE #MonthlyStats (\r\n        CustomerID INT,\r\n        OrderCount INT,\r\n        TotalRevenue DECIMAL(12,2)\r\n    );\r\n\r\n    INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID;\r\n\r\n    -- Return results joined with customer info\r\n    SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC;\r\n\r\n    DROP TABLE #MonthlyStats;\r\nEND;\r\n",
+    "sourceDefinitionHash": "ad348295bfa425ad196df3211e81fe88479bdce60e3696e993b69a68e33e6a3d",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_BuildMonthlyReport(\n    p_year INT,\n    p_month INT\n)\nRETURNS TABLE (\n    customername TEXT,\n    ordercount BIGINT,\n    totalrevenue NUMERIC(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- Temp table usage\n    CREATE TEMP TABLE IF NOT EXISTS temp_monthlystats (\n        customerid INT,\n        ordercount INT,\n        totalrevenue NUMERIC(12,2)\n    ) ON COMMIT DROP;\n\n    -- Clear temp table in case it exists from previous call in same session\n    TRUNCATE TABLE temp_monthlystats;\n\n    INSERT INTO temp_monthlystats\n    SELECT\n        o.customerid,\n        COUNT(*)::INT,\n        SUM(o.totalamount)\n    FROM dbo.orders o\n    WHERE EXTRACT(YEAR FROM o.orderdate) = p_year \n      AND EXTRACT(MONTH FROM o.orderdate) = p_month\n    GROUP BY o.customerid;\n\n    -- Return results joined with customer info\n    RETURN QUERY\n    SELECT\n        c.firstname || \u0027 \u0027 || c.lastname AS customername,\n        ms.ordercount::BIGINT,\n        ms.totalrevenue\n    FROM temp_monthlystats ms\n    INNER JOIN dbo.customers c ON ms.customerid = c.customerid\n    ORDER BY ms.totalrevenue DESC;\n\n    -- Temp table will be automatically dropped at transaction end\nEND;\n$$;",
+    "confidenceScore": 0.92,
+    "assumptions": [
+      "The procedure returns a result set, so it\u0027s converted to a FUNCTION returning TABLE",
+      "Parameter names prefixed with \u0027p_\u0027 to follow PostgreSQL conventions and avoid conflicts",
+      "COUNT(*) returns BIGINT in PostgreSQL vs INT in SQL Server",
+      "String concatenation converted from \u0027\u002B\u0027 to \u0027||\u0027 operator",
+      "YEAR() and MONTH() functions converted to EXTRACT()",
+      "Temporary table converted to PostgreSQL TEMP TABLE with ON COMMIT DROP",
+      "Schema \u0027dbo\u0027 is assumed to exist in PostgreSQL or should be adjusted to target schema",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (functions don\u0027t return row counts by default)",
+      "Explicit DROP TABLE is removed as temp table auto-drops at transaction end"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "SQL Server COUNT returns INT, PostgreSQL returns BIGINT. Explicit cast added but verify if downstream consumers expect INT or can handle BIGINT in the return type",
+        "codeSection": "COUNT(*)::INT"
+      },
+      {
+        "reason": "Temp table behavior differs: PostgreSQL temp tables persist for the session unless ON COMMIT DROP is used. Verify transaction boundaries match expected behavior",
+        "codeSection": "CREATE TEMP TABLE IF NOT EXISTS ... ON COMMIT DROP"
+      },
+      {
+        "reason": "Verify that the \u0027dbo\u0027 schema exists in PostgreSQL or update to the appropriate schema name (e.g., \u0027public\u0027)",
+        "codeSection": "dbo schema references"
+      },
+      {
+        "reason": "Ensure calling code is updated to handle this as a function returning a table rather than a procedure with a result set",
+        "codeSection": "RETURN QUERY"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Return Type",
+        "description": "SQL Server procedure returns result set implicitly; PostgreSQL function must be called with SELECT * FROM sp_BuildMonthlyReport(year, month) syntax"
+      },
+      {
+        "category": "Temporary Tables",
+        "description": "PostgreSQL temp tables are session-scoped by default. ON COMMIT DROP ensures cleanup after transaction, but behavior may differ if called multiple times in same transaction"
+      },
+      {
+        "category": "Data Types",
+        "description": "COUNT(*) returns BIGINT in PostgreSQL vs INT in SQL Server. Return type adjusted to BIGINT for ordercount column"
+      },
+      {
+        "category": "String Concatenation",
+        "description": "PostgreSQL uses || operator instead of \u002B for string concatenation. NULL handling is similar (NULL \u002B string = NULL in both)"
+      },
+      {
+        "category": "Date Functions",
+        "description": "YEAR() and MONTH() converted to EXTRACT(). Both handle NULL dates similarly, but verify date type compatibility"
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:19.3663671+00:00",
+  "isManuallyEdited": false
+}

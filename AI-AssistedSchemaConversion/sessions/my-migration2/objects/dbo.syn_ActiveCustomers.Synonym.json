@@ -1,0 +1,29 @@
+{
+  "source": {
+    "name": "syn_ActiveCustomers",
+    "schemaName": "dbo",
+    "objectType": "synonym",
+    "sourceDefinition": "CREATE SYNONYM [dbo].[syn_ActiveCustomers] FOR [dbo].[Customers];\n",
+    "sourceDefinitionHash": "56434d847ec09946c5a2cf8b9315a299c1c6cf83913c7d0d31b97b17bcf18a7c",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "syn_ActiveCustomers",
+    "schemaName": "dbo",
+    "objectType": "synonym",
+    "status": "converted",
+    "method": "ruleBased",
+    "generatedDdl": "CREATE OR REPLACE VIEW public.syn_activecustomers AS\nSELECT * FROM public.customers;",
+    "confidenceScore": 1,
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": [
+      {
+        "category": "Synonym",
+        "description": "SQL Server synonym \u0027syn_ActiveCustomers\u0027 converted to a PostgreSQL view. This preserves read access but DML operations through the view may require INSTEAD OF triggers if the target is not a simple table."
+      }
+    ]
+  },
+  "convertedAt": "2026-07-11T19:01:44.9746228+00:00",
+  "isManuallyEdited": false
+}

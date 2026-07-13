@@ -1,0 +1,72 @@
+{
+  "source": {
+    "name": "vw_MonthlyCategoryRevenue",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "sourceDefinition": "\r\nCREATE VIEW dbo.vw_MonthlyCategoryRevenue AS\r\n    SELECT CategoryName, [1] AS Jan, [2] AS Feb, [3] AS Mar, [4] AS Apr,\r\n           [5] AS May, [6] AS Jun, [7] AS Jul, [8] AS Aug,\r\n           [9] AS Sep, [10] AS Oct, [11] AS Nov, [12] AS Dec\r\n    FROM (\r\n        SELECT\r\n            c.CategoryName,\r\n            MONTH(o.OrderDate) AS OrderMonth,\r\n            oi.Quantity * oi.UnitPrice AS Revenue\r\n        FROM dbo.OrderItems oi\r\n        INNER JOIN dbo.Orders o ON oi.OrderID = o.OrderID\r\n        INNER JOIN dbo.Products p ON oi.ProductID = p.ProductID\r\n        INNER JOIN dbo.Categories c ON p.CategoryID = c.CategoryID\r\n    ) src\r\n    PIVOT (\r\n        SUM(Revenue) FOR OrderMonth IN ([1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11],[12])\r\n    ) pvt;\r\n",
+    "sourceDefinitionHash": "38712ab5279c8052e1af58f576ab015d7d99376a758e30bbeeb54f1e271b4263",
+    "dependsOn": [
+      "dbo.Categories",
+      "dbo.OrderItems",
+      "dbo.Orders",
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "vw_MonthlyCategoryRevenue",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE VIEW dbo.vw_MonthlyCategoryRevenue AS\n    SELECT\n        CategoryName,\n        COALESCE(\u00221\u0022, 0) AS Jan,\n        COALESCE(\u00222\u0022, 0) AS Feb,\n        COALESCE(\u00223\u0022, 0) AS Mar,\n        COALESCE(\u00224\u0022, 0) AS Apr,\n        COALESCE(\u00225\u0022, 0) AS May,\n        COALESCE(\u00226\u0022, 0) AS Jun,\n        COALESCE(\u00227\u0022, 0) AS Jul,\n        COALESCE(\u00228\u0022, 0) AS Aug,\n        COALESCE(\u00229\u0022, 0) AS Sep,\n        COALESCE(\u002210\u0022, 0) AS Oct,\n        COALESCE(\u002211\u0022, 0) AS Nov,\n        COALESCE(\u002212\u0022, 0) AS Dec\n    FROM crosstab(\n        \u0027SELECT\n            c.CategoryName,\n            EXTRACT(MONTH FROM o.OrderDate)::text AS OrderMonth,\n            SUM(oi.Quantity * oi.UnitPrice) AS Revenue\n        FROM dbo.OrderItems oi\n        INNER JOIN dbo.Orders o ON oi.OrderID = o.OrderID\n        INNER JOIN dbo.Products p ON oi.ProductID = p.ProductID\n        INNER JOIN dbo.Categories c ON p.CategoryID = c.CategoryID\n        GROUP BY c.CategoryName, EXTRACT(MONTH FROM o.OrderDate)\n        ORDER BY 1, 2\u0027,\n        \u0027SELECT generate_series(1, 12)::text\u0027\n    ) AS ct(\n        CategoryName varchar,\n        \u00221\u0022 numeric,\n        \u00222\u0022 numeric,\n        \u00223\u0022 numeric,\n        \u00224\u0022 numeric,\n        \u00225\u0022 numeric,\n        \u00226\u0022 numeric,\n        \u00227\u0022 numeric,\n        \u00228\u0022 numeric,\n        \u00229\u0022 numeric,\n        \u002210\u0022 numeric,\n        \u002211\u0022 numeric,\n        \u002212\u0022 numeric\n    );",
+    "confidenceScore": 0.75,
+    "assumptions": [
+      "The tablefunc extension is installed and available (required for crosstab function)",
+      "Schema \u0027dbo\u0027 exists in PostgreSQL or will be created",
+      "Column data types: CategoryName is varchar, Revenue calculations result in numeric type",
+      "MONTH() function converted to EXTRACT(MONTH FROM ...) which returns integer values 1-12",
+      "PIVOT aggregation SUM(Revenue) requires pre-aggregation in the source query for crosstab",
+      "NULL values in pivot results are handled with COALESCE to return 0 for consistency",
+      "The crosstab function requires ordered input, added ORDER BY to source query"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "PostgreSQL does not have native PIVOT syntax. The crosstab function from the tablefunc extension is used instead. Verify that the extension is installed with: CREATE EXTENSION IF NOT EXISTS tablefunc;",
+        "codeSection": "crosstab() function and tablefunc extension"
+      },
+      {
+        "reason": "The exact data types (varchar length, numeric precision) should be verified against the actual table definitions. Adjust CategoryName varchar and numeric types as needed to match source table schemas.",
+        "codeSection": "Column data type definitions in crosstab AS clause"
+      },
+      {
+        "reason": "Unlike SQL Server PIVOT which can aggregate on-the-fly, crosstab requires the aggregation to be done in the source query. Verify that the SUM and GROUP BY logic produces the expected results.",
+        "codeSection": "Pre-aggregation in crosstab source query"
+      },
+      {
+        "reason": "Added COALESCE to convert NULL values to 0. Verify this matches the expected behavior of the original SQL Server view. Remove COALESCE if NULL values should be preserved.",
+        "codeSection": "COALESCE wrapper for NULL handling"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Syntax Difference",
+        "description": "SQL Server PIVOT syntax has no direct equivalent in PostgreSQL. The crosstab function from the tablefunc extension provides similar functionality but requires different syntax and pre-aggregated data."
+      },
+      {
+        "category": "Extension Dependency",
+        "description": "This view requires the tablefunc extension to be installed. Execute \u0027CREATE EXTENSION IF NOT EXISTS tablefunc;\u0027 before creating the view."
+      },
+      {
+        "category": "Function Conversion",
+        "description": "MONTH() function converted to EXTRACT(MONTH FROM ...). Both return integer month values 1-12, but EXTRACT returns double precision which is cast to text for crosstab compatibility."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "Added COALESCE to convert NULL pivot results to 0. SQL Server PIVOT may handle NULLs differently depending on context. Review if NULL preservation is required."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T19:02:57.4600189+00:00",
+  "isManuallyEdited": false
+}

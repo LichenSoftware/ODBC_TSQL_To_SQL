@@ -1,0 +1,69 @@
+{
+  "source": {
+    "name": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_GetOrderShippingInfo\r\n    @OrderID INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID;\r\nEND;\r\n",
+    "sourceDefinitionHash": "3030d5e798c08757bc2dfe07a2f6022aa5484e4c57e08f258ab1ba0d6dd9f6b7",
+    "dependsOn": [
+      "dbo.OrderMetadata",
+      "dbo.Orders",
+      "dbo.query",
+      "dbo.value"
+    ]
+  },
+  "result": {
+    "objectName": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_GetOrderShippingInfo(\n    p_OrderID INTEGER\n)\nRETURNS TABLE (\n    OrderID INTEGER,\n    ShippingAddress VARCHAR(500),\n    ShippingMethod VARCHAR(100),\n    ItemsXml XML\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        o.OrderID,\n        (xpath(\u0027/order/shipping/address/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(500) AS ShippingAddress,\n        (xpath(\u0027/order/shipping/method/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(100) AS ShippingMethod,\n        (xpath(\u0027/order/items\u0027, m.MetadataXml))[1]::XML AS ItemsXml\n    FROM dbo.Orders o\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\n    WHERE o.OrderID = p_OrderID;\nEND;\n$$;",
+    "confidenceScore": 0.75,
+    "assumptions": [
+      "The MetadataXml column in OrderMetadata table is of type XML in PostgreSQL",
+      "The dbo schema exists in PostgreSQL database",
+      "SQL Server\u0027s .value() method is converted to xpath() function with array indexing",
+      "SQL Server\u0027s .query() method is converted to xpath() function returning XML",
+      "NVARCHAR is mapped to VARCHAR in PostgreSQL (UTF-8 encoding is default)",
+      "INT is mapped to INTEGER",
+      "The procedure returns a result set, so it\u0027s converted to a FUNCTION returning TABLE",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (PostgreSQL doesn\u0027t send row counts by default in functions)"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "XPath syntax and behavior differs between SQL Server and PostgreSQL. SQL Server\u0027s .value() method with XPath may handle namespaces, default values, and null handling differently than PostgreSQL\u0027s xpath() function. Test with actual XML data to ensure correct extraction.",
+        "codeSection": "(xpath(\u0027/order/shipping/address/text()\u0027, m.MetadataXml))[1]::TEXT::VARCHAR(500)"
+      },
+      {
+        "reason": "SQL Server\u0027s .query() method returns XML fragments differently than PostgreSQL\u0027s xpath(). The xpath() function returns an array of XML nodes. Verify that the returned XML structure matches the expected format, especially for complex nested elements.",
+        "codeSection": "(xpath(\u0027/order/items\u0027, m.MetadataXml))[1]::XML"
+      },
+      {
+        "reason": "Verify that the MetadataXml column in OrderMetadata table is actually of type XML in PostgreSQL. If it\u0027s stored as TEXT, additional casting may be required.",
+        "codeSection": "MetadataXml column type"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "XML Processing",
+        "description": "SQL Server\u0027s XQuery methods (.value(), .query()) have different syntax and semantics compared to PostgreSQL\u0027s xpath() function. PostgreSQL xpath() returns an array of XML nodes, requiring array indexing [1] to get the first match. Text extraction requires explicit ::TEXT casting."
+      },
+      {
+        "category": "Return Type",
+        "description": "SQL Server stored procedure returns result set implicitly. PostgreSQL requires explicit RETURNS TABLE definition and RETURN QUERY statement. Calling code must be updated to SELECT FROM the function instead of EXEC."
+      },
+      {
+        "category": "NULL Handling",
+        "description": "If XPath expressions don\u0027t match any nodes, PostgreSQL xpath() returns an empty array. Accessing [1] on an empty array returns NULL. SQL Server\u0027s .value() may have different NULL handling behavior depending on the XPath expression."
+      },
+      {
+        "category": "Character Encoding",
+        "description": "SQL Server NVARCHAR uses UCS-2/UTF-16 encoding. PostgreSQL VARCHAR uses UTF-8 by default. This should be functionally equivalent for most use cases but may affect byte length calculations."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:38.7930326+00:00",
+  "isManuallyEdited": false
+}

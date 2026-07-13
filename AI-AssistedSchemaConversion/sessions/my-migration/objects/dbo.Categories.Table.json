@@ -1,0 +1,28 @@
+{
+  "source": {
+    "name": "Categories",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "sourceDefinition": "",
+    "sourceDefinitionHash": "",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "Categories",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "status": "failed",
+    "method": "aiAssisted",
+    "assumptions": [],
+    "reviewFlags": [
+      {
+        "reason": "AI conversion failed: Response parsing failed after 3 attempts: Response validation failed: \u0027ddl\u0027 is required and must be non-empty"
+      }
+    ],
+    "compatibilityNotes": [],
+    "promptTemplateVersion": "1.0.0",
+    "errorMessage": "Response parsing failed after 3 attempts: Response validation failed: \u0027ddl\u0027 is required and must be non-empty"
+  },
+  "convertedAt": "2026-07-11T18:29:55.5708126+00:00",
+  "isManuallyEdited": false
+}

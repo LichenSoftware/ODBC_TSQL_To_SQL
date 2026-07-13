@@ -1,0 +1,308 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using SchemaConversion.Core.Models;
+using SchemaConversion.Core.Options;
+using SchemaConversion.Reporting;
+
+namespace SchemaConversion.Reporting.Tests;
+
+public class ScriptGeneratorTests : IDisposable
+{
+    private readonly ScriptGenerator _generator;
+    private readonly string _outputDir;
+
+    public ScriptGeneratorTests()
+    {
+        var resolver = new ScriptOrderResolver();
+        _generator = new ScriptGenerator(resolver, NullLogger<ScriptGenerator>.Instance);
+        _outputDir = Path.Combine(Path.GetTempPath(), $"ScriptGenTest_{Guid.NewGuid():N}");
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_outputDir))
+            Directory.Delete(_outputDir, recursive: true);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Consolidated_CreatesSingleFile()
+    {
+        var entries = CreateSampleEntries();
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var filePath = Path.Combine(_outputDir, "migration.sql");
+        Assert.True(File.Exists(filePath));
+
+        var content = await File.ReadAllTextAsync(filePath);
+        Assert.Contains("CREATE SCHEMA", content);
+        Assert.Contains("CREATE TABLE", content);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_PerSchema_CreatesDirectoryPerSchema()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "Table1", SchemaObjectType.Table, "CREATE TABLE dbo.Table1 (Id INTEGER)"),
+            CreateConvertedEntry("sales", "Orders", SchemaObjectType.Table, "CREATE TABLE sales.Orders (Id INTEGER)"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.PerSchema
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        Assert.True(Directory.Exists(Path.Combine(_outputDir, "dbo")));
+        Assert.True(Directory.Exists(Path.Combine(_outputDir, "sales")));
+        Assert.True(File.Exists(Path.Combine(_outputDir, "dbo", "dbo.sql")));
+        Assert.True(File.Exists(Path.Combine(_outputDir, "sales", "sales.sql")));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_PerType_CreatesFilePerType()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER)"),
+            CreateConvertedEntry("dbo", "GetOrders", SchemaObjectType.Function, "CREATE FUNCTION dbo.GetOrders()"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.PerType
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        Assert.True(File.Exists(Path.Combine(_outputDir, "table.sql")));
+        Assert.True(File.Exists(Path.Combine(_outputDir, "function.sql")));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_PerObject_CreatesNumberedFilesInSchemaDirectories()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "public", SchemaObjectType.Schema, "CREATE SCHEMA IF NOT EXISTS public"),
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER)"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.PerObject
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var dboDir = Path.Combine(_outputDir, "dbo");
+        Assert.True(Directory.Exists(dboDir));
+
+        var files = Directory.GetFiles(dboDir, "*.sql").OrderBy(f => f).ToList();
+        Assert.Equal(2, files.Count);
+        Assert.Contains("0001_", Path.GetFileName(files[0]));
+        Assert.Contains("0002_", Path.GetFileName(files[1]));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_IncludeComments_AddsHeaderAndObjectComments()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER)"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated,
+            IncludeComments = true
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var content = await File.ReadAllTextAsync(Path.Combine(_outputDir, "migration.sql"));
+        Assert.Contains("Generated by Schema Conversion Tool", content);
+        Assert.Contains("Table: dbo.Customers", content);
+        Assert.Contains("Method: RuleBased", content);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_NoComments_OmitsHeaderAndObjectComments()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER)"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated,
+            IncludeComments = false
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var content = await File.ReadAllTextAsync(Path.Combine(_outputDir, "migration.sql"));
+        Assert.DoesNotContain("Generated by Schema Conversion Tool", content);
+        Assert.DoesNotContain("Table: dbo.Customers", content);
+        Assert.Contains("CREATE TABLE dbo.Customers", content);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ScriptsAreDependencyOrdered()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "ReadPerms", SchemaObjectType.Permission, "GRANT SELECT ON dbo.Customers TO app_user"),
+            CreateConvertedEntry("dbo", "IX_Name", SchemaObjectType.Index, "CREATE INDEX IX_Name ON dbo.Customers(Name)"),
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER, Name VARCHAR(100))"),
+            CreateConvertedEntry("dbo", "public", SchemaObjectType.Schema, "CREATE SCHEMA IF NOT EXISTS public"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated,
+            IncludeComments = false
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var content = await File.ReadAllTextAsync(Path.Combine(_outputDir, "migration.sql"));
+        var schemaPos = content.IndexOf("CREATE SCHEMA", StringComparison.Ordinal);
+        var tablePos = content.IndexOf("CREATE TABLE", StringComparison.Ordinal);
+        var indexPos = content.IndexOf("CREATE INDEX", StringComparison.Ordinal);
+        var grantPos = content.IndexOf("GRANT SELECT", StringComparison.Ordinal);
+
+        Assert.True(schemaPos < tablePos, "Schema should appear before Table");
+        Assert.True(tablePos < indexPos, "Table should appear before Index");
+        Assert.True(indexPos < grantPos, "Index should appear before Permission");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_WrapperEntriesGenerated_InWrapperCategory()
+    {
+        var entries = new List<ConversionSessionEntry>
+        {
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER)"),
+            CreateEntryWithWrapper("dbo", "GetOrders", SchemaObjectType.Function,
+                "CREATE FUNCTION dbo.get_orders()", "CREATE FUNCTION dbo.GetOrders()"),
+        };
+
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated,
+            IncludeComments = true
+        };
+
+        await _generator.GenerateAsync(entries, options, CancellationToken.None);
+
+        var content = await File.ReadAllTextAsync(Path.Combine(_outputDir, "migration.sql"));
+        Assert.Contains("Wrapper for: dbo.GetOrders", content);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_EmptyEntries_CreatesEmptyOutputFile()
+    {
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = _outputDir,
+            Mode = ScriptOutputMode.Consolidated
+        };
+
+        await _generator.GenerateAsync([], options, CancellationToken.None);
+
+        Assert.True(File.Exists(Path.Combine(_outputDir, "migration.sql")));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_CreatesOutputDirectoryIfNotExists()
+    {
+        var nestedDir = Path.Combine(_outputDir, "nested", "output");
+        var options = new ScriptGenerationOptions
+        {
+            OutputDirectory = nestedDir,
+            Mode = ScriptOutputMode.Consolidated
+        };
+
+        await _generator.GenerateAsync([], options, CancellationToken.None);
+
+        Assert.True(Directory.Exists(nestedDir));
+    }
+
+    private static List<ConversionSessionEntry> CreateSampleEntries()
+    {
+        return
+        [
+            CreateConvertedEntry("dbo", "public", SchemaObjectType.Schema, "CREATE SCHEMA IF NOT EXISTS public"),
+            CreateConvertedEntry("dbo", "Customers", SchemaObjectType.Table, "CREATE TABLE dbo.Customers (Id INTEGER, Name VARCHAR(100))"),
+            CreateConvertedEntry("dbo", "IX_Name", SchemaObjectType.Index, "CREATE INDEX IX_Name ON dbo.Customers(Name)"),
+        ];
+    }
+
+    private static ConversionSessionEntry CreateConvertedEntry(
+        string schema, string name, SchemaObjectType type, string ddl)
+    {
+        return new ConversionSessionEntry
+        {
+            Source = new SchemaObject
+            {
+                SchemaName = schema,
+                Name = name,
+                ObjectType = type,
+                SourceDefinition = $"-- source for {schema}.{name}",
+                SourceDefinitionHash = $"hash-{schema}-{name}"
+            },
+            Result = new ConversionResult
+            {
+                ObjectName = name,
+                SchemaName = schema,
+                ObjectType = type,
+                Status = ConversionStatus.Converted,
+                Method = ConversionMethod.RuleBased,
+                GeneratedDdl = ddl
+            },
+            ConvertedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    private static ConversionSessionEntry CreateEntryWithWrapper(
+        string schema, string name, SchemaObjectType type,
+        string ddl, string wrapperDdl)
+    {
+        return new ConversionSessionEntry
+        {
+            Source = new SchemaObject
+            {
+                SchemaName = schema,
+                Name = name,
+                ObjectType = type,
+                SourceDefinition = $"-- source for {schema}.{name}",
+                SourceDefinitionHash = $"hash-{schema}-{name}"
+            },
+            Result = new ConversionResult
+            {
+                ObjectName = name,
+                SchemaName = schema,
+                ObjectType = type,
+                Status = ConversionStatus.Converted,
+                Method = ConversionMethod.AiAssisted,
+                GeneratedDdl = ddl,
+                WrapperDdl = wrapperDdl
+            },
+            ConvertedAt = DateTimeOffset.UtcNow
+        };
+    }
+}

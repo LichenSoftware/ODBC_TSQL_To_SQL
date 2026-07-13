@@ -1,0 +1,209 @@
+{
+  "mappings": [
+    {
+      "sqlServerType": "INT",
+      "postgresType": "INTEGER",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "BIGINT",
+      "postgresType": "BIGINT",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "SMALLINT",
+      "postgresType": "SMALLINT",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "TINYINT",
+      "postgresType": "SMALLINT",
+      "preservePrecision": false,
+      "additionalConstraint": "CHECK ({column} >= 0 AND {column} <= 255)"
+    },
+    {
+      "sqlServerType": "BIT",
+      "postgresType": "BOOLEAN",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "DECIMAL",
+      "postgresType": "NUMERIC({precision},{scale})",
+      "preservePrecision": true,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "NUMERIC",
+      "postgresType": "NUMERIC({precision},{scale})",
+      "preservePrecision": true,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "MONEY",
+      "postgresType": "NUMERIC(19,4)",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "SMALLMONEY",
+      "postgresType": "NUMERIC(10,4)",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "FLOAT",
+      "postgresType": "DOUBLE PRECISION",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "REAL",
+      "postgresType": "REAL",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "DATETIME",
+      "postgresType": "TIMESTAMP(3)",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "DATETIME2",
+      "postgresType": "TIMESTAMP({precision})",
+      "preservePrecision": true,
+      "maxPrecision": 6,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "SMALLDATETIME",
+      "postgresType": "TIMESTAMP(0)",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "DATE",
+      "postgresType": "DATE",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "TIME",
+      "postgresType": "TIME({precision})",
+      "preservePrecision": true,
+      "maxPrecision": 6,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "DATETIMEOFFSET",
+      "postgresType": "TIMESTAMPTZ({precision})",
+      "preservePrecision": true,
+      "maxPrecision": 6,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "UNIQUEIDENTIFIER",
+      "postgresType": "UUID",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "NVARCHAR",
+      "postgresType": "VARCHAR({length})",
+      "preservePrecision": true,
+      "maxLengthMapping": "TEXT",
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "VARCHAR",
+      "postgresType": "VARCHAR({length})",
+      "preservePrecision": true,
+      "maxLengthMapping": "TEXT",
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "NCHAR",
+      "postgresType": "CHAR({length})",
+      "preservePrecision": true,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "CHAR",
+      "postgresType": "CHAR({length})",
+      "preservePrecision": true,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "TEXT",
+      "postgresType": "TEXT",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "NTEXT",
+      "postgresType": "TEXT",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "VARBINARY",
+      "postgresType": "BYTEA",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "BINARY",
+      "postgresType": "BYTEA",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "IMAGE",
+      "postgresType": "BYTEA",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "XML",
+      "postgresType": "XML",
+      "preservePrecision": false,
+      "additionalConstraint": null
+    },
+    {
+      "sqlServerType": "SQL_VARIANT",
+      "postgresType": "JSONB",
+      "preservePrecision": false,
+      "additionalConstraint": null,
+      "requiresManualReview": true,
+      "compatibilityNote": "SQL_VARIANT has no direct PostgreSQL equivalent. JSONB is used as a flexible container but does not preserve the original typed semantics. Manual review recommended."
+    },
+    {
+      "sqlServerType": "HIERARCHYID",
+      "postgresType": null,
+      "preservePrecision": false,
+      "additionalConstraint": null,
+      "requiresManualReview": true,
+      "compatibilityNote": "No direct PostgreSQL equivalent. Consider the ltree extension as an alternative."
+    },
+    {
+      "sqlServerType": "GEOGRAPHY",
+      "postgresType": null,
+      "preservePrecision": false,
+      "additionalConstraint": null,
+      "requiresManualReview": true,
+      "compatibilityNote": "No direct PostgreSQL equivalent. Consider PostGIS extension (geography type)."
+    },
+    {
+      "sqlServerType": "GEOMETRY",
+      "postgresType": null,
+      "preservePrecision": false,
+      "additionalConstraint": null,
+      "requiresManualReview": true,
+      "compatibilityNote": "No direct PostgreSQL equivalent. Consider PostGIS extension (geometry type)."
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "source": {
+    "name": "sp_DynamicSearch",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_DynamicSearch\r\n    @TableName NVARCHAR(128),\r\n    @FilterColumn NVARCHAR(128),\r\n    @FilterValue NVARCHAR(256)\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    DECLARE @SQL NVARCHAR(MAX);\r\n    SET @SQL = N\u0027SELECT * FROM \u0027 \u002B QUOTENAME(@TableName) \u002B\r\n               N\u0027 WHERE \u0027 \u002B QUOTENAME(@FilterColumn) \u002B N\u0027 = @Value\u0027;\r\n\r\n    EXEC sp_executesql @SQL, N\u0027@Value NVARCHAR(256)\u0027, @Value = @FilterValue;\r\nEND;\r\n",
+    "sourceDefinitionHash": "84d46c356b56f960172c085c840fb9c4e21cafda239dc049160351c5414fe089",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "sp_DynamicSearch",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_DynamicSearch(\n    p_table_name VARCHAR(128),\n    p_filter_column VARCHAR(128),\n    p_filter_value VARCHAR(256)\n)\nRETURNS TABLE\nAS $$\nDECLARE\n    v_sql TEXT;\nBEGIN\n    -- Build dynamic SQL with proper quoting\n    v_sql := format(\u0027SELECT * FROM %I WHERE %I = $1\u0027,\n                    p_table_name,\n                    p_filter_column);\n    \n    -- Execute dynamic SQL and return results\n    RETURN QUERY EXECUTE v_sql USING p_filter_value;\nEND;\n$$ LANGUAGE plpgsql;",
+    "confidenceScore": 0.75,
+    "assumptions": [
+      "The procedure is intended to return a result set, so it\u0027s converted to a FUNCTION returning TABLE",
+      "NVARCHAR types mapped to VARCHAR (PostgreSQL uses UTF-8 by default)",
+      "QUOTENAME() converted to format() with %I identifier placeholder for SQL injection protection",
+      "The calling application can handle the change from PROCEDURE to FUNCTION",
+      "The table structure is unknown, so RETURNS TABLE without explicit column definitions is used",
+      "Schema \u0027dbo\u0027 exists in PostgreSQL or will be created separately"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "PostgreSQL requires explicit column definitions in RETURNS TABLE for strongly-typed results. The current implementation returns an anonymous record set. Consider defining explicit columns if the table structure is known, or use RETURNS SETOF RECORD with OUT parameters.",
+        "codeSection": "RETURNS TABLE"
+      },
+      {
+        "reason": "Dynamic SQL with SELECT * may have security and performance implications. Verify that the calling application has proper validation for table and column names to prevent SQL injection. Consider whitelisting allowed tables/columns.",
+        "codeSection": "format(\u0027SELECT * FROM %I WHERE %I = $1\u0027, p_table_name, p_filter_column)"
+      },
+      {
+        "reason": "The function returns an untyped record set. Callers must use explicit column definitions when calling this function, e.g., SELECT * FROM sp_DynamicSearch(...) AS t(col1 type1, col2 type2, ...)",
+        "codeSection": "RETURN QUERY EXECUTE v_sql USING p_filter_value"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Return Type",
+        "description": "SQL Server procedures can return result sets implicitly. PostgreSQL functions returning TABLE must be called in SELECT statements. Calling syntax changes from EXEC sp_DynamicSearch to SELECT * FROM sp_DynamicSearch(...) AS result."
+      },
+      {
+        "category": "Dynamic SQL Execution",
+        "description": "SQL Server\u0027s sp_executesql is replaced with PostgreSQL\u0027s EXECUTE...USING. Parameter binding works similarly but syntax differs."
+      },
+      {
+        "category": "Column Definition",
+        "description": "Without explicit column definitions in RETURNS TABLE, callers must provide column list when invoking the function. This differs from SQL Server where the result set structure is determined at runtime."
+      },
+      {
+        "category": "SET NOCOUNT ON",
+        "description": "PostgreSQL does not have an equivalent to SET NOCOUNT ON. Row count behavior differs between the two systems."
+      },
+      {
+        "category": "Identifier Quoting",
+        "description": "QUOTENAME() uses square brackets in SQL Server. PostgreSQL format() with %I uses double quotes. Both protect against SQL injection for identifiers."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:22.7089924+00:00",
+  "isManuallyEdited": false
+}

@@ -1,0 +1,70 @@
+{
+  "source": {
+    "name": "tr_OrderAudit",
+    "schemaName": "dbo",
+    "objectType": "trigger",
+    "sourceDefinition": "\nCREATE   TRIGGER dbo.tr_OrderAudit\nON dbo.Orders\nAFTER INSERT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    INSERT INTO dbo.OrderMetadata (OrderID, MetadataXml)\n    SELECT i.OrderID, CAST(\u0027\u003Caudit\u003E\u003Ctimestamp\u003E\u0027 \u002B CONVERT(VARCHAR(30), GETDATE(), 126) \u002B \u0027\u003C/timestamp\u003E\u003C/audit\u003E\u0027 AS XML)\n    FROM inserted i\n    WHERE NOT EXISTS (SELECT 1 FROM dbo.OrderMetadata m WHERE m.OrderID = i.OrderID);\nEND;\n",
+    "sourceDefinitionHash": "dd20630748c5b216b5316940d56e2a951ce7c626d0694a88eba605e2d6201805",
+    "dependsOn": [
+      "dbo.inserted",
+      "dbo.OrderMetadata"
+    ]
+  },
+  "result": {
+    "objectName": "tr_OrderAudit",
+    "schemaName": "dbo",
+    "objectType": "trigger",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "-- Trigger function for OrderAudit\nCREATE OR REPLACE FUNCTION dbo.tr_OrderAudit_func()\nRETURNS TRIGGER AS $$\nBEGIN\n    -- Insert audit metadata for new orders that don\u0027t already have metadata\n    INSERT INTO dbo.OrderMetadata (OrderID, MetadataXml)\n    SELECT i.OrderID, \n           XMLPARSE(DOCUMENT \u0027\u003Caudit\u003E\u003Ctimestamp\u003E\u0027 || TO_CHAR(CURRENT_TIMESTAMP, \u0027YYYY-MM-DD\u0022T\u0022HH24:MI:SS\u0027) || \u0027\u003C/timestamp\u003E\u003C/audit\u003E\u0027)\n    FROM new_table i\n    WHERE NOT EXISTS (\n        SELECT 1 \n        FROM dbo.OrderMetadata m \n        WHERE m.OrderID = i.OrderID\n    );\n    \n    RETURN NULL; -- AFTER trigger on statement level\nEND;\n$$ LANGUAGE plpgsql;\n\n-- Create the trigger\nCREATE TRIGGER tr_OrderAudit\nAFTER INSERT ON dbo.Orders\nREFERENCING NEW TABLE AS new_table\nFOR EACH STATEMENT\nEXECUTE FUNCTION dbo.tr_OrderAudit_func();",
+    "confidenceScore": 0.92,
+    "assumptions": [
+      "The dbo schema exists in PostgreSQL or will be created",
+      "The OrderMetadata table exists with columns OrderID and MetadataXml of type XML",
+      "The Orders table has an OrderID column",
+      "The XML data type is available in PostgreSQL (requires XML support to be enabled)",
+      "Statement-level trigger is appropriate since the original trigger processes the inserted set as a whole",
+      "ISO 8601 timestamp format (YYYY-MM-DDTHH24:MI:SS) is acceptable replacement for SQL Server style 126",
+      "CURRENT_TIMESTAMP is an acceptable replacement for GETDATE()"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "XML construction and timestamp formatting differs from SQL Server. Verify the exact timestamp format requirements and XML structure match application expectations. SQL Server CONVERT style 126 produces \u0027YYYY-MM-DDTHH:MI:SS.mmm\u0027 format with milliseconds.",
+        "codeSection": "XMLPARSE(DOCUMENT \u0027\u003Caudit\u003E\u003Ctimestamp\u003E\u0027 || TO_CHAR(CURRENT_TIMESTAMP, \u0027YYYY-MM-DD\u0022T\u0022HH24:MI:SS\u0027) || \u0027\u003C/timestamp\u003E\u003C/audit\u003E\u0027)"
+      },
+      {
+        "reason": "Verify that the NOT EXISTS check provides the intended behavior in concurrent insert scenarios. PostgreSQL\u0027s MVCC may behave differently than SQL Server\u0027s locking model.",
+        "codeSection": "WHERE NOT EXISTS (SELECT 1 FROM dbo.OrderMetadata m WHERE m.OrderID = i.OrderID)"
+      },
+      {
+        "reason": "Transition tables require PostgreSQL 10\u002B. Verify PostgreSQL version compatibility.",
+        "codeSection": "REFERENCING NEW TABLE AS new_table"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Timestamp Format",
+        "description": "SQL Server CONVERT(VARCHAR(30), GETDATE(), 126) produces ISO 8601 format with milliseconds (YYYY-MM-DDTHH:MI:SS.mmm). PostgreSQL TO_CHAR with the provided format produces format without milliseconds. Add \u0027.MS\u0027 to format string if milliseconds are required."
+      },
+      {
+        "category": "XML Construction",
+        "description": "SQL Server uses CAST to XML, PostgreSQL uses XMLPARSE(DOCUMENT ...). Both create XML data types but parsing behavior may differ slightly for malformed XML."
+      },
+      {
+        "category": "Concurrency",
+        "description": "PostgreSQL uses MVCC (Multi-Version Concurrency Control) while SQL Server uses locking. The NOT EXISTS check may behave differently under concurrent inserts. Consider adding appropriate locking or using ON CONFLICT if duplicate prevention is critical."
+      },
+      {
+        "category": "Trigger Execution",
+        "description": "Both SQL Server and PostgreSQL execute this as a statement-level trigger (once per INSERT statement), but PostgreSQL\u0027s transition tables require version 10\u002B."
+      },
+      {
+        "category": "SET NOCOUNT ON",
+        "description": "PostgreSQL does not have an equivalent to SET NOCOUNT ON. This is typically not needed in PostgreSQL triggers as they don\u0027t return row counts to the client in the same way."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:28.5504491+00:00",
+  "isManuallyEdited": false
+}

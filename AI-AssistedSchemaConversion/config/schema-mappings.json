@@ -1,0 +1,13 @@
+{
+  "defaultMappings": [
+    {
+      "sqlServerSchema": "dbo",
+      "postgresSchema": "public",
+      "notes": "SQL Server default schema maps to PostgreSQL default schema"
+    }
+  ],
+  "rules": {
+    "unmappedBehavior": "preserve",
+    "description": "Schemas not explicitly mapped retain their original name. CREATE SCHEMA statements will be generated for non-public schemas."
+  }
+}

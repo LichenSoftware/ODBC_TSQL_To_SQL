@@ -1,0 +1,81 @@
+{
+  "source": {
+    "name": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_BuildMonthlyReport\r\n    @Year INT,\r\n    @Month INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- Temp table usage\r\n    CREATE TABLE #MonthlyStats (\r\n        CustomerID INT,\r\n        OrderCount INT,\r\n        TotalRevenue DECIMAL(12,2)\r\n    );\r\n\r\n    INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID;\r\n\r\n    -- Return results joined with customer info\r\n    SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC;\r\n\r\n    DROP TABLE #MonthlyStats;\r\nEND;\r\n",
+    "sourceDefinitionHash": "ad348295bfa425ad196df3211e81fe88479bdce60e3696e993b69a68e33e6a3d",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "converted",
+    "method": "aiAssisted",
+    "generatedDdl": "CREATE OR REPLACE FUNCTION dbo.sp_BuildMonthlyReport(\n    p_year INT,\n    p_month INT\n)\nRETURNS TABLE (\n    customername TEXT,\n    ordercount BIGINT,\n    totalrevenue NUMERIC(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- Temp table usage\n    CREATE TEMP TABLE IF NOT EXISTS temp_monthlystats (\n        customerid INT,\n        ordercount INT,\n        totalrevenue NUMERIC(12,2)\n    ) ON COMMIT DROP;\n\n    INSERT INTO temp_monthlystats\n    SELECT\n        o.customerid,\n        COUNT(*)::INT,\n        SUM(o.totalamount)\n    FROM dbo.orders o\n    WHERE EXTRACT(YEAR FROM o.orderdate) = p_year \n      AND EXTRACT(MONTH FROM o.orderdate) = p_month\n    GROUP BY o.customerid;\n\n    -- Return results joined with customer info\n    RETURN QUERY\n    SELECT\n        c.firstname || \u0027 \u0027 || c.lastname AS customername,\n        ms.ordercount::BIGINT,\n        ms.totalrevenue\n    FROM temp_monthlystats ms\n    INNER JOIN dbo.customers c ON ms.customerid = c.customerid\n    ORDER BY ms.totalrevenue DESC;\n\n    -- Temp table automatically dropped on commit\nEND;\n$$;",
+    "confidenceScore": 0.92,
+    "assumptions": [
+      "The procedure returns a result set, so it is converted to a FUNCTION returning TABLE",
+      "Parameter names prefixed with \u0027p_\u0027 to follow PostgreSQL conventions and avoid conflicts",
+      "DECIMAL(12,2) mapped to NUMERIC(12,2) in PostgreSQL",
+      "COUNT(*) returns BIGINT in PostgreSQL, explicitly cast to INT for temp table compatibility",
+      "String concatenation using \u0027\u002B\u0027 converted to \u0027||\u0027 operator",
+      "YEAR() and MONTH() functions converted to EXTRACT(YEAR/MONTH FROM ...)",
+      "Temporary table created with ON COMMIT DROP to auto-cleanup after function execution",
+      "SET NOCOUNT ON has no direct equivalent in PostgreSQL and is omitted (PostgreSQL functions don\u0027t return row counts by default)",
+      "Schema \u0027dbo\u0027 is preserved assuming it exists in PostgreSQL database",
+      "Customers table has firstname and lastname columns (case-sensitive names converted to lowercase per PostgreSQL default)"
+    ],
+    "reviewFlags": [
+      {
+        "reason": "Temporary tables in functions may have naming conflicts if the function is called multiple times in the same session. Consider using a unique name or refactoring to a CTE.",
+        "codeSection": "CREATE TEMP TABLE IF NOT EXISTS temp_monthlystats"
+      },
+      {
+        "reason": "Verify that the \u0027dbo\u0027 schema exists in PostgreSQL. PostgreSQL typically uses \u0027public\u0027 schema by default. Column names should be verified for case sensitivity.",
+        "codeSection": "FROM dbo.orders o"
+      },
+      {
+        "reason": "Verify exact column names in the customers table. PostgreSQL is case-sensitive with quoted identifiers. If columns are FirstName/LastName (mixed case), they need to be quoted.",
+        "codeSection": "c.firstname || \u0027 \u0027 || c.lastname"
+      },
+      {
+        "reason": "Ensure the calling application can handle a function returning a table instead of a procedure returning a result set. The calling syntax will change from EXEC to SELECT * FROM.",
+        "codeSection": "RETURN QUERY SELECT"
+      }
+    ],
+    "compatibilityNotes": [
+      {
+        "category": "Calling Convention",
+        "description": "SQL Server: EXEC dbo.sp_BuildMonthlyReport @Year=2024, @Month=1; PostgreSQL: SELECT * FROM dbo.sp_BuildMonthlyReport(2024, 1);"
+      },
+      {
+        "category": "Return Type",
+        "description": "Converted from PROCEDURE to FUNCTION returning TABLE. This changes how the object is invoked and how results are consumed."
+      },
+      {
+        "category": "Temporary Tables",
+        "description": "PostgreSQL temporary tables are session-scoped by default. Using ON COMMIT DROP ensures cleanup after function execution, but behavior may differ in complex transaction scenarios."
+      },
+      {
+        "category": "Data Types",
+        "description": "COUNT(*) returns BIGINT in PostgreSQL vs INT in SQL Server. Explicit casting applied where needed for consistency."
+      },
+      {
+        "category": "String Concatenation",
+        "description": "PostgreSQL uses || for concatenation. NULL values in concatenation may behave differently; consider using CONCAT() function if NULL handling is critical."
+      },
+      {
+        "category": "Date Functions",
+        "description": "YEAR()/MONTH() converted to EXTRACT(). Performance characteristics may differ; consider adding functional indexes if this query is performance-critical."
+      }
+    ],
+    "promptTemplateVersion": "1.0.0"
+  },
+  "convertedAt": "2026-07-11T18:30:41.1407132+00:00",
+  "isManuallyEdited": false
+}

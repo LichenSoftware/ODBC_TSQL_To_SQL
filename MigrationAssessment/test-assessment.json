@@ -1,16 +1,16 @@
 {
   "assessmentMetadata": {
-    "generatedAt": "2026-06-29T19:21:27.5492205+00:00",
+    "generatedAt": "2026-06-29T20:16:00.1060326+00:00",
     "engineVersion": "1.0.0.0",
     "scoringMethodology": "Migration readiness score is calculated as a weighted average across all analyzed statements, where each statement\u0027s risk level (1-5) is determined by its most complex SQL Server feature. Risk 1-2 features have known direct PostgreSQL equivalents (e.g., ISNULL\u2192COALESCE, TOP\u2192LIMIT). Risk 3 features require procedural restructuring (e.g., TRY_CATCH, TEMP_TABLE). Risk 4-5 features require architectural redesign or have no direct equivalent (e.g., MERGE, XML_METHOD, SQL_CLR). Effort ranges use a geometric series model (0.7 reduction factor per repeated pattern) with confidence-based range clamping: high-confidence items (risk 1-2) are capped at \u22642x ratio, medium-confidence (risk 3) at \u22644x, and low-confidence (risk 4-5) at \u22647x. The overall readiness score ranges from 0 (all risk-5) to 100 (all risk-1), normalized by statement frequency and execution count."
   },
   "executiveSummary": {
-    "migrationReadinessScore": 55,
+    "migrationReadinessScore": 58,
     "classification": "Moderate Candidate - Significant Work Required",
-    "totalStatements": 24,
+    "totalStatements": 28,
     "riskDistribution": {
-      "1": 12,
-      "2": 1,
+      "1": 15,
+      "2": 2,
       "3": 2,
       "4": 8,
       "5": 1
@@ -151,25 +151,22 @@
       "name": "sp_UpdateStockWithLock",
       "type": "StoredProcedure",
       "statementCount": 1,
-      "maxRiskScore": 4,
+      "maxRiskScore": 1,
       "conversionCategories": [
-        "manual"
+        "automatic"
       ],
-      "detectedFeatures": [
-        "ROWLOCK",
-        "UPDLOCK"
-      ]
+      "detectedFeatures": []
     },
     {
       "name": "sp_UpsertProducts",
       "type": "StoredProcedure",
       "statementCount": 1,
-      "maxRiskScore": 4,
+      "maxRiskScore": 3,
       "conversionCategories": [
-        "manual"
+        "semi-automatic"
       ],
       "detectedFeatures": [
-        "MERGE"
+        "EXPLICIT_TRANSACTION"
       ]
     },
     {
@@ -256,13 +253,15 @@
     {
       "name": "Ad Hoc",
       "type": "AdHoc",
-      "statementCount": 10,
+      "statementCount": 15,
       "maxRiskScore": 4,
       "conversionCategories": [
         "automatic",
         "manual"
       ],
       "detectedFeatures": [
+        "ISNULL",
+        "MERGE",
         "NOLOCK"
       ]
     }
@@ -322,6 +321,16 @@
     }
   ],
   "analyzedStatements": [
+    {
+      "statementText": "(@_msparam_0 nvarchar(4000),@_msparam_1 nvarchar(4000),@_msparam_2 nvarchar(4000))SELECT\nSCHEMA_NAME(sp.schema_id) AS [Schema],\nsp.name AS [Name],\nsp.object_id AS [ID],\nCAST(\r\n case \r\n    when sp.is_ms_shipped = 1 then 1\r\n    when exists (\r\n        select \r\n            1\r\n        from \r\n            sys.extended_properties \r\n        where \r\n            major_id = sp.object_id and \r\n            minor_id = 0 and \r\n            class = 1 and \r\n            name = N\u0027microsoft_database_tools_support\u0027) \r\n        then 1\r\n    else 0\r\nend          \r\n             AS bit) AS [IsSystemObject],\nCASE WHEN sp.type = N\u0027P\u0027 THEN 1 WHEN sp.type = N\u0027PC\u0027 THEN 2 ELSE 1 END AS [ImplementationType],\nCAST(CASE WHEN ISNULL(smsp.definition, ssmsp.definition) IS NULL THEN 1 ELSE 0 END AS bit) AS [IsEncrypted]\nFROM\nsys.all_objects AS sp\nLEFT OUTER JOIN sys.sql_modules AS smsp ON smsp.object_id = sp.object_id\nLEFT OUTER JOIN sys.system_sql_modules AS ssmsp ON ssmsp.object_id = sp.object_id\nWHERE\n(sp.type = @_msparam_0 OR sp.type = @_msparam_1 OR sp.type=@_msparam_2)\nORDER BY\n[Schema] ASC,[Name] ASC",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "ISNULL"
+      ],
+      "riskRationale": "ISNULL translates directly to PostgreSQL COALESCE with no behavioral change."
+    },
     {
       "statementText": "(@CustomerID int,@Price decimal(10,2),@Quantity int)INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)\r\n        VALUES (@CustomerID, @Price * @Quantity, \u0027Processing\u0027)",
       "riskScore": 1,
@@ -524,6 +533,30 @@
       "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
       "riskScore": 1,
       "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "riskScore": 1,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                t.name AS TableName,\r\n                c.name AS ColumnName,\r\n                c.column_id AS OrdinalPosition,\r\n                tp.name AS DataType,\r\n                c.precision AS [Precision],\r\n                c.scale AS Scale,\r\n                c.max_length AS MaxLength,\r\n                c.is_nullable AS IsNullable,\r\n                c.is_identity AS IsIdentity,\r\n                cc.definition AS ComputedDefinition\r\n            FROM sys.tables t\r\n            INNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\n            INNER JOIN sys.columns c ON c.object_id = t.object_id\r\n            INNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\n            LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\n            WHERE s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND t.is_ms_shipped = 0\r\n            ORDER BY s.name, t.name, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                t.name AS TableName,\r\n                c.name AS ColumnName,\r\n                c.column_id AS OrdinalPosition,\r\n                tp.name AS DataType,\r\n                c.precision AS [Precision],\r\n                c.scale AS Scale,\r\n                c.max_length AS MaxLength,\r\n                c.is_nullable AS IsNullable,\r\n                c.is_identity AS IsIdentity,\r\n                cc.definition AS ComputedDefinition\r\n            FROM sys.tables t\r\n            INNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\n            INNER JOIN sys.columns c ON c.object_id = t.object_id\r\n            INNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\n            LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\n            WHERE s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND t.is_ms_shipped = 0\r\n            ORDER BY s.name, t.name, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 1,
       "conversionCategory": "automatic",
       "detectedFeatures": [],
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
@@ -782,8 +815,8 @@
   },
   "migrationRecommendation": {
     "recommendation": "PostgreSQL Migration with Compatibility Middleware",
-    "reasoning": "Migration readiness score of 55 indicates moderate complexity. 1 critical (Risk 5) and 8 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
-    "migrationReadinessScore": 55
+    "reasoning": "Migration readiness score of 58 indicates moderate complexity. 1 critical (Risk 5) and 8 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
+    "migrationReadinessScore": 58
   },
   "effort": {
     "schemaConversion": {
