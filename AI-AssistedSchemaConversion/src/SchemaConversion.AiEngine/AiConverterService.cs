@@ -194,14 +194,33 @@ public sealed class AiConverterService : IAiConverter
     private static Dictionary<string, string> BuildPlaceholders(SchemaObject obj, ConversionContext context)
     {
         var typeMappingContext = BuildTypeMappingContext(context);
+        var schemaMappingContext = BuildSchemaMappingContext(context);
         var responseSchema = GetResponseSchema();
 
         return new Dictionary<string, string>
         {
             ["source_definition"] = obj.SourceDefinition,
             ["type_mapping_context"] = typeMappingContext,
+            ["schema_mapping_context"] = schemaMappingContext,
             ["response_schema"] = responseSchema
         };
+    }
+
+    private static string BuildSchemaMappingContext(ConversionContext context)
+    {
+        if (context.SchemaMappings.Count == 0)
+            return "No schema mappings provided. Preserve the original schema names from the source definition.";
+
+        var mappings = context.SchemaMappings
+            .Select(m => $"- {m.Key} → {m.Value}")
+            .ToList();
+
+        return "Apply the following schema mappings to ALL schema-qualified references in the generated DDL " +
+               "(including the object being created and any referenced objects):\n" +
+               string.Join("\n", mappings) +
+               "\n\nIMPORTANT: Every schema-qualified reference in the output DDL must use the mapped target schema. " +
+               "For example, if 'dbo' maps to 'public', then 'dbo.Products' becomes 'public.Products' " +
+               "and 'CREATE FUNCTION dbo.myFunc' becomes 'CREATE FUNCTION public.myFunc'.";
     }
 
     private static string BuildTypeMappingContext(ConversionContext context)

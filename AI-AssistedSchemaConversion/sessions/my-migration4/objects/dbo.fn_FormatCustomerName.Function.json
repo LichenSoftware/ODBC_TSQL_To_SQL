@@ -1,0 +1,22 @@
+{
+  "source": {
+    "name": "fn_FormatCustomerName",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\r\nCREATE FUNCTION dbo.fn_FormatCustomerName(@FirstName NVARCHAR(100), @LastName NVARCHAR(100))\r\nRETURNS NVARCHAR(201)\r\nAS\r\nBEGIN\r\n    RETURN ISNULL(@LastName, \u0027\u0027) \u002B \u0027, \u0027 \u002B ISNULL(@FirstName, \u0027\u0027);\r\nEND;\r\n",
+    "sourceDefinitionHash": "9536b36fcc7872d16363ed77ecb7e2ce80e0af2f1747b3322be8a98003c3a8cf",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "fn_FormatCustomerName",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.0077898+00:00",
+  "isManuallyEdited": false
+}

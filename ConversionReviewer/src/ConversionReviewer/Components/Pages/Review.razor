@@ -1,0 +1,231 @@
+@page "/review/{SessionName}/{Index:int}"
+@using ConversionReviewer.Models
+@using ConversionReviewer.Services
+@inject SessionService SessionService
+@inject DatabaseApplyService ApplyService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<a class="back-link" href="/">← Back to Dashboard</a>
+
+@if (_obj == null)
+{
+    <div class="alert alert-error">Object not found.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 style="margin:0;">@_obj.DisplayName</h2>
+                <div style="margin-top:0.3rem; font-size:0.85rem; color:#888;">
+                    <span class="badge badge-@_obj.Source.ObjectType.ToLowerInvariant()">@_obj.Source.ObjectType</span>
+                    &nbsp;Method: @_obj.Result.Method
+                    &nbsp;|&nbsp;Confidence: <span class="confidence @GetConfidenceClass(_obj.Result.ConfidenceScore)">@($"{_obj.Result.ConfidenceScore:P0}")</span>
+                    @if (_obj.IsManuallyEdited) { <span style="color:#ff9800;"> (manually edited)</span> }
+                </div>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                @if (_index > 0)
+                {
+                    <button class="btn btn-outline btn-sm" @onclick="GoToPrev">← Prev</button>
+                }
+                @if (_index < _totalCount - 1)
+                {
+                    <button class="btn btn-outline btn-sm" @onclick="GoToNext">Next →</button>
+                }
+            </div>
+        </div>
+
+        @if (_obj.Source.DependsOn.Count > 0)
+        {
+            <div style="font-size:0.85rem; margin-bottom:0.75rem;">
+                <strong>Dependencies:</strong> @string.Join(", ", _obj.Source.DependsOn)
+            </div>
+        }
+
+        @if (_obj.IsApplied)
+        {
+            <div class="alert alert-success">✓ Applied successfully at @_obj.AppliedAt?.LocalDateTime.ToString("g")</div>
+        }
+        else if (_obj.AppliedSuccessfully == false)
+        {
+            <div class="alert alert-error">✗ Last apply failed: @_obj.ApplyError</div>
+        }
+    </div>
+
+    @* Side-by-side code panels *@
+    <div class="code-panel">
+        <div class="code-block">
+            <h4>Source T-SQL</h4>
+            <pre>@_obj.Source.SourceDefinition</pre>
+        </div>
+        <div class="code-block">
+            <h4>Generated PostgreSQL @(_isEditing ? "(editing)" : "")</h4>
+            @if (_isEditing)
+            {
+                <textarea @bind="_editedDdl" @bind:event="oninput"></textarea>
+            }
+            else
+            {
+                <pre>@_obj.Result.GeneratedDdl</pre>
+            }
+        </div>
+    </div>
+
+    <div class="toolbar">
+        @if (_isEditing)
+        {
+            <button class="btn btn-success" @onclick="SaveEdit">💾 Save Changes</button>
+            <button class="btn btn-outline" @onclick="CancelEdit">Cancel</button>
+        }
+        else
+        {
+            <button class="btn btn-primary" @onclick="StartEdit">✏️ Edit DDL</button>
+        }
+        <button class="btn btn-success" @onclick="ApplyScript" disabled="@_applying">
+            @(_applying ? "Applying..." : "▶ Apply to Database")
+        </button>
+    </div>
+
+    @if (_applyMessage != null)
+    {
+        <div class="alert @(_applySuccess ? "alert-success" : "alert-error")">@_applyMessage</div>
+    }
+
+    @* Review Flags *@
+    @if (_obj.Result.ReviewFlags.Count > 0)
+    {
+        <div class="section-title">⚠️ Review Flags (@_obj.Result.ReviewFlags.Count)</div>
+        <div class="review-flags">
+            @foreach (var flag in _obj.Result.ReviewFlags)
+            {
+                <div class="flag-item">
+                    <div class="flag-section">@flag.CodeSection</div>
+                    <div class="flag-reason">@flag.Reason</div>
+                </div>
+            }
+        </div>
+    }
+
+    @* Assumptions *@
+    @if (_obj.Result.Assumptions.Count > 0)
+    {
+        <div class="section-title">📝 Assumptions (@_obj.Result.Assumptions.Count)</div>
+        <div class="review-flags">
+            @foreach (var assumption in _obj.Result.Assumptions)
+            {
+                <div class="note-item">
+                    <div class="note-desc">@assumption</div>
+                </div>
+            }
+        </div>
+    }
+
+    @* Compatibility Notes *@
+    @if (_obj.Result.CompatibilityNotes.Count > 0)
+    {
+        <div class="section-title">📋 Compatibility Notes (@_obj.Result.CompatibilityNotes.Count)</div>
+        <div class="review-flags">
+            @foreach (var note in _obj.Result.CompatibilityNotes)
+            {
+                <div class="note-item">
+                    <div class="note-category">@note.Category</div>
+                    <div class="note-desc">@note.Description</div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string SessionName { get; set; } = "";
+    [Parameter] public int Index { get; set; }
+
+    private ConversionObject? _obj;
+    private int _totalCount;
+    private int _index;
+    private bool _isEditing;
+    private string _editedDdl = "";
+    private bool _applying;
+    private string? _applyMessage;
+    private bool _applySuccess;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _applyMessage = null;
+        _isEditing = false;
+        var objects = await SessionService.LoadSessionAsync(SessionName);
+        _totalCount = objects.Count;
+        _index = Index;
+
+        if (Index >= 0 && Index < objects.Count)
+        {
+            _obj = objects[Index];
+        }
+        else
+        {
+            _obj = null;
+        }
+    }
+
+    private void StartEdit()
+    {
+        _editedDdl = _obj?.Result.GeneratedDdl ?? "";
+        _isEditing = true;
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (_obj == null) return;
+
+        _obj.Result.GeneratedDdl = _editedDdl;
+        _obj.IsManuallyEdited = true;
+        await SessionService.SaveObjectAsync(_obj);
+        _isEditing = false;
+        _applyMessage = "DDL changes saved to file.";
+        _applySuccess = true;
+    }
+
+    private async Task ApplyScript()
+    {
+        if (_obj == null) return;
+
+        _applying = true;
+        _applyMessage = null;
+        StateHasChanged();
+
+        var result = await ApplyService.ApplyScriptAsync(_obj);
+
+        _applySuccess = result.Success;
+        _applyMessage = result.Success
+            ? $"✓ Successfully applied {result.ObjectName}"
+            : $"✗ Failed: {result.ErrorMessage}";
+
+        _applying = false;
+    }
+
+    private void GoToPrev()
+    {
+        if (_index > 0)
+            Navigation.NavigateTo($"/review/{SessionName}/{_index - 1}");
+    }
+
+    private void GoToNext()
+    {
+        if (_index < _totalCount - 1)
+            Navigation.NavigateTo($"/review/{SessionName}/{_index + 1}");
+    }
+
+    private static string GetConfidenceClass(double score) => score switch
+    {
+        >= 0.9 => "confidence-high",
+        >= 0.7 => "confidence-medium",
+        _ => "confidence-low"
+    };
+}

@@ -1,0 +1,25 @@
+{
+  "source": {
+    "name": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_BuildMonthlyReport\r\n    @Year INT,\r\n    @Month INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- Temp table usage\r\n    CREATE TABLE #MonthlyStats (\r\n        CustomerID INT,\r\n        OrderCount INT,\r\n        TotalRevenue DECIMAL(12,2)\r\n    );\r\n\r\n    INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID;\r\n\r\n    -- Return results joined with customer info\r\n    SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC;\r\n\r\n    DROP TABLE #MonthlyStats;\r\nEND;\r\n",
+    "sourceDefinitionHash": "ad348295bfa425ad196df3211e81fe88479bdce60e3696e993b69a68e33e6a3d",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "sp_BuildMonthlyReport",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.146381+00:00",
+  "isManuallyEdited": false
+}

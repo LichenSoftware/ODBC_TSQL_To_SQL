@@ -1,0 +1,195 @@
+﻿@page "/"
+@using ConversionReviewer.Models
+@using ConversionReviewer.Services
+@inject SessionService SessionService
+@inject DatabaseApplyService ApplyService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h1>Migration Session Dashboard</h1>
+
+<div class="toolbar">
+    <label>Session:</label>
+    <select @onchange="OnSessionChanged" value="@_selectedSession">
+        <option value="">-- Select a session --</option>
+        @foreach (var s in _sessions)
+        {
+            <option value="@s">@s</option>
+        }
+    </select>
+
+    @if (_objects.Count > 0)
+    {
+        <div class="filter-pills">
+            <button class="pill @(_typeFilter == null ? "active" : "")" @onclick="() => SetFilter(null)">All (@_objects.Count)</button>
+            @foreach (var group in _typeCounts)
+            {
+                <button class="pill @(_typeFilter == group.Key ? "active" : "")" @onclick="() => SetFilter(group.Key)">@group.Key (@group.Value)</button>
+            }
+        </div>
+    }
+</div>
+
+@if (_objects.Count > 0)
+{
+    <div class="status-bar">
+        <span class="status-item">Total: <strong>@_objects.Count</strong></span>
+        <span class="status-item">Applied: <strong style="color:#4caf50">@_objects.Count(o => o.IsApplied)</strong></span>
+        <span class="status-item">Failed: <strong style="color:#f44336">@_objects.Count(o => o.AppliedSuccessfully == false)</strong></span>
+        <span class="status-item">Pending: <strong style="color:#ff9800">@_objects.Count(o => !o.AppliedAt.HasValue)</strong></span>
+        <span class="status-item">Avg Confidence: <strong>@($"{_objects.Average(o => o.Result.ConfidenceScore):P0}")</strong></span>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn btn-success" @onclick="ApplyAllPending" disabled="@_applying">
+            @(_applying ? "Applying..." : "▶ Apply All Pending (in order)")
+        </button>
+        <button class="btn btn-danger btn-sm" @onclick="ResetAllStatus" disabled="@_applying">
+            Reset All Status
+        </button>
+    </div>
+
+    @if (_applyMessage != null)
+    {
+        <div class="alert @(_applySuccess ? "alert-success" : "alert-error")">@_applyMessage</div>
+    }
+
+    <div class="object-grid">
+        @foreach (var obj in FilteredObjects)
+        {
+            <div class="object-card @GetCardClass(obj)" @onclick="() => NavigateToObject(obj)">
+                <div class="card-header">
+                    <span class="badge badge-@obj.Source.ObjectType.ToLowerInvariant()">@obj.Source.ObjectType</span>
+                    <span class="confidence @GetConfidenceClass(obj.Result.ConfidenceScore)">
+                        @($"{obj.Result.ConfidenceScore:P0}")
+                    </span>
+                </div>
+                <strong>@obj.DisplayName</strong>
+                <div style="font-size:0.8rem; color:#888; margin-top:0.3rem;">
+                    Method: @obj.Result.Method
+                    @if (obj.IsManuallyEdited) { <span style="color:#ff9800;"> (edited)</span> }
+                </div>
+                @if (obj.Result.ReviewFlags.Count > 0)
+                {
+                    <div style="font-size:0.78rem; color:#ff9800; margin-top:0.3rem;">
+                        ⚠ @obj.Result.ReviewFlags.Count review flag(s)
+                    </div>
+                }
+                @if (obj.IsApplied)
+                {
+                    <div class="apply-status success">✓ Applied @obj.AppliedAt?.LocalDateTime.ToString("g")</div>
+                }
+                else if (obj.AppliedSuccessfully == false)
+                {
+                    <div class="apply-status failed">✗ Failed</div>
+                }
+                @if (obj.Source.DependsOn.Count > 0)
+                {
+                    <div style="font-size:0.75rem; color:#666; margin-top:0.3rem;">
+                        Depends on: @string.Join(", ", obj.Source.DependsOn)
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+else if (!string.IsNullOrEmpty(_selectedSession))
+{
+    <div class="alert alert-info">No objects found in session '@_selectedSession'.</div>
+}
+
+@code {
+    private List<string> _sessions = [];
+    private string _selectedSession = "";
+    private List<ConversionObject> _objects = [];
+    private string? _typeFilter;
+    private Dictionary<string, int> _typeCounts = new();
+    private bool _applying;
+    private string? _applyMessage;
+    private bool _applySuccess;
+
+    private IEnumerable<ConversionObject> FilteredObjects =>
+        _typeFilter == null ? _objects : _objects.Where(o => o.Source.ObjectType.Equals(_typeFilter, StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnInitialized()
+    {
+        _sessions = SessionService.GetAvailableSessions();
+    }
+
+    private async Task OnSessionChanged(ChangeEventArgs e)
+    {
+        _selectedSession = e.Value?.ToString() ?? "";
+        _applyMessage = null;
+        if (!string.IsNullOrEmpty(_selectedSession))
+        {
+            _objects = await SessionService.LoadSessionAsync(_selectedSession);
+            _typeCounts = _objects.GroupBy(o => o.Source.ObjectType)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+        }
+        else
+        {
+            _objects = [];
+            _typeCounts = new();
+        }
+        _typeFilter = null;
+    }
+
+    private void SetFilter(string? type)
+    {
+        _typeFilter = type;
+    }
+
+    private void NavigateToObject(ConversionObject obj)
+    {
+        var index = _objects.IndexOf(obj);
+        Navigation.NavigateTo($"/review/{_selectedSession}/{index}");
+    }
+
+    private async Task ApplyAllPending()
+    {
+        _applying = true;
+        _applyMessage = null;
+        StateHasChanged();
+
+        var pending = _objects.Where(o => !o.IsApplied).ToList();
+        var results = await ApplyService.ApplyBatchAsync(pending, stopOnError: false);
+
+        var succeeded = results.Count(r => r.Success);
+        var failed = results.Count(r => !r.Success);
+
+        _applySuccess = failed == 0;
+        _applyMessage = $"Applied {succeeded} successfully, {failed} failed out of {results.Count} total.";
+
+        // Reload to get updated status
+        _objects = await SessionService.LoadSessionAsync(_selectedSession);
+        _applying = false;
+    }
+
+    private async Task ResetAllStatus()
+    {
+        foreach (var obj in _objects)
+        {
+            obj.AppliedAt = null;
+            obj.AppliedSuccessfully = null;
+            obj.ApplyError = null;
+            await SessionService.SaveObjectAsync(obj);
+        }
+        _objects = await SessionService.LoadSessionAsync(_selectedSession);
+        _applyMessage = "All apply statuses have been reset.";
+        _applySuccess = true;
+    }
+
+    private static string GetCardClass(ConversionObject obj)
+    {
+        if (obj.IsApplied) return "applied";
+        if (obj.AppliedSuccessfully == false) return "failed";
+        return "pending";
+    }
+
+    private static string GetConfidenceClass(double score) => score switch
+    {
+        >= 0.9 => "confidence-high",
+        >= 0.7 => "confidence-medium",
+        _ => "confidence-low"
+    };
+}

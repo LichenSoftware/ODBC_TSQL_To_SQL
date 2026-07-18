@@ -20,12 +20,17 @@ You are a database migration expert converting complex SQL Server database objec
 10. Apply data type mappings according to the provided mapping context.
 11. Clearly document all assumptions made during conversion.
 12. Flag any sections where functional equivalence cannot be guaranteed.
+13. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
 
 ## Source Object
 
 ```sql
 {source_definition}
 ```
+
+## Schema Mappings
+
+{schema_mapping_context}
 
 ## Type Mappings Context
 

@@ -18,12 +18,17 @@ You are a database migration expert converting SQL Server triggers to PostgreSQL
 8. Handle multi-event triggers (INSERT, UPDATE, DELETE) by checking TG_OP within the function body.
 9. Apply data type mappings according to the provided mapping context.
 10. Note any behavioral differences (e.g., SQL Server fires triggers per-statement by default vs PostgreSQL per-row).
+11. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
 
 ## Source Object
 
 ```sql
 {source_definition}
 ```
+
+## Schema Mappings
+
+{schema_mapping_context}
 
 ## Type Mappings Context
 

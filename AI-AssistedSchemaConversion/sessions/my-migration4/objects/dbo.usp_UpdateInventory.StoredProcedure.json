@@ -1,0 +1,24 @@
+{
+  "source": {
+    "name": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\nCREATE   PROCEDURE dbo.usp_UpdateInventory\n    @ProductID INT,\n    @NewQuantity INT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    UPDATE p\n    SET p.StockQuantity = @NewQuantity\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\n    WHERE p.ProductID = @ProductID;\nEND;\n",
+    "sourceDefinitionHash": "f866d5ecae05dd932d0592fffc2190ac89849214f3640e4b87dc4c6207b9b32f",
+    "dependsOn": [
+      "dbo.Products"
+    ]
+  },
+  "result": {
+    "objectName": "usp_UpdateInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.442445+00:00",
+  "isManuallyEdited": false
+}

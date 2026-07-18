@@ -1,0 +1,27 @@
+{
+  "source": {
+    "name": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "CREATE PROCEDURE dbo.sp_GetOrderShippingInfo\r\n    @OrderID INT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n    SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID;\r\nEND;",
+    "sourceDefinitionHash": "25a2adf0525853fd8308f77f487aedff9fb1250f9fe8225b091e70c7d9ec47cc",
+    "dependsOn": [
+      "dbo.OrderMetadata",
+      "dbo.Orders",
+      "dbo.query",
+      "dbo.value"
+    ]
+  },
+  "result": {
+    "objectName": "sp_GetOrderShippingInfo",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.2342868+00:00",
+  "isManuallyEdited": false
+}

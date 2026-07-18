@@ -1,0 +1,22 @@
+{
+  "source": {
+    "name": "Products",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "sourceDefinition": "CREATE TABLE [dbo].[Products]\r\n(\r\n    [ProductID] int IDENTITY(1,1) NOT NULL,\r\n    [ProductName] nvarchar(200) NOT NULL,\r\n    [SKU] nvarchar(50) NOT NULL,\r\n    [Price] decimal(10,2) NOT NULL,\r\n    [StockQuantity] int NOT NULL DEFAULT ((0)),\r\n    [CategoryID] int NULL,\r\n    CONSTRAINT [PK__Products__B40CC6ED0E119479] PRIMARY KEY (ProductID),\r\n    CONSTRAINT [UQ__Products__CA1ECF0DC5B9041E] UNIQUE (SKU),\r\n    CONSTRAINT [FK__Products__Catego__412EB0B6] FOREIGN KEY (CategoryID) REFERENCES dbo.Categories (CategoryID)\n);\n",
+    "sourceDefinitionHash": "d715209816c2f0a8001ae72a212643957a2b17a5f352559dda9d8940c6b20138",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "Products",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.1228937+00:00",
+  "isManuallyEdited": false
+}

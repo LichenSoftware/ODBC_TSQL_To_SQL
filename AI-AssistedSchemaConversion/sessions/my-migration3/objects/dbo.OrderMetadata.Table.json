@@ -17,8 +17,12 @@
     "confidenceScore": 1,
     "assumptions": [],
     "reviewFlags": [],
-    "compatibilityNotes": []
+    "compatibilityNotes": [],
+    "promptTemplateVersion": null
   },
   "convertedAt": "2026-07-13T16:44:44.9961512+00:00",
-  "isManuallyEdited": false
+  "isManuallyEdited": false,
+  "appliedAt": "2026-07-16T12:16:44.7672416+00:00",
+  "appliedSuccessfully": true,
+  "applyError": null
 }

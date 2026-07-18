@@ -1,0 +1,25 @@
+{
+  "source": {
+    "name": "tr_OrderAudit",
+    "schemaName": "dbo",
+    "objectType": "trigger",
+    "sourceDefinition": "\nCREATE   TRIGGER dbo.tr_OrderAudit\nON dbo.Orders\nAFTER INSERT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    INSERT INTO dbo.OrderMetadata (OrderID, MetadataXml)\n    SELECT i.OrderID, CAST(\u0027\u003Caudit\u003E\u003Ctimestamp\u003E\u0027 \u002B CONVERT(VARCHAR(30), GETDATE(), 126) \u002B \u0027\u003C/timestamp\u003E\u003C/audit\u003E\u0027 AS XML)\n    FROM inserted i\n    WHERE NOT EXISTS (SELECT 1 FROM dbo.OrderMetadata m WHERE m.OrderID = i.OrderID);\nEND;\n",
+    "sourceDefinitionHash": "dd20630748c5b216b5316940d56e2a951ce7c626d0694a88eba605e2d6201805",
+    "dependsOn": [
+      "dbo.inserted",
+      "dbo.OrderMetadata"
+    ]
+  },
+  "result": {
+    "objectName": "tr_OrderAudit",
+    "schemaName": "dbo",
+    "objectType": "trigger",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.395565+00:00",
+  "isManuallyEdited": false
+}

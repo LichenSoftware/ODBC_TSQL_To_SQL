@@ -1,0 +1,24 @@
+{
+  "source": {
+    "name": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "sourceDefinition": "\nCREATE   FUNCTION dbo.fn_GetCustomerTotal(@CustomerID INT)\nRETURNS DECIMAL(18,2)\nAS\nBEGIN\n    DECLARE @Total DECIMAL(18,2);\n    SELECT @Total = ISNULL(SUM(TotalAmount), 0)\n    FROM dbo.Orders\n    WHERE CustomerID = @CustomerID;\n    RETURN @Total;\nEND;\n",
+    "sourceDefinitionHash": "9417862195cd3654a77aef9340ad34143c6c56dddb9b74742acb6ecd6a6803d0",
+    "dependsOn": [
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "fn_GetCustomerTotal",
+    "schemaName": "dbo",
+    "objectType": "function",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.0236834+00:00",
+  "isManuallyEdited": false
+}

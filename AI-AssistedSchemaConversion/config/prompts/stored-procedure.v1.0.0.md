@@ -20,12 +20,17 @@ You are a database migration expert converting SQL Server stored procedures to P
 10. Apply data type mappings according to the provided mapping context.
 11. Convert PRINT statements to RAISE NOTICE.
 12. Convert RAISERROR/THROW to RAISE EXCEPTION with appropriate SQLSTATE codes.
+13. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
 
 ## Source Object
 
 ```sql
 {source_definition}
 ```
+
+## Schema Mappings
+
+{schema_mapping_context}
 
 ## Type Mappings Context
 

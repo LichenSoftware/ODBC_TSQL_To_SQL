@@ -1,0 +1,22 @@
+{
+  "source": {
+    "name": "ProductImportStaging",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "sourceDefinition": "CREATE TABLE [dbo].[ProductImportStaging]\r\n(\r\n    [SKU] nvarchar(50) NOT NULL,\r\n    [ProductName] nvarchar(200) NOT NULL,\r\n    [Price] decimal(10,2) NOT NULL,\r\n    [StockQuantity] int NOT NULL\n);\n",
+    "sourceDefinitionHash": "e5bb428fa05ce814e6c2b19a348fbfaa422f72a795723d477b52dbbea6de715a",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "ProductImportStaging",
+    "schemaName": "dbo",
+    "objectType": "table",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.1052328+00:00",
+  "isManuallyEdited": false
+}

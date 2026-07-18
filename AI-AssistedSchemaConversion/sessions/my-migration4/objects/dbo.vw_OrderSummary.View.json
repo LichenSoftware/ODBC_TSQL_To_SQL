@@ -1,0 +1,25 @@
+{
+  "source": {
+    "name": "vw_OrderSummary",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "sourceDefinition": "\nCREATE   VIEW dbo.vw_OrderSummary\nAS\nSELECT \n    c.CustomerID,\n    c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\n    COUNT(o.OrderID) AS OrderCount,\n    ISNULL(SUM(o.TotalAmount), 0) AS TotalRevenue\nFROM dbo.Customers c\nLEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\nGROUP BY c.CustomerID, c.FirstName, c.LastName;\n",
+    "sourceDefinitionHash": "bf9125484e6200eec546454c831890d53048a8a4b06f8096da7e27b5ca7bf6be",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "vw_OrderSummary",
+    "schemaName": "dbo",
+    "objectType": "view",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.4817619+00:00",
+  "isManuallyEdited": false
+}

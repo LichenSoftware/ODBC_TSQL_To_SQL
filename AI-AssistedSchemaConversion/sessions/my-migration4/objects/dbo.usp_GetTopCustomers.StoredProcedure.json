@@ -1,0 +1,25 @@
+{
+  "source": {
+    "name": "usp_GetTopCustomers",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\nCREATE   PROCEDURE dbo.usp_GetTopCustomers\n    @TopN INT\nAS\nBEGIN\n    SET NOCOUNT ON;\n    SELECT TOP (@TopN)\n        c.CustomerID,\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\n        COUNT(o.OrderID) AS OrderCount,\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\n    FROM dbo.Customers c\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\n    ORDER BY TotalSpent DESC;\nEND;\n",
+    "sourceDefinitionHash": "8364af45bacb471e80de39f7f138869d784f11aa4b24944178b82a20cea4112e",
+    "dependsOn": [
+      "dbo.Customers",
+      "dbo.Orders"
+    ]
+  },
+  "result": {
+    "objectName": "usp_GetTopCustomers",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.4173053+00:00",
+  "isManuallyEdited": false
+}

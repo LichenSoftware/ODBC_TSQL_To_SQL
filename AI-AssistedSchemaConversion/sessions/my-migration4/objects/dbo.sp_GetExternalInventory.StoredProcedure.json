@@ -1,0 +1,22 @@
+{
+  "source": {
+    "name": "sp_GetExternalInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "sourceDefinition": "\r\nCREATE PROCEDURE dbo.sp_GetExternalInventory\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- This references a linked server pattern that the feature detector will find\r\n    -- In a real environment this would query a remote server\r\n    DECLARE @SQL NVARCHAR(MAX) = N\u0027\r\n        SELECT * FROM OPENQUERY(RemoteWarehouse,\r\n            \u0027\u0027SELECT ProductCode, AvailableStock FROM Inventory WHERE AvailableStock \u003E 0\u0027\u0027)\u0027;\r\n\r\n    -- Just print for testing - actual execution would fail without the linked server\r\n    PRINT @SQL;\r\nEND;\r\n",
+    "sourceDefinitionHash": "69ecdbcdc62243fd19cfc25de152f71abf3fe7bf135fae6026aa3128a455a067",
+    "dependsOn": []
+  },
+  "result": {
+    "objectName": "sp_GetExternalInventory",
+    "schemaName": "dbo",
+    "objectType": "storedProcedure",
+    "status": "pending",
+    "method": "ruleBased",
+    "assumptions": [],
+    "reviewFlags": [],
+    "compatibilityNotes": []
+  },
+  "convertedAt": "2026-07-18T15:49:53.1854852+00:00",
+  "isManuallyEdited": false
+}

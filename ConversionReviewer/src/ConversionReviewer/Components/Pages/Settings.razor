@@ -1,0 +1,65 @@
+@page "/settings"
+@using ConversionReviewer.Services
+@inject DatabaseApplyService ApplyService
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+
+<h1>Settings</h1>
+
+<div class="card">
+    <h3>Target PostgreSQL Connection</h3>
+    <p style="font-size:0.85rem; color:#888;">
+        Configure the connection string in <code>appsettings.json</code> under <code>ConnectionStrings:TargetPostgres</code>.
+    </p>
+
+    <div style="margin-bottom:1rem;">
+        <label style="font-size:0.85rem; color:#aaa;">Connection String:</label>
+        <input type="text" @bind="_connectionString" style="width:100%; padding:0.5rem; background:#0d1117; border:1px solid #30363d; border-radius:6px; color:#e0e0e0; font-family:monospace; font-size:0.85rem;" />
+    </div>
+
+    <button class="btn btn-primary" @onclick="TestConnection" disabled="@_testing">
+        @(_testing ? "Testing..." : "🔌 Test Connection")
+    </button>
+
+    @if (_testResult != null)
+    {
+        <div class="alert @(_testSuccess ? "alert-success" : "alert-error")" style="margin-top:1rem;">
+            @_testResult
+        </div>
+    }
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <h3>Sessions Path</h3>
+    <p style="font-size:0.85rem; color:#888;">
+        Configured path: <code>@(Configuration["SessionsPath"] ?? "(default)")</code>
+    </p>
+    <p style="font-size:0.85rem; color:#888;">
+        Configure in <code>appsettings.json</code> under <code>SessionsPath</code>. 
+        Use relative path from the project directory or an absolute path.
+    </p>
+</div>
+
+@code {
+    private string _connectionString = "";
+    private bool _testing;
+    private string? _testResult;
+    private bool _testSuccess;
+
+    protected override void OnInitialized()
+    {
+        _connectionString = ApplyService.GetConnectionString();
+    }
+
+    private async Task TestConnection()
+    {
+        _testing = true;
+        _testResult = null;
+        StateHasChanged();
+
+        var (success, message) = await ApplyService.TestConnectionAsync(_connectionString);
+        _testSuccess = success;
+        _testResult = message;
+        _testing = false;
+    }
+}

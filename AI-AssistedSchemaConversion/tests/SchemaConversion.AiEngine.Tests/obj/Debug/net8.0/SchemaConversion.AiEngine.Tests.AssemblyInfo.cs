@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchemaConversion.AiEngine.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5483edb860e1305d35f55bd597280dcafa67ccc5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1b241596561cb9e7b647c7dca44c35f4a43eb3b9")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchemaConversion.AiEngine.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchemaConversion.AiEngine.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

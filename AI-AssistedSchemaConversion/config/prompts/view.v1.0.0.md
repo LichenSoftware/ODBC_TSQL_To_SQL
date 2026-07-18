@@ -21,12 +21,17 @@ You are a database migration expert converting SQL Server views to PostgreSQL.
 11. Convert indexed/materialized view hints: WITH SCHEMABINDING → note as assumption; consider MATERIALIZED VIEW if appropriate.
 12. Apply data type mappings for any CAST operations within the view.
 13. Preserve column aliases and output column names exactly as defined.
+14. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
 
 ## Source Object
 
 ```sql
 {source_definition}
 ```
+
+## Schema Mappings
+
+{schema_mapping_context}
 
 ## Type Mappings Context
 

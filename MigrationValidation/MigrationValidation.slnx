@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MigrationValidation.Runner/MigrationValidation.Runner.csproj" />
+  </Folder>
+</Solution>

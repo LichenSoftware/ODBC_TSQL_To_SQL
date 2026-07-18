@@ -18,12 +18,17 @@ You are a database migration expert converting SQL Server user-defined functions
 8. Convert RETURN statements to PostgreSQL RETURN or RETURN QUERY syntax.
 9. Apply data type mappings according to the provided mapping context.
 10. If the function signature must change, generate a wrapper function that preserves the original calling interface.
+11. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
 
 ## Source Object
 
 ```sql
 {source_definition}
 ```
+
+## Schema Mappings
+
+{schema_mapping_context}
 
 ## Type Mappings Context
 

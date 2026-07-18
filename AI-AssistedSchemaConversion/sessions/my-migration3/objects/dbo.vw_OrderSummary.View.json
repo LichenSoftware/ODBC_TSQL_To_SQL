@@ -20,8 +20,12 @@
     "confidenceScore": 1,
     "assumptions": [],
     "reviewFlags": [],
-    "compatibilityNotes": []
+    "compatibilityNotes": [],
+    "promptTemplateVersion": null
   },
   "convertedAt": "2026-07-13T16:45:20.0390681+00:00",
-  "isManuallyEdited": false
+  "isManuallyEdited": false,
+  "appliedAt": "2026-07-16T21:47:29.0980732+00:00",
+  "appliedSuccessfully": false,
+  "applyError": "42P01: relation \u0022dbo.customers\u0022 does not exist\r\n\r\nPOSITION: 219"
 }
