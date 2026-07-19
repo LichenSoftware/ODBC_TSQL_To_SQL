@@ -8,10 +8,30 @@
     ".NETCoreApp,Version=v10.0": {
       "ConversionReviewer/1.0.0": {
         "dependencies": {
+          "AWSSDK.BedrockRuntime": "4.0.0.3",
           "Npgsql": "9.0.3"
         },
         "runtime": {
           "ConversionReviewer.dll": {}
+        }
+      },
+      "AWSSDK.BedrockRuntime/4.0.0.3": {
+        "dependencies": {
+          "AWSSDK.Core": "4.0.0.4"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.BedrockRuntime.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.3"
+          }
+        }
+      },
+      "AWSSDK.Core/4.0.0.4": {
+        "runtime": {
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.4"
+          }
         }
       },
       "Npgsql/9.0.3": {
@@ -29,6 +49,20 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "AWSSDK.BedrockRuntime/4.0.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LKKiz2RcixI387PCitnSNxcUYG3KJhU9CmcFZi+3Pq3ZRaaDHOMZ7E0nHPPzJ2FAFyj8Mn+m6XTbLQKp6reaBw==",
+      "path": "awssdk.bedrockruntime/4.0.0.3",
+      "hashPath": "awssdk.bedrockruntime.4.0.0.3.nupkg.sha512"
+    },
+    "AWSSDK.Core/4.0.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5JNAlVZK5dH86G+HJhGpIN3MHlAI2/VEnjMVPfIo0v5raulf+HIypPkvRBsmFhKkgTVp+KOV2AVBMZj9b5sCzA==",
+      "path": "awssdk.core/4.0.0.4",
+      "hashPath": "awssdk.core.4.0.0.4.nupkg.sha512"
     },
     "Npgsql/9.0.3": {
       "type": "package",

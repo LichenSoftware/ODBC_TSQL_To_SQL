@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSingleton<SessionService>();
 builder.Services.AddSingleton<DatabaseApplyService>();
+builder.Services.AddSingleton<BedrockFixService>();
 
 var app = builder.Build();
 

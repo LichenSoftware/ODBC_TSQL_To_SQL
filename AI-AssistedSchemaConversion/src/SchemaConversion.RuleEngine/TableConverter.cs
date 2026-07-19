@@ -221,7 +221,15 @@ public sealed class TableConverter : IRuleBasedConverter
             }
             else
             {
-                parts.Add($"DEFAULT {defaultResult.Expression}");
+                var defaultExpr = defaultResult.Expression;
+
+                // If the target type is BOOLEAN, convert numeric defaults to boolean literals
+                if (pgType.Equals("BOOLEAN", StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultExpr = NormalizeBooleanDefault(defaultExpr);
+                }
+
+                parts.Add($"DEFAULT {defaultExpr}");
             }
         }
 
@@ -386,6 +394,23 @@ public sealed class TableConverter : IRuleBasedConverter
         };
     }
 
+    /// <summary>
+    /// Converts numeric default expressions (0, 1, (0), (1), ((0)), ((1))) to PostgreSQL
+    /// boolean literals (TRUE/FALSE) when the target column type is BOOLEAN.
+    /// </summary>
+    private static string NormalizeBooleanDefault(string expression)
+    {
+        // Strip all parentheses and whitespace to get the core value
+        var stripped = expression.Replace("(", "").Replace(")", "").Trim();
+
+        return stripped switch
+        {
+            "0" => "FALSE",
+            "1" => "TRUE",
+            _ => expression
+        };
+    }
+
     private string? ConvertInlineConstraint(
         ConstraintDefinition constraint,
         ConversionContext context,
@@ -492,10 +517,7 @@ public sealed class TableConverter : IRuleBasedConverter
             return mapped;
         }
 
-        // Default: dbo → public, others keep same name
-        return sourceSchema.Equals("dbo", StringComparison.OrdinalIgnoreCase)
-            ? "public"
-            : sourceSchema;
+        return sourceSchema;
     }
 
     private static string QuoteIdentifier(string identifier)

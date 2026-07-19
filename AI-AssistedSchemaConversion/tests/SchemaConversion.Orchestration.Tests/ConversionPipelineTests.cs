@@ -42,6 +42,7 @@ public class ConversionPipelineTests
             _ruleBasedConverter,
             _aiConverter,
             _reportGenerator,
+            CreateTestSchemaMappingLoader(),
             NullLogger<ConversionPipeline>.Instance);
     }
 
@@ -471,5 +472,18 @@ public class ConversionPipelineTests
             SourceDefinition = $"CREATE {type} {schema}.{name}",
             SourceDefinitionHash = $"hash-{schema}-{name}"
         };
+    }
+
+    private static SchemaMappingLoader CreateTestSchemaMappingLoader()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, """
+        {
+            "defaultMappings": [
+                { "sqlServerSchema": "dbo", "postgresSchema": "public" }
+            ]
+        }
+        """);
+        return new SchemaMappingLoader(tempFile, NullLogger<SchemaMappingLoader>.Instance);
     }
 }

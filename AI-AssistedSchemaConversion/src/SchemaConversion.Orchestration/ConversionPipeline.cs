@@ -21,6 +21,7 @@ public sealed class ConversionPipeline
     private readonly IRuleBasedConverter _ruleBasedConverter;
     private readonly IAiConverter _aiConverter;
     private readonly IConversionReportGenerator _reportGenerator;
+    private readonly SchemaMappingLoader _schemaMappingLoader;
     private readonly ILogger<ConversionPipeline> _logger;
 
     public ConversionPipeline(
@@ -32,6 +33,7 @@ public sealed class ConversionPipeline
         IRuleBasedConverter ruleBasedConverter,
         IAiConverter aiConverter,
         IConversionReportGenerator reportGenerator,
+        SchemaMappingLoader schemaMappingLoader,
         ILogger<ConversionPipeline> logger)
     {
         _extractor = extractor;
@@ -42,6 +44,7 @@ public sealed class ConversionPipeline
         _ruleBasedConverter = ruleBasedConverter;
         _aiConverter = aiConverter;
         _reportGenerator = reportGenerator;
+        _schemaMappingLoader = schemaMappingLoader;
         _logger = logger;
     }
 
@@ -111,7 +114,11 @@ public sealed class ConversionPipeline
         }
 
         // 5. Process objects in dependency order (with parallelism for independent objects)
-        var context = new ConversionContext { SessionId = options.SessionId };
+        var context = new ConversionContext
+        {
+            SessionId = options.SessionId,
+            SchemaMappings = _schemaMappingLoader.GetMappings()
+        };
         var semaphore = new SemaphoreSlim(options.Concurrency, options.Concurrency);
 
         int totalProcessed = 0;

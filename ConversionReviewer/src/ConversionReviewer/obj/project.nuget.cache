@@ -1,11 +1,26 @@
 {
   "version": 2,
-  "dgSpecHash": "QR1G7SkeHgE=",
+  "dgSpecHash": "zNNYxLoZWmk=",
   "success": true,
   "projectFilePath": "C:\\code\\ODBC_TSQL_To_SQL\\ConversionReviewer\\src\\ConversionReviewer\\ConversionReviewer.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.bedrockruntime\\4.0.0.3\\awssdk.bedrockruntime.4.0.0.3.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.core\\4.0.0.4\\awssdk.core.4.0.0.4.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.5\\microsoft.aspnetcore.app.internal.assets.10.0.5.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\npgsql\\9.0.3\\npgsql.9.0.3.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1901",
+      "level": "Warning",
+      "message": "Package 'AWSSDK.Core' 4.0.0.4 has a known low severity vulnerability, https://github.com/advisories/GHSA-9cvc-h2w8-phrp",
+      "projectPath": "C:\\code\\ODBC_TSQL_To_SQL\\ConversionReviewer\\src\\ConversionReviewer\\ConversionReviewer.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\code\\ODBC_TSQL_To_SQL\\ConversionReviewer\\src\\ConversionReviewer\\ConversionReviewer.csproj",
+      "libraryId": "AWSSDK.Core",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
 }

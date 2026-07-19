@@ -217,6 +217,7 @@ public class EndToEndIntegrationTests : IDisposable
             ruleBasedConverter,
             aiConverter,
             reportGenerator,
+            CreateTestSchemaMappingLoader(),
             NullLogger<ConversionPipeline>.Instance);
 
         var options = new ConversionPipelineOptions
@@ -324,6 +325,7 @@ public class EndToEndIntegrationTests : IDisposable
         var pipeline = new ConversionPipeline(
             extractor, sessionStore, changeDetector, dependencyGraphBuilder,
             classifier, ruleBasedConverter, aiConverter, reportGenerator,
+            CreateTestSchemaMappingLoader(),
             NullLogger<ConversionPipeline>.Instance);
 
         var options = new ConversionPipelineOptions
@@ -349,5 +351,18 @@ public class EndToEndIntegrationTests : IDisposable
         var bytes = System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(bytes);
+    }
+
+    private static SchemaMappingLoader CreateTestSchemaMappingLoader()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, """
+        {
+            "defaultMappings": [
+                { "sqlServerSchema": "dbo", "postgresSchema": "public" }
+            ]
+        }
+        """);
+        return new SchemaMappingLoader(tempFile, NullLogger<SchemaMappingLoader>.Instance);
     }
 }

@@ -611,13 +611,162 @@ public sealed class ExpressionTranslator
 
     private TranslationResult TranslateRawExpression(string expression)
     {
-        // For expressions that didn't parse as a single expression,
-        // attempt basic string-level transformations
+        // For SELECT statements that don't have a TOP clause,
+        // apply basic string-level transformations for common T-SQL patterns.
         var result = expression;
 
-        // Replace string concatenation + with ||
-        // This is a simplified heuristic for raw SQL that wasn't AST-parseable
+        // Replace ISNULL(x, y) with COALESCE(x, y)
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\bISNULL\s*\(",
+            "COALESCE(",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Replace GETDATE() with CURRENT_TIMESTAMP
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\bGETDATE\s*\(\s*\)",
+            "CURRENT_TIMESTAMP",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Replace SYSDATETIME() with CURRENT_TIMESTAMP
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\bSYSDATETIME\s*\(\s*\)",
+            "CURRENT_TIMESTAMP",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Replace GETUTCDATE() with (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\bGETUTCDATE\s*\(\s*\)",
+            "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Replace LEN(x) with LENGTH(x)
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\bLEN\s*\(",
+            "LENGTH(",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Replace string concatenation + with || 
+        // Strategy: replace + that appears between string-context operands
+        // A string literal is indicated by single quotes nearby
+        result = ReplaceStringConcatenation(result);
+
+        // Remove WITH (NOLOCK) and similar table hints
+        result = System.Text.RegularExpressions.Regex.Replace(
+            result,
+            @"\s+WITH\s*\(\s*NOLOCK\s*\)",
+            "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Remove square bracket quoting (T-SQL style) 
+        result = result.Replace("[", "").Replace("]", "");
+
         return TranslationResult.Success(result);
+    }
+
+    /// <summary>
+    /// Replaces T-SQL string concatenation operator (+) with PostgreSQL (||).
+    /// Uses a heuristic: if a + operator appears adjacent to a string literal (quoted with ')
+    /// on either side within the same expression context, it's treated as string concatenation.
+    /// </summary>
+    private static string ReplaceStringConcatenation(string sql)
+    {
+        // Find + operators that are in a string concatenation context
+        // Heuristic: scan for patterns like 'expr + expr' where at least one side
+        // involves a string literal within the same SELECT expression
+        var result = new System.Text.StringBuilder(sql.Length);
+        var inSingleQuote = false;
+        var i = 0;
+
+        while (i < sql.Length)
+        {
+            var ch = sql[i];
+
+            // Track single-quote string literals
+            if (ch == '\'')
+            {
+                inSingleQuote = !inSingleQuote;
+                result.Append(ch);
+                i++;
+                continue;
+            }
+
+            if (inSingleQuote)
+            {
+                result.Append(ch);
+                i++;
+                continue;
+            }
+
+            // When we find a + that is not inside a string literal,
+            // check if there's a string literal nearby on either side
+            if (ch == '+')
+            {
+                if (IsStringConcatContext(sql, i))
+                {
+                    result.Append("||");
+                }
+                else
+                {
+                    result.Append(ch);
+                }
+                i++;
+            }
+            else
+            {
+                result.Append(ch);
+                i++;
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// Determines if a + at the given position is likely string concatenation
+    /// by checking for string literals within the surrounding expression context.
+    /// </summary>
+    private static bool IsStringConcatContext(string sql, int plusIndex)
+    {
+        // Look backwards and forwards for a string literal (single quote)
+        // within the same comma-separated expression (bounded by commas or keywords)
+        var exprStart = FindExpressionBoundaryBackward(sql, plusIndex);
+        var exprEnd = FindExpressionBoundaryForward(sql, plusIndex);
+
+        var exprSegment = sql[exprStart..exprEnd];
+
+        // If the expression contains a string literal, the + is likely concatenation
+        return exprSegment.Contains('\'');
+    }
+
+    private static int FindExpressionBoundaryBackward(string sql, int fromIndex)
+    {
+        var depth = 0;
+        for (var i = fromIndex - 1; i >= 0; i--)
+        {
+            var ch = sql[i];
+            if (ch == ')') depth++;
+            else if (ch == '(') { if (depth > 0) depth--; else return i + 1; }
+            else if (ch == ',' && depth == 0) return i + 1;
+        }
+        return 0;
+    }
+
+    private static int FindExpressionBoundaryForward(string sql, int fromIndex)
+    {
+        var depth = 0;
+        for (var i = fromIndex + 1; i < sql.Length; i++)
+        {
+            var ch = sql[i];
+            if (ch == '(') depth++;
+            else if (ch == ')') { if (depth > 0) depth--; else return i; }
+            else if (ch == ',' && depth == 0) return i;
+        }
+        return sql.Length;
     }
 
     private TranslationResult TranslateGenericFragment(TSqlFragment fragment)

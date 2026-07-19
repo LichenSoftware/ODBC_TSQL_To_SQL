@@ -72,6 +72,7 @@ public static class Program
         var typeMappingsFile = conversionSection["TypeMappingsFile"] ?? "./config/type-mappings.json";
         var functionMappingsFile = conversionSection["FunctionMappingsFile"] ?? "./config/function-mappings.json";
         var promptTemplatesDirectory = conversionSection["PromptTemplatesDirectory"] ?? "./config/prompts";
+        var schemaMappingsFile = conversionSection["SchemaMappingsFile"] ?? "./config/schema-mappings.json";
         var auditDirectory = auditLogSection["Directory"] ?? "./sessions/{sessionId}/audit";
         var maxFileSizeBytes = auditLogSection.GetValue("MaxFileSizeBytes", 52428800L);
 
@@ -116,6 +117,9 @@ public static class Program
         services.AddSingleton<ISchemaExtractor>(sp => sp.GetRequiredService<DdlFileSchemaExtractor>());
 
         // Orchestration
+        services.AddSingleton(sp => new SchemaMappingLoader(
+            schemaMappingsFile,
+            sp.GetRequiredService<ILogger<SchemaMappingLoader>>()));
         services.AddSingleton(sp => new ConversionSessionStore(
             sessionDirectory,
             sp.GetRequiredService<ILogger<ConversionSessionStore>>()));

@@ -138,6 +138,16 @@
             Validates that a resolved path is within the expected base directory.
             </summary>
         </member>
+        <member name="T:SchemaConversion.Orchestration.SchemaMappingLoader">
+            <summary>
+            Loads schema mappings from the schema-mappings.json configuration file.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Orchestration.SchemaMappingLoader.GetMappings">
+            <summary>
+            Gets the loaded schema mappings (source schema → target schema).
+            </summary>
+        </member>
         <member name="T:SchemaConversion.Orchestration.SessionChangeDetector">
             <summary>
             Compares source definition SHA-256 hashes between current extraction and stored session

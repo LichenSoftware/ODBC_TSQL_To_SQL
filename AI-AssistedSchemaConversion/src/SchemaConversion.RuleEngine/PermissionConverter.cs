@@ -234,9 +234,7 @@ public sealed class PermissionConverter : IRuleBasedConverter
             return mapped;
         }
 
-        return sourceSchema.Equals("dbo", StringComparison.OrdinalIgnoreCase)
-            ? "public"
-            : sourceSchema;
+        return sourceSchema;
     }
 
     private static string QuoteIdentifier(string identifier)

@@ -3,6 +3,7 @@
 @using ConversionReviewer.Services
 @inject SessionService SessionService
 @inject DatabaseApplyService ApplyService
+@inject BedrockFixService FixService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
@@ -50,7 +51,12 @@ else
         }
         else if (_obj.AppliedSuccessfully == false)
         {
-            <div class="alert alert-error">✗ Last apply failed: @_obj.ApplyError</div>
+            <div class="alert alert-error">
+                ✗ Last apply failed: @_obj.ApplyError
+                <button class="btn btn-primary btn-sm" style="margin-left:1rem;" @onclick="RequestAiFix" disabled="@_fixingWithAi">
+                    @(_fixingWithAi ? "🔄 Fixing..." : "🤖 Fix with AI")
+                </button>
+            </div>
         }
     </div>
 
@@ -91,6 +97,38 @@ else
     @if (_applyMessage != null)
     {
         <div class="alert @(_applySuccess ? "alert-success" : "alert-error")">@_applyMessage</div>
+    }
+
+    @if (_fixResult != null)
+    {
+        <div class="card" style="margin-top:1rem; border:1px solid #1f6feb;">
+            <div class="card-header" style="background:#0d2240;">
+                <h4 style="margin:0; color:#58a6ff;">🤖 AI-Suggested Fix</h4>
+            </div>
+            @if (_fixResult.Success)
+            {
+                <div class="code-block">
+                    <pre style="max-height:400px; overflow:auto;">@_fixResult.FixedDdl</pre>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_fixResult.Explanation))
+                {
+                    <div style="padding:0.75rem; font-size:0.85rem; color:#aaa; border-top:1px solid #30363d;">
+                        <strong>Explanation:</strong> @_fixResult.Explanation
+                    </div>
+                }
+                <div class="toolbar">
+                    <button class="btn btn-success" @onclick="AcceptFix">✓ Accept Fix</button>
+                    <button class="btn btn-outline" @onclick="DismissFix">Dismiss</button>
+                    <button class="btn btn-primary" @onclick="AcceptAndApplyFix" disabled="@_applying">
+                        @(_applying ? "Applying..." : "✓ Accept & Apply")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-error" style="margin:0.75rem;">@_fixResult.ErrorMessage</div>
+            }
+        </div>
     }
 
     @* Review Flags *@
@@ -150,10 +188,13 @@ else
     private bool _applying;
     private string? _applyMessage;
     private bool _applySuccess;
+    private bool _fixingWithAi;
+    private FixResult? _fixResult;
 
     protected override async Task OnParametersSetAsync()
     {
         _applyMessage = null;
+        _fixResult = null;
         _isEditing = false;
         var objects = await SessionService.LoadSessionAsync(SessionName);
         _totalCount = objects.Count;
@@ -208,6 +249,53 @@ else
             : $"✗ Failed: {result.ErrorMessage}";
 
         _applying = false;
+    }
+
+    private async Task RequestAiFix()
+    {
+        if (_obj == null || string.IsNullOrWhiteSpace(_obj.ApplyError)) return;
+
+        _fixingWithAi = true;
+        _fixResult = null;
+        StateHasChanged();
+
+        _fixResult = await FixService.RequestFixAsync(
+            _obj.Result.GeneratedDdl,
+            _obj.ApplyError,
+            _obj.Source.SourceDefinition);
+
+        _fixingWithAi = false;
+    }
+
+    private async Task AcceptFix()
+    {
+        if (_obj == null || _fixResult == null || !_fixResult.Success) return;
+
+        _obj.Result.GeneratedDdl = _fixResult.FixedDdl;
+        _obj.IsManuallyEdited = true;
+        await SessionService.SaveObjectAsync(_obj);
+
+        _applyMessage = "AI fix accepted and saved.";
+        _applySuccess = true;
+        _fixResult = null;
+    }
+
+    private void DismissFix()
+    {
+        _fixResult = null;
+    }
+
+    private async Task AcceptAndApplyFix()
+    {
+        if (_obj == null || _fixResult == null || !_fixResult.Success) return;
+
+        _obj.Result.GeneratedDdl = _fixResult.FixedDdl;
+        _obj.IsManuallyEdited = true;
+        await SessionService.SaveObjectAsync(_obj);
+        _fixResult = null;
+
+        // Now apply the fixed script
+        await ApplyScript();
     }
 
     private void GoToPrev()

@@ -85,3 +85,5 @@ C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\obj\Debug\net
 C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\obj\Debug\net10.0\ConversionReviewer.pdb
 C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\obj\Debug\net10.0\ConversionReviewer.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\obj\Debug\net10.0\ref\ConversionReviewer.dll
+C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\bin\Debug\net10.0\AWSSDK.BedrockRuntime.dll
+C:\code\ODBC_TSQL_To_SQL\ConversionReviewer\src\ConversionReviewer\bin\Debug\net10.0\AWSSDK.Core.dll

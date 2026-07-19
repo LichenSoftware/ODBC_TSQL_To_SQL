@@ -215,12 +215,17 @@ public sealed class AiConverterService : IAiConverter
             .Select(m => $"- {m.Key} → {m.Value}")
             .ToList();
 
+        // Use the first actual mapping to generate a concrete example
+        var firstMapping = context.SchemaMappings.First();
+        var sourceExample = firstMapping.Key;
+        var targetExample = firstMapping.Value;
+
         return "Apply the following schema mappings to ALL schema-qualified references in the generated DDL " +
                "(including the object being created and any referenced objects):\n" +
                string.Join("\n", mappings) +
-               "\n\nIMPORTANT: Every schema-qualified reference in the output DDL must use the mapped target schema. " +
-               "For example, if 'dbo' maps to 'public', then 'dbo.Products' becomes 'public.Products' " +
-               "and 'CREATE FUNCTION dbo.myFunc' becomes 'CREATE FUNCTION public.myFunc'.";
+               $"\n\nIMPORTANT: Every schema-qualified reference in the output DDL must use the mapped target schema. " +
+               $"For example, '{sourceExample}.Products' becomes '{targetExample}.Products' " +
+               $"and 'CREATE FUNCTION {sourceExample}.myFunc' becomes 'CREATE FUNCTION {targetExample}.myFunc'.";
     }
 
     private static string BuildTypeMappingContext(ConversionContext context)

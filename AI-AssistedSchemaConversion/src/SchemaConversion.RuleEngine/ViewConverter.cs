@@ -175,12 +175,6 @@ public sealed class ViewConverter : IRuleBasedConverter
             result = result.Replace($"{source}.", $"{target}.", StringComparison.OrdinalIgnoreCase);
         }
 
-        // Default: dbo → public (if not already in mappings)
-        if (!schemaMappings.ContainsKey("dbo"))
-        {
-            result = result.Replace("[dbo].", "public.", StringComparison.OrdinalIgnoreCase);
-        }
-
         // Remove remaining square brackets (T-SQL quoting → PostgreSQL uses double quotes if needed)
         result = result.Replace("[", "").Replace("]", "");
 
@@ -194,9 +188,7 @@ public sealed class ViewConverter : IRuleBasedConverter
             return mapped;
         }
 
-        return sourceSchema.Equals("dbo", StringComparison.OrdinalIgnoreCase)
-            ? "public"
-            : sourceSchema;
+        return sourceSchema;
     }
 
     private static string QuoteIdentifier(string identifier)
