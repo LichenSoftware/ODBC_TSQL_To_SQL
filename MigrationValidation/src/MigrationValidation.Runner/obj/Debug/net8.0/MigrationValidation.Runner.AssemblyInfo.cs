@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MigrationValidation.Runner")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+30c4275a0f07dd5e543ee9b91bda444349458a95")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5c0591ccd016c6634927bd8a9cb6f41af9a3295d")]
 [assembly: System.Reflection.AssemblyProductAttribute("MigrationValidation.Runner")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MigrationValidation.Runner")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
