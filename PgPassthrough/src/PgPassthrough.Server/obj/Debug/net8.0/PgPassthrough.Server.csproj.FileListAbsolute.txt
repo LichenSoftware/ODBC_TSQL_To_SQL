@@ -64,3 +64,5 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\obj\Debug\net8.0
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\obj\Debug\net8.0\PgPassthrough.Server.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\obj\Debug\net8.0\ref\PgPassthrough.Server.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\bin\Debug\net8.0\appsettings.json
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\obj\Debug\net8.0\PgPassthrough.Server.sourcelink.json
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Server\bin\Debug\net8.0\procedure-mappings.json

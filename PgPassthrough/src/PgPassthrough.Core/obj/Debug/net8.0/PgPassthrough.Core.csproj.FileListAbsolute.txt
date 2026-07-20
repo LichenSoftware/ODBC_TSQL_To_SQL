@@ -12,3 +12,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Debug\net8.0\P
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Debug\net8.0\refint\PgPassthrough.Core.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Debug\net8.0\PgPassthrough.Core.pdb
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Debug\net8.0\ref\PgPassthrough.Core.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Core\obj\Debug\net8.0\PgPassthrough.Core.sourcelink.json

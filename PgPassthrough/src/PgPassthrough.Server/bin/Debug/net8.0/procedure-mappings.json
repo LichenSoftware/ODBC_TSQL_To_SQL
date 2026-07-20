@@ -1,0 +1,253 @@
+{
+  "description": "Custom translation mappings generated from schema conversion session. PgPassthrough uses these to route EXEC/function calls to the correct PostgreSQL objects.",
+  "generatedAt": "2026-07-19T23:27:40.923795+00:00",
+  "sessionPath": "C:\\code\\ODBC_TSQL_To_SQL\\AI-AssistedSchemaConversion\\sessions\\my-migration7",
+  "mappings": [
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "fn_FormatCustomerName",
+      "sourceType": "function",
+      "postgresSchema": "public",
+      "postgresName": "fn_FormatCustomerName",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": false,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "fn_GetCustomerTotal",
+      "sourceType": "function",
+      "postgresSchema": "public",
+      "postgresName": "fn_GetCustomerTotal",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": false,
+      "parameters": [
+        {
+          "postgresName": "p_CustomerID",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_BuildMonthlyReport",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_BuildMonthlyReport",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": [
+        {
+          "postgresName": "p_year",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "p_month",
+          "postgresType": "INT",
+          "position": 2,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_DynamicSearch",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_DynamicSearch",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_GetExternalInventory",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_GetExternalInventory",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_GetInventorySnapshot",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_GetInventorySnapshot",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_GetOrderShippingInfo",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_GetOrderShippingInfo",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": [
+        {
+          "postgresName": "p_OrderID",
+          "postgresType": "INTEGER",
+          "position": 1,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_GetTopCustomers",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_GetTopCustomers",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": [
+        {
+          "postgresName": "p_TopN",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": true
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_ProcessOrder",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_ProcessOrder",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": [
+        {
+          "postgresName": "p_CustomerID",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "p_ProductID",
+          "postgresType": "INT",
+          "position": 2,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "p_Quantity",
+          "postgresType": "INT",
+          "position": 3,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "INOUT",
+          "postgresType": "p_OrderID INT",
+          "position": 4,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_SharedTempReport",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_SharedTempReport",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_UpdateStockWithLock",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_UpdateStockWithLock",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": [
+        {
+          "postgresName": "p_ProductID",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "p_NewQuantity",
+          "postgresType": "INT",
+          "position": 2,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "sp_UpsertProducts",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "sp_UpsertProducts",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": []
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "usp_GetTopCustomers",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "usp_GetTopCustomers",
+      "postgresType": "function",
+      "callStyle": "SELECT",
+      "returnsTable": true,
+      "parameters": [
+        {
+          "postgresName": "p_TopN",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "sourceSchema": "dbo",
+      "sourceName": "usp_UpdateInventory",
+      "sourceType": "storedProcedure",
+      "postgresSchema": "public",
+      "postgresName": "usp_UpdateInventory",
+      "postgresType": "procedure",
+      "callStyle": "CALL",
+      "returnsTable": false,
+      "parameters": [
+        {
+          "postgresName": "p_ProductID",
+          "postgresType": "INT",
+          "position": 1,
+          "hasDefault": false
+        },
+        {
+          "postgresName": "p_NewQuantity",
+          "postgresType": "INT",
+          "position": 2,
+          "hasDefault": false
+        }
+      ]
+    }
+  ]
+}

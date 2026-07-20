@@ -19,3 +19,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Translation\obj\Debug\n
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Translation\obj\Debug\net8.0\PgPassthrough.Translation.xml
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Translation\obj\Debug\net8.0\PgPassthrough.Translation.pdb
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Translation\obj\Debug\net8.0\ref\PgPassthrough.Translation.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Translation\obj\Debug\net8.0\PgPassthrough.Translation.sourcelink.json

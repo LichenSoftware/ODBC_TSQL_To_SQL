@@ -115,3 +115,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Tds.Tests\bin\Debug\n
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Tds.Tests\bin\Debug\net8.0\Microsoft.Extensions.FileProviders.Abstractions.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Tds.Tests\bin\Debug\net8.0\Microsoft.Extensions.Hosting.Abstractions.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Tds.Tests\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Tds.Tests\obj\Debug\net8.0\PgPassthrough.Tds.Tests.sourcelink.json

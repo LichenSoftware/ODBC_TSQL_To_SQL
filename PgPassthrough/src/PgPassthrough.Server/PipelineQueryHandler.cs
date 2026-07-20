@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using PgPassthrough.Core.Abstractions;
 using PgPassthrough.Core.Models;
+using PgPassthrough.Translation;
 
 namespace PgPassthrough.Server;
 
@@ -16,15 +17,18 @@ internal sealed class PipelineQueryHandler : IQueryHandler
 {
     private readonly ISqlTranslator _translator;
     private readonly IExecutionEngine _executionEngine;
+    private readonly ProcedureMappingStore _mappingStore;
     private readonly ILogger<PipelineQueryHandler> _logger;
 
     public PipelineQueryHandler(
         ISqlTranslator translator,
         IExecutionEngine executionEngine,
+        ProcedureMappingStore mappingStore,
         ILogger<PipelineQueryHandler> logger)
     {
         _translator = translator;
         _executionEngine = executionEngine;
+        _mappingStore = mappingStore;
         _logger = logger;
     }
 
@@ -101,13 +105,23 @@ internal sealed class PipelineQueryHandler : IQueryHandler
             RequestId = batch.RequestId
         };
 
-        if (translation.StatementType == StatementType.Select)
+        _logger.LogDebug("Translated SQL [{Type}]: {Sql}", translation.StatementType, translation.TranslatedSql);
+
+        // Use query execution (which streams result sets) for any statement that may
+        // return rows. Only known DML/DDL statements use the non-query path.
+        if (translation.StatementType is StatementType.Insert
+            or StatementType.Update
+            or StatementType.Delete
+            or StatementType.Ddl
+            or StatementType.Transaction
+            or StatementType.SetOption
+            or StatementType.Use)
         {
-            await ExecuteQueryAndStreamAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
+            await ExecuteNonQueryAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
         }
         else
         {
-            await ExecuteNonQueryAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
+            await ExecuteQueryAndStreamAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
         }
     }
 
@@ -134,15 +148,89 @@ internal sealed class PipelineQueryHandler : IQueryHandler
             return;
         }
 
-        // Other RPCs: try to execute as a function/procedure call
-        string callSql = $"SELECT * FROM {rpc.ProcedureName}()";
-        var context = new TranslationContext { DatabaseName = rpc.Session.DatabaseName };
-        var translation = _translator.Translate(callSql, context);
+        // Other RPCs: look up in procedure mapping store first
+        var mapping = _mappingStore.Lookup(null, rpc.ProcedureName)
+                   ?? _mappingStore.Lookup("dbo", rpc.ProcedureName);
+
+        string callSql;
+        IReadOnlyList<QueryParameter> execParams;
+
+        if (mapping != null)
+        {
+            // Build the correct PostgreSQL call based on the mapping
+            // Use @p1, @p2, ... named params so the execution engine can rewrite them to $1, $2, ...
+            var rpcParams = rpc.Parameters.Where(p => !p.IsOutput).ToList();
+
+            // Build param placeholders with type casts from the mapping
+            var placeholders = new List<string>();
+            for (int i = 0; i < rpcParams.Count; i++)
+            {
+                var placeholder = $"@p{i + 1}";
+                // Add type cast if we know the target type from the mapping
+                if (i < mapping.Parameters.Count)
+                {
+                    var pgType = mapping.Parameters[i].PostgresType?.ToUpperInvariant() ?? "";
+                    var cast = pgType switch
+                    {
+                        "INT" or "INTEGER" => "::int",
+                        "BIGINT" => "::bigint",
+                        "SMALLINT" => "::smallint",
+                        "TEXT" => "::text",
+                        "BOOLEAN" or "BOOL" => "::boolean",
+                        "NUMERIC" or "DECIMAL" => "::numeric",
+                        _ when pgType.StartsWith("VARCHAR") => "::text",
+                        _ when pgType.StartsWith("NUMERIC") => "::numeric",
+                        _ => ""
+                    };
+                    placeholder += cast;
+                }
+                placeholders.Add(placeholder);
+            }
+            var paramPlaceholders = string.Join(", ", placeholders);
+
+            // Rename params to positional names for the execution engine
+            execParams = rpcParams.Select((p, i) => new QueryParameter
+            {
+                Name = $"@p{i + 1}",
+                Value = p.Value,
+                TsqlType = p.TsqlType,
+                IsOutput = false
+            }).ToList<QueryParameter>();
+
+            if (mapping.CallStyle == "SELECT")
+            {
+                callSql = $"SELECT * FROM {mapping.PostgresSchema}.{mapping.PostgresName}({paramPlaceholders})";
+            }
+            else
+            {
+                callSql = $"CALL {mapping.PostgresSchema}.{mapping.PostgresName}({paramPlaceholders})";
+            }
+
+            _logger.LogDebug("Mapped RPC {Proc} → {Sql}", rpc.ProcedureName, callSql);
+        }
+        else
+        {
+            // No mapping found — try as a function call with public schema
+            var rpcParams = rpc.Parameters.Where(p => !p.IsOutput).ToList();
+            var paramPlaceholders = rpcParams.Count > 0
+                ? string.Join(", ", rpcParams.Select((_, i) => $"@p{i + 1}"))
+                : "";
+
+            execParams = rpcParams.Select((p, i) => new QueryParameter
+            {
+                Name = $"@p{i + 1}",
+                Value = p.Value,
+                TsqlType = p.TsqlType,
+                IsOutput = false
+            }).ToList<QueryParameter>();
+
+            callSql = $"SELECT * FROM public.{rpc.ProcedureName}({paramPlaceholders})";
+        }
 
         var execRequest = new ExecutionRequest
         {
-            Sql = translation.TranslatedSql,
-            Parameters = rpc.Parameters,
+            Sql = callSql,
+            Parameters = execParams,
             RequestId = rpc.RequestId
         };
 
@@ -179,13 +267,19 @@ internal sealed class PipelineQueryHandler : IQueryHandler
             RequestId = rpc.RequestId
         };
 
-        if (translation.StatementType == StatementType.Select)
+        if (translation.StatementType is StatementType.Insert
+            or StatementType.Update
+            or StatementType.Delete
+            or StatementType.Ddl
+            or StatementType.Transaction
+            or StatementType.SetOption
+            or StatementType.Use)
         {
-            await ExecuteQueryAndStreamAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
+            await ExecuteNonQueryAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
         }
         else
         {
-            await ExecuteNonQueryAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
+            await ExecuteQueryAndStreamAsync(execRequest, responseWriter, ct).ConfigureAwait(false);
         }
     }
 

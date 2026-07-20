@@ -111,3 +111,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.SqlParser.Tests\obj\D
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.SqlParser.Tests\obj\Debug\net8.0\PgPassthrough.SqlParser.Tests.pdb
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.SqlParser.Tests\obj\Debug\net8.0\PgPassthrough.SqlParser.Tests.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.SqlParser.Tests\obj\Debug\net8.0\ref\PgPassthrough.SqlParser.Tests.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.SqlParser.Tests\obj\Debug\net8.0\PgPassthrough.SqlParser.Tests.sourcelink.json

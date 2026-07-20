@@ -51,6 +51,32 @@
             to its PostgreSQL equivalent.
             </summary>
         </member>
+        <member name="T:PgPassthrough.Translation.ProcedureMappingStore">
+            <summary>
+            Loads and provides access to custom procedure-to-function mappings generated
+            from the schema conversion session. These mappings tell PgPassthrough how to
+            translate EXEC proc_name calls to SELECT * FROM function_name() calls.
+            </summary>
+        </member>
+        <member name="M:PgPassthrough.Translation.ProcedureMappingStore.Lookup(System.String,System.String)">
+            <summary>
+            Looks up a procedure/function mapping by its original SQL Server name.
+            Tries both schema-qualified and unqualified lookups.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Translation.ProcedureMappingStore.All">
+            <summary>
+            Returns all loaded mappings.
+            </summary>
+        </member>
+        <member name="T:PgPassthrough.Translation.ProcedureMapping">
+            <summary>
+            Represents a mapping from a SQL Server procedure/function to its PostgreSQL equivalent.
+            </summary>
+        </member>
+        <member name="P:PgPassthrough.Translation.ProcedureMapping.CallStyle">
+            <summary>"SELECT" for functions (SELECT * FROM func()), "CALL" for procedures.</summary>
+        </member>
         <member name="T:PgPassthrough.Translation.TranslationCache">
              <summary>
              Thread-safe LRU cache for translation results.

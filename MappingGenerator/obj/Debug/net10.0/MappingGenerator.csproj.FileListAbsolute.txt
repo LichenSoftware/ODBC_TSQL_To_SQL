@@ -1,0 +1,15 @@
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\bin\Debug\net10.0\MappingGenerator.exe
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\bin\Debug\net10.0\MappingGenerator.deps.json
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\bin\Debug\net10.0\MappingGenerator.runtimeconfig.json
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\bin\Debug\net10.0\MappingGenerator.dll
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\bin\Debug\net10.0\MappingGenerator.pdb
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.AssemblyInfoInputs.cache
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.AssemblyInfo.cs
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.csproj.CoreCompileInputs.cache
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.sourcelink.json
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.dll
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\refint\MappingGenerator.dll
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.pdb
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\MappingGenerator.genruntimeconfig.cache
+C:\code\ODBC_TSQL_To_SQL\MappingGenerator\obj\Debug\net10.0\ref\MappingGenerator.dll

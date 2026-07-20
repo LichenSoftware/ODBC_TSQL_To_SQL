@@ -468,6 +468,24 @@ internal sealed class PgSqlEmitter : ISqlVisitor<string>
         if (node.Operator == BinaryOperator.Add && LooksLikeString(node.Left))
             return $"({left} || {right})";
 
+        // T-SQL boolean comparison: column = 1/0 → column = TRUE/FALSE
+        // PostgreSQL BOOLEAN columns don't accept integer comparisons.
+        // Use a CAST that works for both boolean and integer columns.
+        if (node.Operator is BinaryOperator.Equal or BinaryOperator.NotEqual)
+        {
+            if (node.Right is IntegerLiteralExpression intRight && (intRight.Value == 0 || intRight.Value == 1))
+            {
+                // Emit: column = (1)::boolean — works for boolean columns
+                // For integer columns, PostgreSQL accepts 1/0 directly, so only rewrite
+                // when the value is 0 or 1 (common BIT→BOOLEAN pattern)
+                right = intRight.Value == 1 ? "TRUE" : "FALSE";
+            }
+            else if (node.Left is IntegerLiteralExpression intLeft && (intLeft.Value == 0 || intLeft.Value == 1))
+            {
+                left = intLeft.Value == 1 ? "TRUE" : "FALSE";
+            }
+        }
+
         string op = node.Operator switch
         {
             BinaryOperator.Add                => "+",
@@ -820,7 +838,13 @@ internal sealed class PgSqlEmitter : ISqlVisitor<string>
 
         // Strip server and database qualifiers (PG doesn't support cross-db queries)
         if (name.Schema != null)
-            return $"{QuoteIdent(name.Schema)}.{QuoteIdent(name.Name)}";
+        {
+            // Map dbo (SQL Server default schema) to public (PostgreSQL default schema)
+            var pgSchema = name.Schema.Equals("dbo", StringComparison.OrdinalIgnoreCase)
+                ? "public"
+                : name.Schema;
+            return $"{QuoteIdent(pgSchema)}.{QuoteIdent(name.Name)}";
+        }
 
         return QuoteIdent(name.Name);
     }

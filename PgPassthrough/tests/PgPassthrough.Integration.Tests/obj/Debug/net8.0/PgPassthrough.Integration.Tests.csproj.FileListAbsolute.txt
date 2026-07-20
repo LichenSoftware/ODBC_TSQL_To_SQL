@@ -189,3 +189,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Integration.Tests\obj
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Integration.Tests\obj\Debug\net8.0\PgPassthrough.Integration.Tests.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Integration.Tests\obj\Debug\net8.0\ref\PgPassthrough.Integration.Tests.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Integration.Tests\bin\Debug\net8.0\appsettings.json
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Integration.Tests\obj\Debug\net8.0\PgPassthrough.Integration.Tests.sourcelink.json

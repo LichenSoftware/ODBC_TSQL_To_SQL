@@ -115,3 +115,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Translation.Tests\obj
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Translation.Tests\obj\Debug\net8.0\PgPassthrough.Translation.Tests.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Translation.Tests\obj\Debug\net8.0\ref\PgPassthrough.Translation.Tests.dll
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Translation.Tests\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\tests\PgPassthrough.Translation.Tests\obj\Debug\net8.0\PgPassthrough.Translation.Tests.sourcelink.json

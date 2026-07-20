@@ -16,3 +16,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.SqlParser\obj\Debug\net
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.SqlParser\obj\Debug\net8.0\PgPassthrough.SqlParser.xml
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.SqlParser\obj\Debug\net8.0\PgPassthrough.SqlParser.pdb
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.SqlParser\obj\Debug\net8.0\ref\PgPassthrough.SqlParser.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.SqlParser\obj\Debug\net8.0\PgPassthrough.SqlParser.sourcelink.json

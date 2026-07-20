@@ -16,3 +16,4 @@ C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Tds\obj\Debug\net8.0\re
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Tds\obj\Debug\net8.0\PgPassthrough.Tds.xml
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Tds\obj\Debug\net8.0\PgPassthrough.Tds.pdb
 C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Tds\obj\Debug\net8.0\ref\PgPassthrough.Tds.dll
+C:\code\ODBC_TSQL_To_SQL\PgPassthrough\src\PgPassthrough.Tds\obj\Debug\net8.0\PgPassthrough.Tds.sourcelink.json

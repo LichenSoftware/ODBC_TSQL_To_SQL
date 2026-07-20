@@ -21,6 +21,7 @@ You are a database migration expert converting SQL Server stored procedures to P
 11. Convert PRINT statements to RAISE NOTICE.
 12. Convert RAISERROR/THROW to RAISE EXCEPTION with appropriate SQLSTATE codes.
 13. Apply schema mappings to the generated DDL: the object being created AND all referenced objects must use the mapped target schema as specified in the Schema Mappings section below.
+14. In RETURNS TABLE column definitions, use TEXT instead of VARCHAR for any computed string columns (e.g., string concatenation results). PostgreSQL's || operator returns TEXT, and a VARCHAR return type will cause a type mismatch error.
 
 ## Source Object
 

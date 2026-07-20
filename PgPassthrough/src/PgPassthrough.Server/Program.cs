@@ -58,6 +58,14 @@ var host = Host.CreateDefaultBuilder(args)
         // SQL translator
         services.AddSingleton<ISqlTranslator, TSqlToPgTranslator>();
 
+        // Procedure mapping store (custom translations from schema conversion session)
+        services.AddSingleton(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<ProcedureMappingStore>>();
+            var mappingFile = Path.Combine(AppContext.BaseDirectory, "procedure-mappings.json");
+            return new ProcedureMappingStore(mappingFile, logger);
+        });
+
         // Query handler — the real pipeline
         services.AddSingleton<IQueryHandler, PipelineQueryHandler>();
 
