@@ -1,0 +1,725 @@
+﻿{
+    "reportId":  "8740b48f-9e52-4ad8-812a-69ce96a8bdbc",
+    "timestamp":  "2026-07-23T01:03:50.5839627+00:00",
+    "totalElapsedSeconds":  341.91,
+    "validationMode":  "syntax-only",
+    "configHashes":  {
+                         "trigger.v1.0.0.md":  "97300A4CF57E5DBE8D1589B17EAAE926CBE649900783B7846CDDD9552AA5BEC5",
+                         "function-mappings.json":  "CAADDE986F9A4E4A7474E165E1D7776B1630035A6949A84FE6B4CEADC41790DA",
+                         "complex-object.v1.0.0.md":  "642E45ABE397567E6AF18CD9A326D4268881BA39A8B0309E15CFDA712AD9A034",
+                         "schema-mappings.json":  "430D3F3F69FD24D93A0ED75115113E4EDAE7BCD4D820F2F8F489AC1ADF9D9A10",
+                         "type-mappings.json":  "BB0EA462E7206D88326BF01B5C2E9C749425FC10D4BF5F66EB2C3F14C372CA78",
+                         "stored-procedure.v1.0.0.md":  "766FFAF06FA1B0E0B668B7818F1DB380EBB54CB5A93968B3BDB50909E65E2AD7",
+                         "view.v1.0.0.md":  "522593A585E00798356DFC461F54581634F16D8F01E9785E18D2B72F1B1B1AB6",
+                         "function.v1.0.0.md":  "910B1DD4F70E84C708A45DFF813DC72C4899B353959C896A382F4B3EB1305DF8"
+                     },
+    "databases":  [
+                      {
+                          "name":  "ViewsTriggerDB",
+                          "sessionName":  null,
+                          "objectCount":  18,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  77.8,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  14,
+                                        "failSyntax":  4,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Table":  {
+                                                       "pass":  6,
+                                                       "fail":  0,
+                                                       "score":  100
+                                                   },
+                                         "View":  {
+                                                      "pass":  8,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  },
+                                         "Trigger":  {
+                                                         "pass":  0,
+                                                         "fail":  4,
+                                                         "score":  0
+                                                     }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "vw_SeniorActiveEmployees",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "tr_Projects_MultiTableAudit",
+                                              "type":  "trigger",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- Trigger function for multi-table audit on Projects\nCREATE OR REPLACE FUNCTION public.tr_Projects_MultiTableAudit_func()\nRETURNS TRIGGER AS $$\nBEGIN\n    -- Log to AuditLog\n    IF (TG_OP = \u0027INSERT\u0027) THEN\n        INSERT INTO public.AuditLog (TableName, Operation, RecordID, NewValues)\n        SELECT\n            \u0027Projects\u0027,\n            \u0027INSERT\u0027,\n            NEW.ProjectID,\n            \u0027Name=\u0027 || NEW.ProjectName || \u0027, Budget=\u0027 || COALESCE(NEW.Budget::TEXT, \u0027NULL\u0027);\n        \n        -- Update department budget allocation for INSERT\n        UPDATE public.Departments d\n        SET Budget = d.Budget + COALESCE(NEW.Budget, 0)\n        WHERE d.DepartmentID = NEW.DepartmentID;\n        \n    ELSIF (TG_OP = \u0027UPDATE\u0027) THEN\n        INSERT INTO public.AuditLog (TableName, Operation, RecordID, NewValues)\n        SELECT\n            \u0027Projects\u0027,\n            \u0027UPDATE\u0027,\n            NEW.ProjectID,\n            \u0027Name=\u0027 || NEW.ProjectName || \u0027, Budget=\u0027 || COALESCE(NEW.Budget::TEXT, \u0027NULL\u0027);\n        \n        -- Update department budget allocation for UPDATE\n        UPDATE public.Departments d\n        SET Budget = d.Budget + COALESCE(NEW.Budget, 0) - COALESCE(OLD.Budget, 0)\n        WHERE d.DepartmentID = NEW.DepartmentID;\n    END IF;\n    \n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- Create the trigger\nCREATE TRIGGER tr_Projects_MultiTableAudit\nAFTER INSERT OR UPDATE ON public.Projects\nFOR EACH ROW\nEXECUTE FUNCTION public.tr_Projects_MultiTableAudit_func();"
+                                          },
+                                          {
+                                              "name":  "vw_ActiveEmployees",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "ProjectAssignments",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_ActiveEmployeeDetails",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_EmployeeDirectory",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_EmployeeProjectLoad",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Projects",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "tr_EmployeeDirectory_InsteadOfUpdate",
+                                              "type":  "trigger",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- Create trigger function for INSTEAD OF UPDATE on vw_EmployeeDirectory\nCREATE OR REPLACE FUNCTION public.tr_EmployeeDirectory_InsteadOfUpdate_func()\nRETURNS TRIGGER AS $$\nBEGIN\n    -- Update the underlying Employees table with values from the view update\n    UPDATE public.Employees e\n    SET\n        FirstName = NEW.FirstName,\n        LastName = NEW.LastName,\n        Email = NEW.Email,\n        DepartmentID = NEW.DepartmentID,\n        Salary = NEW.Salary\n    WHERE e.EmployeeID = NEW.EmployeeID;\n    \n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- Create INSTEAD OF UPDATE trigger on the view\nCREATE TRIGGER tr_EmployeeDirectory_InsteadOfUpdate\nINSTEAD OF UPDATE ON public.vw_EmployeeDirectory\nFOR EACH ROW\nEXECUTE FUNCTION public.tr_EmployeeDirectory_InsteadOfUpdate_func();"
+                                          },
+                                          {
+                                              "name":  "tr_EmployeeDirectory_InsteadOfInsert",
+                                              "type":  "trigger",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- Create trigger function for INSTEAD OF INSERT on vw_EmployeeDirectory\nCREATE OR REPLACE FUNCTION public.tr_EmployeeDirectory_InsteadOfInsert_func()\nRETURNS TRIGGER AS $$\nBEGIN\n    -- Insert into Employees table only if DepartmentID exists\n    INSERT INTO public.Employees (FirstName, LastName, Email, DepartmentID, Salary)\n    SELECT\n        NEW.FirstName,\n        NEW.LastName,\n        NEW.Email,\n        NEW.DepartmentID,\n        NEW.Salary\n    WHERE EXISTS (\n        SELECT 1 \n        FROM public.Departments d \n        WHERE d.DepartmentID = NEW.DepartmentID\n    );\n    \n    -- For INSTEAD OF triggers, return NULL to indicate the operation was handled\n    RETURN NULL;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- Create the INSTEAD OF INSERT trigger\nCREATE TRIGGER tr_EmployeeDirectory_InsteadOfInsert\nINSTEAD OF INSERT ON public.vw_EmployeeDirectory\nFOR EACH ROW\nEXECUTE FUNCTION public.tr_EmployeeDirectory_InsteadOfInsert_func();"
+                                          },
+                                          {
+                                              "name":  "EmployeeSkills",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_EmployeeTopSkills",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "AuditLog",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Employees",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_ProjectOverview",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_DepartmentSummary",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Departments",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "tr_Employees_AuditAndBudget",
+                                              "type":  "trigger",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- MULTI-TABLE TRIGGER (affects 2+ tables)\n-- Requirement 1.2: multi-table triggers pattern\n-- Converted from SQL Server to PostgreSQL\n-- =============================================================================\n\nCREATE OR REPLACE FUNCTION public.tr_employees_auditandbudget_func()\nRETURNS TRIGGER AS $$\nBEGIN\n    -- Handle UPDATE operation\n    IF TG_OP = \u0027UPDATE\u0027 THEN\n        -- Write to AuditLog table\n        INSERT INTO public.AuditLog (TableName, Operation, RecordID, OldValues, NewValues)\n        SELECT\n            \u0027Employees\u0027,\n            \u0027UPDATE\u0027,\n            new_table.EmployeeID,\n            \u0027Salary=\u0027 || CAST(old_table.Salary AS VARCHAR(20)),\n            \u0027Salary=\u0027 || CAST(new_table.Salary AS VARCHAR(20))\n        FROM new_table\n        INNER JOIN old_table ON new_table.EmployeeID = old_table.EmployeeID;\n\n        -- Update Department budget when salary changes\n        UPDATE public.Departments dept\n        SET Budget = dept.Budget + (new_table.Salary - old_table.Salary)\n        FROM new_table\n        INNER JOIN old_table ON new_table.EmployeeID = old_table.EmployeeID\n        WHERE dept.DepartmentID = new_table.DepartmentID\n          AND new_table.Salary \u003c\u003e old_table.Salary;\n\n    -- Handle INSERT operation\n    ELSIF TG_OP = \u0027INSERT\u0027 THEN\n        -- Write to AuditLog table\n        INSERT INTO public.AuditLog (TableName, Operation, RecordID, NewValues)\n        SELECT\n            \u0027Employees\u0027,\n            \u0027INSERT\u0027,\n            new_table.EmployeeID,\n            \u0027Name=\u0027 || new_table.FirstName || \u0027 \u0027 || new_table.LastName || \u0027, Salary=\u0027 || CAST(new_table.Salary AS VARCHAR(20))\n        FROM new_table;\n\n        -- Add salary to department budget\n        UPDATE public.Departments dept\n        SET Budget = dept.Budget + new_table.Salary\n        FROM new_table\n        WHERE dept.DepartmentID = new_table.DepartmentID;\n\n    -- Handle DELETE operation\n    ELSIF TG_OP = \u0027DELETE\u0027 THEN\n        -- Write to AuditLog table\n        INSERT INTO public.AuditLog (TableName, Operation, RecordID, OldValues)\n        SELECT\n            \u0027Employees\u0027,\n            \u0027DELETE\u0027,\n            old_table.EmployeeID,\n            \u0027Name=\u0027 || old_table.FirstName || \u0027 \u0027 || old_table.LastName || \u0027, Salary=\u0027 || CAST(old_table.Salary AS VARCHAR(20))\n        FROM old_table;\n\n        -- Subtract salary from department budget\n        UPDATE public.Departments dept\n        SET Budget = dept.Budget - old_table.Salary\n        FROM old_table\n        WHERE dept.DepartmentID = old_table.DepartmentID;\n    END IF;\n\n    -- For AFTER triggers, return value is ignored but required\n    IF TG_OP = \u0027DELETE\u0027 THEN\n        RETURN OLD;\n    ELSE\n        RETURN NEW;\n    END IF;\nEND;\n$$ LANGUAGE plpgsql;\n\n-- Create the trigger binding\nCREATE TRIGGER tr_employees_auditandbudget\nAFTER INSERT OR UPDATE OR DELETE ON public.Employees\nREFERENCING NEW TABLE AS new_table OLD TABLE AS old_table\nFOR EACH STATEMENT\nEXECUTE FUNCTION public.tr_employees_auditandbudget_func();"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "AssessmentTestDB",
+                          "sessionName":  null,
+                          "objectCount":  21,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  100,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  21,
+                                        "failSyntax":  0,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Function":  {
+                                                          "pass":  1,
+                                                          "fail":  0,
+                                                          "score":  100
+                                                      },
+                                         "Table":  {
+                                                       "pass":  7,
+                                                       "fail":  0,
+                                                       "score":  100
+                                                   },
+                                         "StoredProcedure":  {
+                                                                 "pass":  10,
+                                                                 "fail":  0,
+                                                                 "score":  100
+                                                             },
+                                         "View":  {
+                                                      "pass":  2,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "sp_GetTopCustomers",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_UpdateStockWithLock",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetOrderShippingInfo",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Categories",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetInventorySnapshot",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "OrderMetadata",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Customers",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Orders",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_BuildMonthlyReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "ProductImportStaging",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_DynamicSearch",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Products",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_RecentOrders",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_MonthlyCategoryRevenue",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetExternalInventory",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_UpsertProducts",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_FormatCustomerName",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_SharedTempReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "OrderItems",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "syn_ActiveCustomers",
+                                              "type":  "synonym",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_ProcessOrder",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "TypesAndCLRDB",
+                          "sessionName":  null,
+                          "objectCount":  15,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  80,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  12,
+                                        "failSyntax":  3,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Function":  {
+                                                          "pass":  5,
+                                                          "fail":  0,
+                                                          "score":  100
+                                                      },
+                                         "Table":  {
+                                                       "pass":  3,
+                                                       "fail":  1,
+                                                       "score":  75
+                                                   },
+                                         "StoredProcedure":  {
+                                                                 "pass":  2,
+                                                                 "fail":  2,
+                                                                 "score":  50
+                                                             },
+                                         "View":  {
+                                                      "pass":  2,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "sp_GetEmployeeReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_EmployeeBonuses",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_RegexMatchFallback",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_JsonParseFallback",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_EmployeeSummary",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Orders",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_CreateOrderWithLines",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "Unclosed string literal detected",
+                                              "errorLineNumber":  8,
+                                              "generatedDdl":  "-- =============================================================================\n-- SCHEMA: Procedures using table types as parameters\n-- =============================================================================\n\n-- Table type equivalent: OrderLineType\n-- PostgreSQL doesn\u0027t support user-defined table types as parameters.\n-- Instead, we\u0027ll use a temporary table or a composite type approach.\n-- For this conversion, we\u0027ll create a composite type to represent a single line,\n-- and accept an array of that type.\n\nCREATE TYPE public.order_line_type AS (\n    ProductID INT,\n    Quantity INT,\n    UnitPrice DECIMAL(12, 2)\n);\n\n-- 14. Procedure accepting table type parameter (OrderLineType)\nCREATE OR REPLACE FUNCTION public.sp_CreateOrderWithLines(\n    p_CustomerName VARCHAR(200),\n    p_Lines public.order_line_type[]\n)\nRETURNS TABLE(\n    NewOrderID INT,\n    TotalAmount DECIMAL(12, 2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_OrderID INT;\n    v_Total DECIMAL(12, 2);\n    v_Line public.order_line_type;\nBEGIN\n    -- Calculate total from the array parameter\n    SELECT COALESCE(SUM((line).Quantity * (line).UnitPrice), 0)\n    INTO v_Total\n    FROM unnest(p_Lines) AS line;\n\n    -- Insert into Orders table\n    INSERT INTO public.Orders (CustomerName, TotalAmount)\n    VALUES (p_CustomerName, COALESCE(v_Total, 0))\n    RETURNING OrderID INTO v_OrderID;\n\n    -- Insert order lines\n    INSERT INTO public.OrderLines (OrderID, ProductID, Quantity, UnitPrice)\n    SELECT v_OrderID, (line).ProductID, (line).Quantity, (line).UnitPrice\n    FROM unnest(p_Lines) AS line;\n\n    -- Return result set\n    RETURN QUERY\n    SELECT v_OrderID, v_Total;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "fn_CalculateLineTotal",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_BatchUpdateSalaries",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- Converted from SQL Server procedure: dbo.sp_BatchUpdateSalaries\n-- This function accepts a table type parameter and returns updated employee records\n\nCREATE OR REPLACE FUNCTION public.sp_BatchUpdateSalaries(\n    p_updates public.EmployeeBatchType[]\n)\nRETURNS TABLE(\n    EmployeeID INTEGER,\n    FirstName VARCHAR,\n    LastName VARCHAR,\n    UpdatedSalary NUMERIC\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- Update salaries based on the input array\n    UPDATE public.Employees e\n    SET Salary = u.NewSalary\n    FROM UNNEST(p_updates) AS u\n    WHERE e.EmployeeID = u.EmployeeID\n      AND u.EffectiveDate \u003c= CURRENT_TIMESTAMP;\n\n    -- Return the updated employee records\n    RETURN QUERY\n    SELECT\n        e.EmployeeID,\n        e.FirstName,\n        e.LastName,\n        e.Salary AS UpdatedSalary\n    FROM public.Employees e\n    INNER JOIN UNNEST(p_updates) AS u ON e.EmployeeID = u.EmployeeID;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "sp_GetInventoryValuation",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Employees",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_CalculateFullName",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "OrderLines",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_CalculateBonus",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "ProductInventory",
+                                              "type":  "table",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "T-SQL bracket-quoted identifier detected",
+                                              "errorLineNumber":  6,
+                                              "generatedDdl":  "CREATE TABLE public.productinventory (\n    inventoryid INTEGER GENERATED BY DEFAULT AS IDENTITY NOT NULL,\n    productname VARCHAR(200) NOT NULL,\n    quantityonhand INTEGER NOT NULL DEFAULT ((0)),\n    unitcost NUMERIC(10,2) NOT NULL,\n    totalvalue TEXT /* COMPUTED: ([dbo].[fn_CalculateLineTotal]([QuantityOnHand],[UnitCost])) — requires manual review */,\n    CONSTRAINT pk__producti__f5fde6d3ac6ea550 PRIMARY KEY (inventoryid)\n);"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "ProcedureComplexityDB",
+                          "sessionName":  null,
+                          "objectCount":  17,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  64.7,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  11,
+                                        "failSyntax":  6,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Table":  {
+                                                       "pass":  7,
+                                                       "fail":  0,
+                                                       "score":  100
+                                                   },
+                                         "StoredProcedure":  {
+                                                                 "pass":  3,
+                                                                 "fail":  6,
+                                                                 "score":  33.3
+                                                             },
+                                         "View":  {
+                                                      "pass":  1,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "sp_ProcessQueueWithErrorHandling",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetDepartmentStats",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 5: OUTPUT parameters with multiple assignments\n-- Computes department statistics and returns them via OUTPUT params\n-- =============================================================================\n\nCREATE OR REPLACE PROCEDURE public.sp_GetDepartmentStats(\n    p_DepartmentID INT,\n    INOUT p_EmployeeCount INT,\n    INOUT p_TotalSalary DECIMAL(12,2),\n    INOUT p_AvgSalary DECIMAL(10,2),\n    INOUT p_MinSalary DECIMAL(10,2),\n    INOUT p_MaxSalary DECIMAL(10,2),\n    INOUT p_BudgetRemaining DECIMAL(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_Budget DECIMAL(12,2);\nBEGIN\n    -- Validate department exists\n    IF NOT EXISTS (SELECT 1 FROM public.Departments WHERE DepartmentID = p_DepartmentID) THEN\n        p_EmployeeCount := 0;\n        p_TotalSalary := 0;\n        p_AvgSalary := 0;\n        p_MinSalary := 0;\n        p_MaxSalary := 0;\n        p_BudgetRemaining := 0;\n        RETURN;\n    END IF;\n\n    -- Compute all statistics\n    SELECT\n        COUNT(*)::INT,\n        COALESCE(SUM(Salary), 0),\n        COALESCE(AVG(Salary), 0),\n        COALESCE(MIN(Salary), 0),\n        COALESCE(MAX(Salary), 0)\n    INTO\n        p_EmployeeCount,\n        p_TotalSalary,\n        p_AvgSalary,\n        p_MinSalary,\n        p_MaxSalary\n    FROM public.Employees\n    WHERE DepartmentID = p_DepartmentID;\n\n    -- Compute remaining budget\n    SELECT BudgetAmount INTO v_Budget \n    FROM public.Departments \n    WHERE DepartmentID = p_DepartmentID;\n    \n    p_BudgetRemaining := v_Budget - p_TotalSalary;\n\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "BudgetTransfers",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_BulkInsertEmployees",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 4: Table-valued parameter procedure\n-- Bulk-inserts employees from a TVP with validation\n-- =============================================================================\n\nCREATE OR REPLACE PROCEDURE public.sp_BulkInsertEmployees(\n    p_Employees public.EmployeeBatchType[],\n    INOUT p_InsertedCount INT DEFAULT 0\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_row_count INT;\nBEGIN\n    p_InsertedCount := 0;\n\n    -- Validate all departments exist\n    IF EXISTS (\n        SELECT 1 FROM UNNEST(p_Employees) e\n        WHERE NOT EXISTS (\n            SELECT 1 FROM public.Departments d \n            WHERE d.DepartmentID = e.DepartmentID\n        )\n    ) THEN\n        RAISE EXCEPTION \u0027One or more department IDs are invalid\u0027 USING ERRCODE = \u002750010\u0027;\n    END IF;\n\n    -- Validate no duplicate emails against existing data\n    IF EXISTS (\n        SELECT 1 FROM UNNEST(p_Employees) e\n        INNER JOIN public.Employees existing ON existing.Email = e.Email\n    ) THEN\n        RAISE EXCEPTION \u0027One or more email addresses already exist\u0027 USING ERRCODE = \u002750011\u0027;\n    END IF;\n\n    -- Insert from array of composite type\n    INSERT INTO public.Employees (FirstName, LastName, Email, DepartmentID, Salary)\n    SELECT \n        e.FirstName, \n        e.LastName, \n        e.Email, \n        e.DepartmentID, \n        e.Salary\n    FROM UNNEST(p_Employees) e;\n\n    GET DIAGNOSTICS v_row_count = ROW_COUNT;\n    p_InsertedCount := v_row_count;\n\n    -- Log the bulk operation\n    INSERT INTO public.AuditLog (TableName, Operation, RecordID, NewValues)\n    VALUES (\u0027Employees\u0027, \u0027BULK_INSERT\u0027, p_InsertedCount, \u0027Batch insert via TVP\u0027);\n\n    -- Note: PostgreSQL procedures cannot return result sets directly\n    -- The inserted count is returned via the INOUT parameter\n    -- If a result set is required, consider converting to a FUNCTION\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "sp_CursorDepartmentReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 8: Another cursor pattern - department report generation\n-- Uses cursor to iterate departments and build summary\n-- Converted to PostgreSQL - refactored to set-based operation\n-- =============================================================================\n\nCREATE OR REPLACE FUNCTION public.sp_CursorDepartmentReport()\nRETURNS TABLE (\n    DepartmentName VARCHAR(100),\n    EmployeeCount INT,\n    TotalSalary DECIMAL(12,2),\n    BudgetUtilization DECIMAL(5,2)\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- PostgreSQL best practice: use set-based operation instead of cursor\n    -- This is more efficient and idiomatic in PostgreSQL\n    RETURN QUERY\n    SELECT \n        d.DepartmentName::VARCHAR(100),\n        COALESCE(emp_stats.EmpCount, 0)::INT,\n        COALESCE(emp_stats.TotalSal, 0)::DECIMAL(12,2),\n        CASE \n            WHEN d.BudgetAmount \u003e 0 THEN \n                (COALESCE(emp_stats.TotalSal, 0) / d.BudgetAmount * 100)::DECIMAL(5,2)\n            ELSE \n                0::DECIMAL(5,2)\n        END AS BudgetUtilization\n    FROM \n        public.Departments d\n    LEFT JOIN (\n        SELECT \n            DepartmentID,\n            COUNT(*)::INT AS EmpCount,\n            COALESCE(SUM(Salary), 0) AS TotalSal\n        FROM \n            public.Employees\n        GROUP BY \n            DepartmentID\n    ) emp_stats ON d.DepartmentID = emp_stats.DepartmentID\n    WHERE \n        d.IsActive = true\n    ORDER BY \n        CASE \n            WHEN d.BudgetAmount \u003e 0 THEN \n                (COALESCE(emp_stats.TotalSal, 0) / d.BudgetAmount * 100)\n            ELSE \n                0\n        END DESC;\nEND;\n$$;\n\nCOMMENT ON FUNCTION public.sp_CursorDepartmentReport() IS \u0027Department report generation - refactored from cursor to set-based operation for better performance\u0027;"
+                                          },
+                                          {
+                                              "name":  "sp_NestedTryCatchTransfer",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Departments",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_MultiResultSetDashboard",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 3: Multiple result sets from a single procedure\n-- Returns employee details, department summary, and processing queue status\n-- =============================================================================\n-- NOTE: PostgreSQL does not support multiple result sets from a single procedure/function.\n-- This has been split into separate functions, one for each result set.\n-- Applications must call each function separately.\n\n-- Result Set 1: Employee listing\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_Employees(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    EmployeeID INT,\n    FullName TEXT,\n    Email VARCHAR,\n    Salary NUMERIC,\n    DepartmentName VARCHAR\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        e.EmployeeID,\n        (e.FirstName || \u0027 \u0027 || e.LastName)::TEXT AS FullName,\n        e.Email,\n        e.Salary,\n        d.DepartmentName\n    FROM public.Employees e\n    INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n    WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n    ORDER BY e.LastName, e.FirstName;\nEND;\n$$;\n\n-- Result Set 2: Department budget summary\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_DepartmentSummary(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    DepartmentID INT,\n    DepartmentName VARCHAR,\n    BudgetAmount NUMERIC,\n    HeadCount BIGINT,\n    TotalSalary NUMERIC,\n    RemainingBudget NUMERIC\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        d.DepartmentID,\n        d.DepartmentName,\n        d.BudgetAmount,\n        COUNT(e.EmployeeID) AS HeadCount,\n        COALESCE(SUM(e.Salary), 0) AS TotalSalary,\n        d.BudgetAmount - COALESCE(SUM(e.Salary), 0) AS RemainingBudget\n    FROM public.Departments d\n    LEFT JOIN public.Employees e ON d.DepartmentID = e.DepartmentID\n    WHERE (p_DepartmentID IS NULL OR d.DepartmentID = p_DepartmentID)\n    GROUP BY d.DepartmentID, d.DepartmentName, d.BudgetAmount;\nEND;\n$$;\n\n-- Result Set 3: Pending processing queue items\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_PendingQueue(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    QueueID INT,\n    EmployeeName TEXT,\n    ActionType VARCHAR,\n    Priority INT,\n    Status VARCHAR,\n    CreatedAt TIMESTAMP\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        pq.QueueID,\n        (e.FirstName || \u0027 \u0027 || e.LastName)::TEXT AS EmployeeName,\n        pq.ActionType,\n        pq.Priority,\n        pq.Status,\n        pq.CreatedAt\n    FROM public.ProcessingQueue pq\n    INNER JOIN public.Employees e ON pq.EmployeeID = e.EmployeeID\n    WHERE pq.Status = \u0027Pending\u0027\n      AND (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n    ORDER BY pq.Priority ASC, pq.CreatedAt ASC;\nEND;\n$$;\n\n-- Result Set 4: Recent audit trail\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_AuditTrail(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    AuditID INT,\n    TableName VARCHAR,\n    Operation VARCHAR,\n    RecordID INT,\n    ChangedBy VARCHAR,\n    ChangedAt TIMESTAMP\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        al.AuditID,\n        al.TableName,\n        al.Operation,\n        al.RecordID,\n        al.ChangedBy,\n        al.ChangedAt\n    FROM public.AuditLog al\n    ORDER BY al.ChangedAt DESC\n    LIMIT 10;\nEND;\n$$;\n\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_Employees(INT) IS \u0027Result Set 1 from sp_MultiResultSetDashboard - Employee listing\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_DepartmentSummary(INT) IS \u0027Result Set 2 from sp_MultiResultSetDashboard - Department budget summary\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_PendingQueue(INT) IS \u0027Result Set 3 from sp_MultiResultSetDashboard - Pending processing queue items\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_AuditTrail(INT) IS \u0027Result Set 4 from sp_MultiResultSetDashboard - Recent audit trail (note: does not use DepartmentID parameter)\u0027;\n"
+                                          },
+                                          {
+                                              "name":  "AuditLog",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "ProcessingQueue",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "SalaryHistory",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Employees",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_DepartmentSummary",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_EmployeeReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 9: Multiple result sets with conditional output\n-- Returns different result sets based on parameters\n-- =============================================================================\n-- Note: PostgreSQL does not support multiple result sets from a single function.\n-- This implementation uses a refcursor approach to return multiple result sets.\n\nCREATE OR REPLACE FUNCTION public.sp_EmployeeReport(\n    p_ReportType VARCHAR(20),\n    p_DepartmentID INTEGER DEFAULT NULL,\n    OUT ref_header REFCURSOR,\n    OUT ref_data REFCURSOR\n)\nRETURNS RECORD\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- Result Set 1: Always returned - report header\n    OPEN ref_header FOR\n    SELECT\n        p_ReportType AS ReportType,\n        CURRENT_TIMESTAMP AS GeneratedAt,\n        (SELECT COUNT(*) FROM public.Employees) AS TotalEmployees;\n\n    -- Result Set 2: Conditional on report type\n    IF p_ReportType = \u0027SALARY\u0027 THEN\n        OPEN ref_data FOR\n        SELECT\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            e.Salary,\n            d.DepartmentName,\n            RANK() OVER (PARTITION BY e.DepartmentID ORDER BY e.Salary DESC) AS SalaryRank\n        FROM public.Employees e\n        INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID);\n    ELSIF p_ReportType = \u0027HISTORY\u0027 THEN\n        OPEN ref_data FOR\n        SELECT\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            sh.OldSalary,\n            sh.NewSalary,\n            sh.ChangeDate,\n            sh.Reason\n        FROM public.SalaryHistory sh\n        INNER JOIN public.Employees e ON sh.EmployeeID = e.EmployeeID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n        ORDER BY sh.ChangeDate DESC;\n    ELSE\n        OPEN ref_data FOR\n        SELECT\n            e.EmployeeID,\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            e.Email,\n            d.DepartmentName,\n            e.HireDate\n        FROM public.Employees e\n        INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID);\n    END IF;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "sp_CursorSalaryAdjustment",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 1: Cursor-based processing\n-- Iterates through employees and applies salary adjustments per department rules\n-- =============================================================================\n\nCREATE OR REPLACE FUNCTION public.sp_CursorSalaryAdjustment(\n    p_AdjustmentPercent DECIMAL(5,2),\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE(\n    EmployeesProcessed INT,\n    AdjustmentPercent DECIMAL(5,2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_EmpID INT;\n    v_CurrentSalary DECIMAL(10,2);\n    v_NewSalary DECIMAL(10,2);\n    v_EmpDeptID INT;\n    v_ProcessedCount INT := 0;\n    v_DeptBudget DECIMAL(12,2);\n    v_DeptCount INT;\n    emp_cursor CURSOR FOR\n        SELECT EmployeeID, Salary, DepartmentID\n        FROM public.Employees\n        WHERE (p_DepartmentID IS NULL OR DepartmentID = p_DepartmentID)\n          AND Salary \u003e 0;\nBEGIN\n    -- Open cursor and iterate through employees\n    OPEN emp_cursor;\n    \n    LOOP\n        FETCH NEXT FROM emp_cursor INTO v_EmpID, v_CurrentSalary, v_EmpDeptID;\n        EXIT WHEN NOT FOUND;\n        \n        -- Calculate new salary\n        v_NewSalary := v_CurrentSalary * (1 + p_AdjustmentPercent / 100.0);\n        \n        -- Cap salary at department budget / employee count\n        SELECT BudgetAmount INTO v_DeptBudget \n        FROM public.Departments \n        WHERE DepartmentID = v_EmpDeptID;\n        \n        SELECT COUNT(*) INTO v_DeptCount \n        FROM public.Employees \n        WHERE DepartmentID = v_EmpDeptID;\n        \n        IF v_DeptCount \u003e 0 AND v_NewSalary \u003e (v_DeptBudget / v_DeptCount) THEN\n            v_NewSalary := v_DeptBudget / v_DeptCount;\n        END IF;\n        \n        -- Record history\n        INSERT INTO public.SalaryHistory (EmployeeID, OldSalary, NewSalary, Reason)\n        VALUES (v_EmpID, v_CurrentSalary, v_NewSalary, \n                \u0027Annual adjustment \u0027 || p_AdjustmentPercent::TEXT || \u0027%\u0027);\n        \n        -- Apply update\n        UPDATE public.Employees \n        SET Salary = v_NewSalary \n        WHERE EmployeeID = v_EmpID;\n        \n        v_ProcessedCount := v_ProcessedCount + 1;\n    END LOOP;\n    \n    CLOSE emp_cursor;\n    \n    -- Return result set\n    RETURN QUERY SELECT v_ProcessedCount, p_AdjustmentPercent;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "ErrorLog",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_PromoteEmployee",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          }
+                                      ]
+                      },
+                      {
+                          "name":  "CrossSchemaAdvancedDB",
+                          "sessionName":  null,
+                          "objectCount":  17,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  88.2,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  15,
+                                        "failSyntax":  2,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Function":  {
+                                                          "pass":  2,
+                                                          "fail":  0,
+                                                          "score":  100
+                                                      },
+                                         "Table":  {
+                                                       "pass":  8,
+                                                       "fail":  0,
+                                                       "score":  100
+                                                   },
+                                         "StoredProcedure":  {
+                                                                 "pass":  2,
+                                                                 "fail":  2,
+                                                                 "score":  50
+                                                             },
+                                         "View":  {
+                                                      "pass":  3,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "fn_RegionPredicate",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Employees",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_StockSummary",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Products",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_HighValueOrders",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_OrderDetails",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "StockMovements",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Orders",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetExternalCustomerData",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- Converted from SQL Server procedure: sales.sp_GetExternalCustomerData\n-- Returns customer data with cross-database reference pattern converted\n\nCREATE OR REPLACE FUNCTION sales.sp_GetExternalCustomerData()\nRETURNS TABLE (\n    CustomerID INTEGER,\n    CustomerName TEXT,\n    Email TEXT\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_sql TEXT;\nBEGIN\n    -- Cross-database reference pattern using three-part naming\n    -- In production this would reference another database on the same server\n    -- PostgreSQL uses foreign data wrappers (FDW) or dblink for cross-database access\n    v_sql := \u0027\n        SELECT CustomerID, CustomerName, Email\n        FROM ExternalCRM.public.Customers\n        WHERE IsActive = true\u0027;\n\n    -- Print the cross-database query for detection purposes\n    -- Actual execution would fail without ExternalCRM database or FDW setup\n    RAISE NOTICE \u0027Cross-database reference detected:\u0027;\n    RAISE NOTICE \u0027%\u0027, v_sql;\n\n    -- Return local data as fallback so the procedure produces results\n    RETURN QUERY\n    SELECT c.CustomerID, c.CustomerName, c.Email\n    FROM sales.Customers c;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "EmployeesHistory",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_PlaceOrder",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "Unclosed string literal detected",
+                                              "errorLineNumber":  54,
+                                              "generatedDdl":  "-- Converted from SQL Server procedure: sales.sp_PlaceOrder\n-- This procedure performs DML and returns a result set, so it\u0027s converted to a FUNCTION\nCREATE OR REPLACE FUNCTION sales.sp_PlaceOrder(\n    p_CustomerID INT,\n    p_ProductID INT,\n    p_Quantity INT\n)\nRETURNS TABLE(\n    NewOrderID INT,\n    OrderTotal DECIMAL(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_UnitPrice DECIMAL(10,2);\n    v_Stock INT;\n    v_Total DECIMAL(12,2);\n    v_OrderID INT;\nBEGIN\n    -- Read from inventory schema\n    SELECT UnitPrice, StockLevel\n    INTO v_UnitPrice, v_Stock\n    FROM inventory.Products\n    WHERE ProductID = p_ProductID;\n\n    -- Check if product exists\n    IF NOT FOUND THEN\n        RAISE EXCEPTION \u0027Product not found: %\u0027, p_ProductID\n            USING ERRCODE = \u002750001\u0027;\n    END IF;\n\n    -- Check stock level\n    IF v_Stock \u003c p_Quantity THEN\n        RAISE EXCEPTION \u0027Insufficient stock for ProductID %\u0027, p_ProductID\n            USING ERRCODE = \u002750001\u0027;\n    END IF;\n\n    -- Calculate total\n    v_Total := v_UnitPrice * p_Quantity;\n\n    -- Begin transaction (implicit in PostgreSQL function, but explicit for clarity)\n    -- Insert into sales schema\n    INSERT INTO sales.Orders (CustomerID, ProductID, Quantity, OrderTotal, Status)\n    VALUES (p_CustomerID, p_ProductID, p_Quantity, v_Total, \u0027Confirmed\u0027)\n    RETURNING OrderID INTO v_OrderID;\n\n    -- Write to inventory schema (cross-schema dependency)\n    UPDATE inventory.Products\n    SET StockLevel = StockLevel - p_Quantity\n    WHERE ProductID = p_ProductID;\n\n    -- Insert stock movement record\n    INSERT INTO inventory.StockMovements (ProductID, OrderID, QuantityChange, MovementType)\n    VALUES (p_ProductID, v_OrderID, -p_Quantity, \u0027Sale\u0027);\n\n    -- Return result set\n    RETURN QUERY\n    SELECT v_OrderID, v_Total;\n\nEXCEPTION\n    WHEN OTHERS THEN\n        -- Re-raise the exception (transaction will be rolled back automatically)\n        RAISE;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "OrdersPartitioned",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Customers",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_RestockProduct",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "UserRegionMapping",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_CustomerOrderHistory",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "fn_GetProductValue",
+                                              "type":  "function",
+                                              "status":  "pass"
+                                          }
+                                      ]
+                      }
+                  ],
+    "aggregate":  {
+                      "compatibilityScore":  83,
+                      "previousScore":  64.7,
+                      "delta":  18.3,
+                      "totalPass":  73,
+                      "totalFailSyntax":  15,
+                      "totalFailConvert":  0,
+                      "totalSkip":  0
+                  },
+    "diagnostics":  {
+                        "rootCauseCategories":  [
+                                                    {
+                                                        "category":  "procedural pattern not handled",
+                                                        "count":  15,
+                                                        "objects":  [
+                                                                        "sp_GetDepartmentStats",
+                                                                        "sp_BulkInsertEmployees",
+                                                                        "sp_CursorDepartmentReport",
+                                                                        "sp_MultiResultSetDashboard",
+                                                                        "sp_EmployeeReport",
+                                                                        "sp_CursorSalaryAdjustment",
+                                                                        "tr_Projects_MultiTableAudit",
+                                                                        "tr_EmployeeDirectory_InsteadOfUpdate",
+                                                                        "tr_EmployeeDirectory_InsteadOfInsert",
+                                                                        "tr_Employees_AuditAndBudget",
+                                                                        "sp_CreateOrderWithLines",
+                                                                        "sp_BatchUpdateSalaries",
+                                                                        "ProductInventory",
+                                                                        "sp_GetExternalCustomerData",
+                                                                        "sp_PlaceOrder"
+                                                                    ]
+                                                    }
+                                                ],
+                        "topFailingTypes":  [
+
+                                            ]
+                    }
+}

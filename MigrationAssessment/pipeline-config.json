@@ -1,0 +1,43 @@
+{
+  "databases": [
+    {
+      "name": "AssessmentTestDB",
+      "connectionString": "Server=localhost;Database=AssessmentTestDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True",
+      "sessionName": "assessment-test",
+      "setupScript": "scripts/setup-test-database.sql"
+    },
+    {
+      "name": "ProcedureComplexityDB",
+      "connectionString": "Server=localhost;Database=ProcedureComplexityDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True",
+      "sessionName": "procedure-complexity",
+      "setupScript": "scripts/setup-procedure-complexity-db.sql"
+    },
+    {
+      "name": "ViewsTriggerDB",
+      "connectionString": "Server=localhost;Database=ViewsTriggerDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True",
+      "sessionName": "views-triggers",
+      "setupScript": "scripts/setup-views-triggers-db.sql"
+    },
+    {
+      "name": "TypesAndCLRDB",
+      "connectionString": "Server=localhost;Database=TypesAndCLRDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True",
+      "sessionName": "types-clr",
+      "setupScript": "scripts/setup-types-clr-db.sql"
+    },
+    {
+      "name": "CrossSchemaAdvancedDB",
+      "connectionString": "Server=localhost;Database=CrossSchemaAdvancedDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True",
+      "sessionName": "cross-schema-advanced",
+      "setupScript": "scripts/setup-cross-schema-advanced-db.sql"
+    }
+  ],
+  "validation": {
+    "pgConnectionString": "Host=localhost;Database=validation_scratch;Username=postgres;Password=postgres",
+    "timeoutSeconds": 30,
+    "fallbackToSyntaxOnly": true
+  },
+  "reporting": {
+    "outputDirectory": "./pipeline-reports",
+    "trackProgression": true
+  }
+}
