@@ -5,7 +5,9 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using SchemaConversion.AiEngine;
+using SchemaConversion.Cli.Services;
 using SchemaConversion.Core.Interfaces;
 using SchemaConversion.Core.Models;
 using SchemaConversion.Core.Options;
@@ -39,6 +41,7 @@ public static class Program
         rootCommand.AddCommand(BuildGenerateCommand());
         rootCommand.AddCommand(BuildGenerateMappingCommand());
         rootCommand.AddCommand(BuildReportCommand());
+        rootCommand.AddCommand(BuildFixCommand());
 
         return await rootCommand.InvokeAsync(args);
     }
@@ -799,5 +802,143 @@ public static class Program
         });
 
         return command;
+    }
+
+    // ─── Fix Command ───────────────────────────────────────────────────
+
+    private static Command BuildFixCommand()
+    {
+        var failedDdlOption = new Option<string>("--failed-ddl", "The failed PostgreSQL DDL statement") { IsRequired = true };
+        var errorOption = new Option<string>("--error", "The PostgreSQL error message") { IsRequired = true };
+        var sourceTsqlOption = new Option<string?>("--source-tsql", "The original T-SQL source definition for context");
+        var pgConnectionOption = new Option<string>("--pg-connection", "PostgreSQL connection string for applying fixes") { IsRequired = true };
+        var maxAttemptsOption = new Option<int>("--max-attempts", () => 2, "Maximum number of fix attempts");
+
+        var command = new Command("fix", "Attempt AI-assisted fix of failed PostgreSQL DDL via Bedrock")
+        {
+            failedDdlOption,
+            errorOption,
+            sourceTsqlOption,
+            pgConnectionOption,
+            maxAttemptsOption
+        };
+
+        command.SetHandler(async (InvocationContext context) =>
+        {
+            var failedDdl = context.ParseResult.GetValueForOption(failedDdlOption)!;
+            var error = context.ParseResult.GetValueForOption(errorOption)!;
+            var sourceTsql = context.ParseResult.GetValueForOption(sourceTsqlOption);
+            var pgConnection = context.ParseResult.GetValueForOption(pgConnectionOption)!;
+            var maxAttempts = context.ParseResult.GetValueForOption(maxAttemptsOption);
+
+            var configuration = LoadConfiguration();
+            using var serviceProvider = BuildFixServiceProvider(configuration);
+            var fixService = serviceProvider.GetRequiredService<BedrockFixService>();
+            var logger = serviceProvider.GetRequiredService<ILogger<BedrockFixService>>();
+            var ct = context.GetCancellationToken();
+
+            var currentDdl = failedDdl;
+            var currentError = error;
+            var errors = new List<string> { error };
+            var attempts = 0;
+            var success = false;
+            string? fixedDdl = null;
+            string? explanation = null;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                attempts = attempt;
+                logger.LogInformation("Fix attempt {Attempt}/{MaxAttempts}", attempt, maxAttempts);
+
+                // Request fix from Bedrock
+                var fixResult = await fixService.RequestFixAsync(currentDdl, currentError, sourceTsql);
+
+                if (!fixResult.Success)
+                {
+                    // AI service itself failed
+                    errors.Add(fixResult.ErrorMessage ?? "AI fix request failed");
+                    break;
+                }
+
+                fixedDdl = fixResult.FixedDdl;
+                explanation = fixResult.Explanation;
+
+                // Try applying the fix to PostgreSQL
+                var applyError = await TryApplyDdlAsync(fixedDdl, pgConnection, ct);
+
+                if (applyError is null)
+                {
+                    // Success - DDL applied without error
+                    success = true;
+                    logger.LogInformation("Fix succeeded on attempt {Attempt}", attempt);
+                    break;
+                }
+
+                // DDL still fails - prepare for next attempt
+                logger.LogWarning("Fix attempt {Attempt} failed: {Error}", attempt, applyError);
+                errors.Add(applyError);
+                currentDdl = fixedDdl;
+                currentError = applyError;
+            }
+
+            // Output JSON result to stdout
+            var result = new
+            {
+                success,
+                fixedDdl = fixedDdl ?? currentDdl,
+                attempts,
+                explanation = explanation ?? "",
+                errors
+            };
+
+            var json = JsonSerializer.Serialize(result, JsonOptions);
+            Console.WriteLine(json);
+
+            context.ExitCode = success ? 0 : 1;
+        });
+
+        return command;
+    }
+
+    /// <summary>
+    /// Attempts to apply DDL to PostgreSQL. Returns null on success, or the error message on failure.
+    /// </summary>
+    private static async Task<string?> TryApplyDdlAsync(string ddl, string connectionString, CancellationToken ct)
+    {
+        try
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(ct);
+            await using var cmd = new NpgsqlCommand(ddl, connection);
+            await cmd.ExecuteNonQueryAsync(ct);
+            return null;
+        }
+        catch (PostgresException ex)
+        {
+            return $"{ex.MessageText} (Position: {ex.Position}, SQLSTATE: {ex.SqlState})";
+        }
+        catch (NpgsqlException ex)
+        {
+            return $"Connection error: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Builds a lightweight service provider for the fix command with only BedrockFixService and Npgsql dependencies.
+    /// </summary>
+    private static ServiceProvider BuildFixServiceProvider(IConfiguration configuration)
+    {
+        var services = new ServiceCollection();
+
+        services.AddLogging(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Information);
+        });
+
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<BedrockFixService>();
+
+        return services.BuildServiceProvider();
     }
 }

@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "9D97aFTHSlI=",
+  "dgSpecHash": "ZeRx07e4FYA=",
   "success": true,
   "projectFilePath": "C:\\code\\ODBC_TSQL_To_SQL\\AI-AssistedSchemaConversion\\src\\SchemaConversion.Cli\\SchemaConversion.Cli.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\jason\\.nuget\\packages\\awssdk.bedrockruntime\\3.7.414\\awssdk.bedrockruntime.3.7.414.nupkg.sha512",
-    "C:\\Users\\jason\\.nuget\\packages\\awssdk.core\\3.7.402.13\\awssdk.core.3.7.402.13.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.bedrockruntime\\4.0.0.3\\awssdk.bedrockruntime.4.0.0.3.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\awssdk.core\\4.0.0.4\\awssdk.core.4.0.0.4.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\1.1.1\\microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
@@ -41,6 +41,7 @@
     "C:\\Users\\jason\\.nuget\\packages\\microsoft.netcore.targets\\1.1.0\\microsoft.netcore.targets.1.1.0.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\microsoft.sqlserver.server\\1.0.0\\microsoft.sqlserver.server.1.0.0.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\microsoft.sqlserver.transactsql.scriptdom\\161.9142.1\\microsoft.sqlserver.transactsql.scriptdom.161.9142.1.nupkg.sha512",
+    "C:\\Users\\jason\\.nuget\\packages\\npgsql\\8.0.6\\npgsql.8.0.6.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\system.clientmodel\\1.0.0\\system.clientmodel.1.0.0.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\system.commandline\\2.0.0-beta4.22272.1\\system.commandline.2.0.0-beta4.22272.1.nupkg.sha512",
     "C:\\Users\\jason\\.nuget\\packages\\system.configuration.configurationmanager\\8.0.0\\system.configuration.configurationmanager.8.0.0.nupkg.sha512",

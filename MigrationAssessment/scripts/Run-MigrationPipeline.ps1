@@ -25,6 +25,18 @@
 .PARAMETER PgConnectionString
     PostgreSQL connection string for live-instance validation.
 
+.PARAMETER EndToEnd
+    Switch to enable end-to-end validation mode (DDL application, fix loop, data migration, functional tests).
+
+.PARAMETER MaxFixAttempts
+    Maximum number of AI-assisted fix attempts per failed DDL object. Default: 2.
+
+.PARAMETER DestPgConnectionString
+    Destination PostgreSQL connection string for DDL application in end-to-end mode.
+
+.PARAMETER PgPassthroughPort
+    Port for PgPassthrough server during functional testing. Default: 11433.
+
 .EXAMPLE
     .\Run-MigrationPipeline.ps1 -ConnectionString "Server=localhost;Database=TestDB;Trusted_Connection=True;" -SessionName "test-run"
 
@@ -53,7 +65,18 @@ param(
     [string]$ValidationMode,
 
     [Parameter(Mandatory = $false)]
-    [string]$PgConnectionString
+    [string]$PgConnectionString,
+
+    [switch]$EndToEnd,
+
+    [Parameter(Mandatory = $false)]
+    [int]$MaxFixAttempts = 2,
+
+    [Parameter(Mandatory = $false)]
+    [string]$DestPgConnectionString,
+
+    [Parameter(Mandatory = $false)]
+    [int]$PgPassthroughPort = 11433
 )
 
 # Import library modules
@@ -64,6 +87,11 @@ $libDir = Join-Path $scriptDir "lib"
 . (Join-Path $libDir "Invoke-DiagnosticsClassification.ps1")
 . (Join-Path $libDir "Invoke-PgValidation.ps1")
 . (Join-Path $libDir "Invoke-ReportGeneration.ps1")
+. (Join-Path $libDir "Invoke-DdlApplication.ps1")
+. (Join-Path $libDir "Invoke-FixLoop.ps1")
+. (Join-Path $libDir "Invoke-DataMigration.ps1")
+. (Join-Path $libDir "Invoke-FunctionalTests.ps1")
+. (Join-Path $libDir "Invoke-EndToEndScoring.ps1")
 
 # Resolve paths
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..\")).Path
@@ -138,9 +166,15 @@ function Invoke-PipelineStep {
         $processInfo.CreateNoWindow = $true
 
         $process = [System.Diagnostics.Process]::Start($processInfo)
-        $stdout = $process.StandardOutput.ReadToEnd()
-        $stderr = $process.StandardError.ReadToEnd()
+
+        # Read stdout and stderr asynchronously to avoid deadlock
+        # when the subprocess fills one pipe buffer while we block on the other.
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
         $process.WaitForExit()
+
+        $stdout = $stdoutTask.GetAwaiter().GetResult()
+        $stderr = $stderrTask.GetAwaiter().GetResult()
 
         $stopwatch.Stop()
         $elapsed = [Math]::Round($stopwatch.Elapsed.TotalSeconds, 2)
@@ -349,7 +383,25 @@ function Invoke-SingleDatabasePipeline {
 
         [string]$PgConnString,
 
-        [string[]]$ChangedConfigTypes = @()
+        [string[]]$ChangedConfigTypes = @(),
+
+        [bool]$EndToEndEnabled = $false,
+
+        [string]$DestPgConnString,
+
+        [string]$E2eMaintenanceConnString,
+
+        [string]$E2eDatabaseName,
+
+        [int]$E2eMaxFixAttempts = 2,
+
+        [string]$E2eTestScriptDir,
+
+        [string]$E2ePgPassthroughPath,
+
+        [int]$E2ePgPassthroughPort = 11433,
+
+        [int]$E2eTimeoutPerScript = 30
     )
 
     $pipelineStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -588,15 +640,278 @@ function Invoke-SingleDatabasePipeline {
         }
     }
 
+    # -----------------------------------------------------------------------
+    # End-to-End Steps (Steps 5-7): Apply → Fix Loop → Data Migration → Functional Tests → E2E Scoring
+    # Gated by -EndToEnd switch or endToEnd config presence
+    # -----------------------------------------------------------------------
+    $endToEndResults = $null
+
+    # Determine if E2E is enabled (from param or config passed through)
+    $e2eEnabled = $false
+    if ($EndToEndEnabled) {
+        $e2eEnabled = $true
+    }
+
+    if ($e2eEnabled -and $DestPgConnString) {
+        Write-Host "[$Session] End-to-End validation enabled. Starting E2E steps..."
+
+        $e2eStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $ddlResults = @()
+        $fixResults = @()
+        $dataMigrationResults = $null
+        $functionalTestResults = $null
+
+        # Step 5: DDL Application
+        Write-Host "[$Session] Step 5: Apply DDL to destination database..."
+        $applyStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+        try {
+            $ddlResults = Invoke-DdlApplication `
+                -DdlStatements $ddlStatements `
+                -PgConnectionString $DestPgConnString `
+                -MaintenanceConnectionString $E2eMaintenanceConnString `
+                -DatabaseName $E2eDatabaseName
+
+            $applyStopwatch.Stop()
+            $applyElapsed = [Math]::Round($applyStopwatch.Elapsed.TotalSeconds, 2)
+
+            $appliedCount = @($ddlResults | Where-Object { $_.status -eq "applied" }).Count
+            $failedCount = @($ddlResults | Where-Object { $_.status -eq "failed" }).Count
+
+            $stepResults += @{
+                step           = "apply"
+                exitCode       = 0
+                elapsedSeconds = $applyElapsed
+                errorMessage   = $null
+            }
+
+            Write-PipelineLog -Level "INFO" -Step "apply" -Message "DDL application completed: $appliedCount applied, $failedCount failed" -ElapsedSeconds $applyElapsed
+        }
+        catch {
+            $applyStopwatch.Stop()
+            $applyElapsed = [Math]::Round($applyStopwatch.Elapsed.TotalSeconds, 2)
+
+            $stepResults += @{
+                step           = "apply"
+                exitCode       = 1
+                elapsedSeconds = $applyElapsed
+                errorMessage   = $_.Exception.Message
+            }
+
+            Write-PipelineLog -Level "ERROR" -Step "apply" -Message "DDL application failed: $($_.Exception.Message)" -ElapsedSeconds $applyElapsed
+        }
+
+        # Step 5b: Fix Loop for failed objects
+        $failedDdlObjects = @($ddlResults | Where-Object { $_.status -eq "failed" })
+        if ($failedDdlObjects.Count -gt 0) {
+            Write-Host "[$Session] Step 5b: Fix Loop for $($failedDdlObjects.Count) failed object(s)..."
+            $fixStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+            try {
+                # Build failed objects array with source T-SQL info
+                $failedForFix = @($failedDdlObjects | ForEach-Object {
+                    $objName = $_.objectName
+                    $ddlObj = $ddlStatements | Where-Object { $_.objectName -eq $objName }
+                    @{
+                        objectName   = $objName
+                        ddl          = if ($ddlObj) { $ddlObj.ddl } else { $null }
+                        errorMessage = $_.errorMessage
+                        sourceTSql   = $null  # Source T-SQL not readily available in pipeline context
+                    }
+                })
+
+                $fixResults = Invoke-FixLoop `
+                    -FailedObjects $failedForFix `
+                    -PgConnectionString $DestPgConnString `
+                    -MaxAttempts $E2eMaxFixAttempts `
+                    -CliProjectPath $cliProjectPath
+
+                $fixStopwatch.Stop()
+                $fixElapsed = [Math]::Round($fixStopwatch.Elapsed.TotalSeconds, 2)
+
+                $fixedCount = @($fixResults | Where-Object { $_.finalStatus -eq "fixed" }).Count
+                $unfixableCount = @($fixResults | Where-Object { $_.finalStatus -eq "unfixable" }).Count
+
+                $stepResults += @{
+                    step           = "fix-loop"
+                    exitCode       = 0
+                    elapsedSeconds = $fixElapsed
+                    errorMessage   = $null
+                }
+
+                Write-PipelineLog -Level "INFO" -Step "fix-loop" -Message "Fix loop completed: $fixedCount fixed, $unfixableCount unfixable" -ElapsedSeconds $fixElapsed
+            }
+            catch {
+                $fixStopwatch.Stop()
+                $fixElapsed = [Math]::Round($fixStopwatch.Elapsed.TotalSeconds, 2)
+
+                $stepResults += @{
+                    step           = "fix-loop"
+                    exitCode       = 1
+                    elapsedSeconds = $fixElapsed
+                    errorMessage   = $_.Exception.Message
+                }
+
+                Write-PipelineLog -Level "ERROR" -Step "fix-loop" -Message "Fix loop failed: $($_.Exception.Message)" -ElapsedSeconds $fixElapsed
+            }
+        }
+        else {
+            $stepResults += @{
+                step           = "fix-loop"
+                exitCode       = 0
+                elapsedSeconds = 0
+                errorMessage   = $null
+            }
+            Write-PipelineLog -Level "INFO" -Step "fix-loop" -Message "No failed objects - fix loop skipped" -ElapsedSeconds 0
+        }
+
+        # Step 6: Data Migration - only if at least one table was applied or fixed
+        $appliedObjects = @($ddlResults | Where-Object { $_.status -eq "applied" })
+        $fixedObjects = @($fixResults | Where-Object { $_.finalStatus -eq "fixed" })
+        $appliedTables = @($ddlStatements | Where-Object {
+            $_.objectType -eq "Table" -and (
+                ($appliedObjects | Where-Object { $_.objectName -eq $_.objectName }) -or
+                ($fixedObjects | Where-Object { $_.objectName -eq $_.objectName })
+            )
+        })
+
+        $hasAppliedTables = ($appliedObjects.Count + $fixedObjects.Count) -gt 0
+
+        if ($hasAppliedTables) {
+            Write-Host "[$Session] Step 6: Data Migration..."
+            $dataMigStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+            try {
+                $sessionPath = Join-Path $sessionsDir $Session
+                $dataMigratorPath = Join-Path $repoRoot "DataMigrator"
+
+                $dataMigrationResults = Invoke-DataMigration `
+                    -SourceConnectionString $ConnString `
+                    -TargetConnectionString $DestPgConnString `
+                    -SessionPath $sessionPath `
+                    -DataMigratorProjectPath $dataMigratorPath
+
+                $dataMigStopwatch.Stop()
+                $dataMigElapsed = [Math]::Round($dataMigStopwatch.Elapsed.TotalSeconds, 2)
+
+                $stepResults += @{
+                    step           = "data-migration"
+                    exitCode       = 0
+                    elapsedSeconds = $dataMigElapsed
+                    errorMessage   = $null
+                }
+
+                Write-PipelineLog -Level "INFO" -Step "data-migration" -Message "Data migration completed: $($dataMigrationResults.tablesSucceeded) tables, $($dataMigrationResults.totalRows) rows" -ElapsedSeconds $dataMigElapsed
+            }
+            catch {
+                $dataMigStopwatch.Stop()
+                $dataMigElapsed = [Math]::Round($dataMigStopwatch.Elapsed.TotalSeconds, 2)
+
+                $stepResults += @{
+                    step           = "data-migration"
+                    exitCode       = 1
+                    elapsedSeconds = $dataMigElapsed
+                    errorMessage   = $_.Exception.Message
+                }
+
+                Write-PipelineLog -Level "ERROR" -Step "data-migration" -Message "Data migration failed: $($_.Exception.Message)" -ElapsedSeconds $dataMigElapsed
+            }
+        }
+        else {
+            $stepResults += @{
+                step           = "data-migration"
+                exitCode       = 0
+                elapsedSeconds = 0
+                errorMessage   = $null
+            }
+            Write-PipelineLog -Level "INFO" -Step "data-migration" -Message "No tables applied - data migration skipped" -ElapsedSeconds 0
+        }
+
+        # Step 7: Functional Tests - only if data migration succeeded and test scripts exist
+        $dataMigSucceeded = ($dataMigrationResults -and $dataMigrationResults.tablesSucceeded -gt 0)
+
+        if ($dataMigSucceeded -and $E2eTestScriptDir -and (Test-Path $E2eTestScriptDir)) {
+            Write-Host "[$Session] Step 7: Functional Tests..."
+            $funcTestStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+            try {
+                $functionalTestResults = Invoke-FunctionalTests `
+                    -TestScriptDirectory $E2eTestScriptDir `
+                    -PgPassthroughProjectPath $E2ePgPassthroughPath `
+                    -PgPassthroughPort $E2ePgPassthroughPort `
+                    -DestPgConnectionString $DestPgConnString `
+                    -TimeoutPerScript $E2eTimeoutPerScript
+
+                $funcTestStopwatch.Stop()
+                $funcTestElapsed = [Math]::Round($funcTestStopwatch.Elapsed.TotalSeconds, 2)
+
+                $stepResults += @{
+                    step           = "functional-tests"
+                    exitCode       = 0
+                    elapsedSeconds = $funcTestElapsed
+                    errorMessage   = $null
+                }
+
+                Write-PipelineLog -Level "INFO" -Step "functional-tests" -Message "Functional tests completed: $($functionalTestResults.passed) passed, $($functionalTestResults.failed) failed" -ElapsedSeconds $funcTestElapsed
+            }
+            catch {
+                $funcTestStopwatch.Stop()
+                $funcTestElapsed = [Math]::Round($funcTestStopwatch.Elapsed.TotalSeconds, 2)
+
+                $stepResults += @{
+                    step           = "functional-tests"
+                    exitCode       = 1
+                    elapsedSeconds = $funcTestElapsed
+                    errorMessage   = $_.Exception.Message
+                }
+
+                Write-PipelineLog -Level "ERROR" -Step "functional-tests" -Message "Functional tests failed: $($_.Exception.Message)" -ElapsedSeconds $funcTestElapsed
+            }
+        }
+        else {
+            $stepResults += @{
+                step           = "functional-tests"
+                exitCode       = 0
+                elapsedSeconds = 0
+                errorMessage   = $null
+            }
+            $skipReason = if (-not $dataMigSucceeded) { "data migration did not succeed" } else { "no test scripts found" }
+            Write-PipelineLog -Level "INFO" -Step "functional-tests" -Message "Functional tests skipped: $skipReason" -ElapsedSeconds 0
+        }
+
+        # Compute End-to-End Score
+        $e2eStopwatch.Stop()
+        $e2eTotalElapsed = [Math]::Round($e2eStopwatch.Elapsed.TotalSeconds, 2)
+
+        try {
+            $endToEndResults = Invoke-EndToEndScoring `
+                -DdlResults $ddlResults `
+                -FixResults $fixResults `
+                -DataMigrationResults $dataMigrationResults `
+                -FunctionalTestResults $functionalTestResults
+
+            Write-Host "[$Session] End-to-End Score: $($endToEndResults.endToEndScore)%"
+        }
+        catch {
+            Write-PipelineLog -Level "WARN" -Step "e2e-scoring" -Message "Failed to compute E2E score: $($_.Exception.Message)" -ElapsedSeconds 0
+        }
+
+        Write-PipelineLog -Level "INFO" -Step "end-to-end" -Message "All end-to-end steps completed" -ElapsedSeconds $e2eTotalElapsed
+    }
+    elseif ($e2eEnabled -and -not $DestPgConnString) {
+        Write-PipelineLog -Level "WARN" -Step "end-to-end" -Message "End-to-end mode enabled but no destination connection string provided. Skipping E2E steps." -ElapsedSeconds 0
+    }
+
     $pipelineStopwatch.Stop()
     $totalElapsed = [Math]::Round($pipelineStopwatch.Elapsed.TotalSeconds, 2)
 
     return @{
-        success        = $true
-        failedStep     = $null
-        stepResults    = $stepResults
-        objectResults  = $objectResults
-        elapsedSeconds = $totalElapsed
+        success           = $true
+        failedStep        = $null
+        stepResults       = $stepResults
+        objectResults     = $objectResults
+        endToEndResults   = $endToEndResults
+        elapsedSeconds    = $totalElapsed
     }
 }
 
@@ -1668,6 +1983,98 @@ function Invoke-BatchPipeline {
     # Load previous scores for delta computation
     $batchPreviousScores = Get-PreviousScores -OutputDir $outputDir
 
+    # Resolve end-to-end configuration from batch config
+    $batchE2eEnabled = $false
+    $batchE2eDestConnStr = $null
+    $batchE2eMaintenanceConnStr = $null
+    $batchE2eMaxFixAttempts = 2
+    $batchE2eTestScriptDir = $null
+    $batchE2ePgPassthroughPath = $null
+    $batchE2ePgPassthroughPort = 11433
+    $batchE2eTimeoutPerScript = 30
+
+    if ($configRaw.endToEnd) {
+        if ($configRaw.endToEnd.enabled) {
+            $batchE2eEnabled = $true
+        }
+        if ($configRaw.endToEnd.destinationConnectionString) {
+            $batchE2eDestConnStr = $configRaw.endToEnd.destinationConnectionString
+        }
+        if ($configRaw.endToEnd.maintenanceConnectionString) {
+            $batchE2eMaintenanceConnStr = $configRaw.endToEnd.maintenanceConnectionString
+        }
+        if ($configRaw.endToEnd.maxFixAttempts) {
+            $batchE2eMaxFixAttempts = $configRaw.endToEnd.maxFixAttempts
+        }
+        if ($configRaw.endToEnd.testScriptDirectory) {
+            $batchE2eTestScriptDir = $configRaw.endToEnd.testScriptDirectory
+        }
+        if ($configRaw.endToEnd.pgPassthroughPath) {
+            $batchE2ePgPassthroughPath = $configRaw.endToEnd.pgPassthroughPath
+        }
+        if ($configRaw.endToEnd.pgPassthroughPort) {
+            $batchE2ePgPassthroughPort = $configRaw.endToEnd.pgPassthroughPort
+        }
+        if ($configRaw.endToEnd.timeoutPerScript) {
+            $batchE2eTimeoutPerScript = $configRaw.endToEnd.timeoutPerScript
+        }
+    }
+
+    # Validate E2E configuration for batch mode (Requirement 6.5)
+    if ($batchE2eEnabled) {
+        $batchE2eConfigErrors = @()
+
+        if (-not $batchE2eDestConnStr) {
+            $batchE2eConfigErrors += "End-to-end mode enabled in config but no destinationConnectionString provided."
+        }
+
+        # Derive maintenance connection from destination if not provided
+        if (-not $batchE2eMaintenanceConnStr) {
+            if ($batchE2eDestConnStr) {
+                $batchE2eMaintenanceConnStr = $batchE2eDestConnStr -replace 'Database=[^;]+', 'Database=postgres'
+                if ($batchE2eMaintenanceConnStr -eq $batchE2eDestConnStr) {
+                    $batchE2eMaintenanceConnStr = "$batchE2eDestConnStr;Database=postgres"
+                }
+                Write-Host "  Maintenance connection derived from destination (targeting 'postgres' database)"
+            }
+            else {
+                $batchE2eConfigErrors += "No maintenanceConnectionString provided and cannot derive from missing destinationConnectionString."
+            }
+        }
+
+        # Check pgPassthroughPath exists if specified
+        if ($batchE2ePgPassthroughPath -and -not (Test-Path $batchE2ePgPassthroughPath)) {
+            $batchE2eConfigErrors += "PgPassthrough path does not exist: '$batchE2ePgPassthroughPath'. Functional tests will not be able to run."
+        }
+
+        # Validate scoring weights if present
+        if ($configRaw.endToEnd.scoring) {
+            $scoring = $configRaw.endToEnd.scoring
+            $weightSum = 0
+            if ($scoring.ddlWeight) { $weightSum += $scoring.ddlWeight }
+            if ($scoring.dataWeight) { $weightSum += $scoring.dataWeight }
+            if ($scoring.testWeight) { $weightSum += $scoring.testWeight }
+            if ([Math]::Abs($weightSum - 1.0) -gt 0.01) {
+                $batchE2eConfigErrors += "Scoring weights do not sum to 1.0 (actual: $weightSum). DDL=$($scoring.ddlWeight), Data=$($scoring.dataWeight), Test=$($scoring.testWeight)"
+            }
+        }
+
+        # Report errors
+        if ($batchE2eConfigErrors.Count -gt 0) {
+            foreach ($err in $batchE2eConfigErrors) {
+                Write-PipelineLog -Level "ERROR" -Step "e2e-config-validation" -Message $err -ElapsedSeconds 0
+            }
+            if (-not $batchE2eDestConnStr) {
+                $batchE2eEnabled = $false
+            }
+        }
+    }
+
+    # Resolve default PgPassthrough path for batch mode
+    if (-not $batchE2ePgPassthroughPath) {
+        $batchE2ePgPassthroughPath = Join-Path $repoRoot "PgPassthrough\src\PgPassthrough.Server"
+    }
+
     Write-Host "=== Migration Validation Pipeline (Batch Mode) ==="
     Write-Host "Config:    $ConfigPath"
     Write-Host "Databases: $($configRaw.databases.Count)"
@@ -1730,13 +2137,47 @@ function Invoke-BatchPipeline {
         # Execute the pipeline for this database (Req 5.4 – failure does not halt batch)
         $dbResult = $null
         try {
+            # Resolve per-database E2E settings
+            $dbE2eDestConnStr = $batchE2eDestConnStr
+            $dbE2eDbName = "${dbName}_e2e"
+            $dbE2eTestScriptDir = $batchE2eTestScriptDir
+
+            if ($batchE2eEnabled -and $configRaw.endToEnd.databases) {
+                $dbE2eOverride = $configRaw.endToEnd.databases.PSObject.Properties[$dbName]
+                if ($dbE2eOverride) {
+                    if ($dbE2eOverride.Value.destinationDatabase) {
+                        $dbE2eDbName = $dbE2eOverride.Value.destinationDatabase
+                    }
+                    if ($dbE2eOverride.Value.testScripts) {
+                        $dbE2eTestScriptDir = $dbE2eOverride.Value.testScripts
+                    }
+                }
+            }
+
+            # Resolve test script directory relative to MigrationAssessment root if not absolute
+            if ($dbE2eTestScriptDir -and -not [System.IO.Path]::IsPathRooted($dbE2eTestScriptDir)) {
+                $dbE2eTestScriptDir = Join-Path $scriptDir "..\$dbE2eTestScriptDir"
+            }
+            elseif (-not $dbE2eTestScriptDir) {
+                $dbE2eTestScriptDir = Join-Path $scriptDir "..\tests\functional\$dbName"
+            }
+
             $dbResult = Invoke-SingleDatabasePipeline `
                 -ConnString        $connString `
                 -Session           $session `
                 -DbName            $dbName `
                 -ValMode           $ValMode `
                 -PgConnString      $effectivePgConnString `
-                -ChangedConfigTypes $changedConfigTypes
+                -ChangedConfigTypes $changedConfigTypes `
+                -EndToEndEnabled   $batchE2eEnabled `
+                -DestPgConnString  $dbE2eDestConnStr `
+                -E2eMaintenanceConnString $batchE2eMaintenanceConnStr `
+                -E2eDatabaseName   $dbE2eDbName `
+                -E2eMaxFixAttempts $batchE2eMaxFixAttempts `
+                -E2eTestScriptDir  $dbE2eTestScriptDir `
+                -E2ePgPassthroughPath $batchE2ePgPassthroughPath `
+                -E2ePgPassthroughPort $batchE2ePgPassthroughPort `
+                -E2eTimeoutPerScript $batchE2eTimeoutPerScript
         }
         catch {
             # Unhandled exception (e.g. connection failure) – log and continue (Req 5.4)
@@ -2052,13 +2493,191 @@ if ($ConnectionString -and $SessionName) {
         Write-Host ""
     }
 
+    # Determine end-to-end configuration
+    $e2eEnabled = $EndToEnd.IsPresent
+    $e2eDestConnStr = $DestPgConnectionString
+    $e2eMaintenanceConnStr = $null
+    $e2eDbName = $null
+    $e2eMaxAttempts = $MaxFixAttempts
+    $e2eTestScriptDir = $null
+    $e2ePgPassthroughPath = $null
+    $e2ePgPassthroughPortVal = $PgPassthroughPort
+    $e2eTimeoutPerScript = 30
+
+    # Load config if BatchConfig-style config exists for single-database mode
+    # Check for pipeline-config.json in the default location
+    $singleDbConfigPath = Join-Path $scriptDir "..\pipeline-config.json"
+    if (-not (Test-Path $singleDbConfigPath)) {
+        $singleDbConfigPath = Join-Path $scriptDir "pipeline-config.json"
+    }
+    if (Test-Path $singleDbConfigPath) {
+        try {
+            $singleDbConfig = Get-Content -Path $singleDbConfigPath -Raw | ConvertFrom-Json
+            if ($singleDbConfig.endToEnd) {
+                if ($singleDbConfig.endToEnd.enabled -and -not $e2eEnabled) {
+                    $e2eEnabled = $true
+                }
+                if (-not $e2eDestConnStr -and $singleDbConfig.endToEnd.destinationConnectionString) {
+                    $e2eDestConnStr = $singleDbConfig.endToEnd.destinationConnectionString
+                }
+                if ($singleDbConfig.endToEnd.maintenanceConnectionString) {
+                    $e2eMaintenanceConnStr = $singleDbConfig.endToEnd.maintenanceConnectionString
+                }
+                if ($singleDbConfig.endToEnd.maxFixAttempts) {
+                    $e2eMaxAttempts = $singleDbConfig.endToEnd.maxFixAttempts
+                }
+                if ($singleDbConfig.endToEnd.testScriptDirectory) {
+                    $e2eTestScriptDir = $singleDbConfig.endToEnd.testScriptDirectory
+                }
+                if ($singleDbConfig.endToEnd.pgPassthroughPath) {
+                    $e2ePgPassthroughPath = $singleDbConfig.endToEnd.pgPassthroughPath
+                }
+                if ($singleDbConfig.endToEnd.pgPassthroughPort) {
+                    $e2ePgPassthroughPortVal = $singleDbConfig.endToEnd.pgPassthroughPort
+                }
+                if ($singleDbConfig.endToEnd.timeoutPerScript) {
+                    $e2eTimeoutPerScript = $singleDbConfig.endToEnd.timeoutPerScript
+                }
+                if ($singleDbConfig.endToEnd.scoring) {
+                    # Scoring weights are available for downstream scoring module
+                    # They are read by Invoke-EndToEndScoring from the config directly
+                }
+
+                # Per-database overrides (Requirement 6.4): look up overrides for this session/database
+                if ($singleDbConfig.endToEnd.databases) {
+                    # Try matching by SessionName first, then by database name patterns
+                    $dbOverride = $null
+                    if ($singleDbConfig.endToEnd.databases.PSObject.Properties[$SessionName]) {
+                        $dbOverride = $singleDbConfig.endToEnd.databases.$SessionName
+                    }
+                    # Also try finding a matching database name from the databases array
+                    if (-not $dbOverride -and $singleDbConfig.databases) {
+                        $matchingDb = $singleDbConfig.databases | Where-Object { $_.sessionName -eq $SessionName }
+                        if ($matchingDb -and $singleDbConfig.endToEnd.databases.PSObject.Properties[$matchingDb.name]) {
+                            $dbOverride = $singleDbConfig.endToEnd.databases.($matchingDb.name)
+                        }
+                    }
+
+                    if ($dbOverride) {
+                        if ($dbOverride.destinationDatabase) {
+                            $e2eDbName = $dbOverride.destinationDatabase
+                        }
+                        if ($dbOverride.testScripts) {
+                            $e2eTestScriptDir = $dbOverride.testScripts
+                        }
+                    }
+                }
+            }
+        }
+        catch {
+            Write-Warning "Failed to read pipeline config for E2E settings: $($_.Exception.Message)"
+        }
+    }
+
+    # Validate E2E configuration at startup (Requirement 6.5)
+    if ($e2eEnabled) {
+        $e2eConfigErrors = @()
+
+        # Check destinationConnectionString is provided
+        if (-not $e2eDestConnStr) {
+            $e2eConfigErrors += "End-to-end mode enabled but no destination PostgreSQL connection string provided. Use -DestPgConnectionString parameter or set endToEnd.destinationConnectionString in config."
+        }
+
+        # Check maintenanceConnectionString - derive from destination if not provided
+        if (-not $e2eMaintenanceConnStr) {
+            if ($e2eDestConnStr) {
+                # Derive maintenance connection from destination by targeting 'postgres' database
+                # Parse the connection string and replace the Database component
+                $derivedMaintConn = $e2eDestConnStr -replace 'Database=[^;]+', 'Database=postgres'
+                if ($derivedMaintConn -eq $e2eDestConnStr) {
+                    # If no Database= was found, append it
+                    $derivedMaintConn = "$e2eDestConnStr;Database=postgres"
+                }
+                $e2eMaintenanceConnStr = $derivedMaintConn
+                Write-Host "  Maintenance connection derived from destination (targeting 'postgres' database)"
+            }
+            else {
+                $e2eConfigErrors += "No maintenanceConnectionString provided and cannot derive from missing destinationConnectionString."
+            }
+        }
+
+        # Check pgPassthroughPath exists if functional tests are expected
+        if ($e2eTestScriptDir -and (Test-Path $e2eTestScriptDir)) {
+            # Test scripts exist, so PgPassthrough is needed
+            if ($e2ePgPassthroughPath -and -not (Test-Path $e2ePgPassthroughPath)) {
+                $e2eConfigErrors += "PgPassthrough path does not exist: '$e2ePgPassthroughPath'. Functional tests will not be able to run."
+            }
+        }
+
+        # Validate scoring weights sum to approximately 1.0 if scoring section is present
+        if ($singleDbConfig -and $singleDbConfig.endToEnd -and $singleDbConfig.endToEnd.scoring) {
+            $scoring = $singleDbConfig.endToEnd.scoring
+            $weightSum = 0
+            if ($scoring.ddlWeight) { $weightSum += $scoring.ddlWeight }
+            if ($scoring.dataWeight) { $weightSum += $scoring.dataWeight }
+            if ($scoring.testWeight) { $weightSum += $scoring.testWeight }
+            if ([Math]::Abs($weightSum - 1.0) -gt 0.01) {
+                $e2eConfigErrors += "Scoring weights do not sum to 1.0 (actual: $weightSum). DDL=$($scoring.ddlWeight), Data=$($scoring.dataWeight), Test=$($scoring.testWeight)"
+            }
+        }
+
+        # Report errors or proceed
+        if ($e2eConfigErrors.Count -gt 0) {
+            foreach ($err in $e2eConfigErrors) {
+                Write-PipelineLog -Level "ERROR" -Step "e2e-config-validation" -Message $err -ElapsedSeconds 0
+            }
+            # If destination connection is missing, disable E2E entirely
+            if (-not $e2eDestConnStr) {
+                Write-Host "End-to-End mode: DISABLED (configuration errors - see above)" -ForegroundColor Yellow
+                $e2eEnabled = $false
+            }
+            else {
+                # Non-fatal warnings (e.g. PgPassthrough path) - continue with E2E but some steps may be skipped
+                Write-Host "End-to-End mode: ENABLED (with warnings - see above)" -ForegroundColor Yellow
+                Write-Host "  Destination: $($e2eDestConnStr.Substring(0, [Math]::Min(50, $e2eDestConnStr.Length)))..."
+                Write-Host "  Max fix attempts: $e2eMaxAttempts"
+                Write-Host ""
+            }
+        }
+        else {
+            Write-Host "End-to-End mode: ENABLED"
+            Write-Host "  Destination: $($e2eDestConnStr.Substring(0, [Math]::Min(50, $e2eDestConnStr.Length)))..."
+            Write-Host "  Max fix attempts: $e2eMaxAttempts"
+            Write-Host ""
+        }
+    }
+
+    # Resolve E2E database name (default to session name)
+    if (-not $e2eDbName) {
+        $e2eDbName = "${SessionName}_e2e"
+    }
+
+    # Resolve default PgPassthrough path
+    if (-not $e2ePgPassthroughPath) {
+        $e2ePgPassthroughPath = Join-Path $repoRoot "PgPassthrough\src\PgPassthrough.Server"
+    }
+
+    # Resolve test script directory
+    if (-not $e2eTestScriptDir) {
+        $e2eTestScriptDir = Join-Path $scriptDir "..\tests\functional\$SessionName"
+    }
+
     $result = Invoke-SingleDatabasePipeline `
         -ConnString $ConnectionString `
         -Session $SessionName `
         -DbName $SessionName `
         -ValMode $ValidationMode `
         -PgConnString $PgConnectionString `
-        -ChangedConfigTypes $changedConfigTypes
+        -ChangedConfigTypes $changedConfigTypes `
+        -EndToEndEnabled $e2eEnabled `
+        -DestPgConnString $e2eDestConnStr `
+        -E2eMaintenanceConnString $e2eMaintenanceConnStr `
+        -E2eDatabaseName $e2eDbName `
+        -E2eMaxFixAttempts $e2eMaxAttempts `
+        -E2eTestScriptDir $e2eTestScriptDir `
+        -E2ePgPassthroughPath $e2ePgPassthroughPath `
+        -E2ePgPassthroughPort $e2ePgPassthroughPortVal `
+        -E2eTimeoutPerScript $e2eTimeoutPerScript
 
     if (-not $result.success) {
         Write-Host ""
@@ -2117,6 +2736,11 @@ if ($ConnectionString -and $SessionName) {
     Write-Host "Total elapsed: $($result.elapsedSeconds) seconds"
     Write-Host "Compatibility Score: $($report.aggregate.compatibilityScore)%"
     Write-Host "Pass: $($report.aggregate.totalPass) | Fail-Syntax: $($report.aggregate.totalFailSyntax) | Fail-Convert: $($report.aggregate.totalFailConvert) | Skip: $($report.aggregate.totalSkip)"
+    if ($result.endToEndResults) {
+        Write-Host "End-to-End Score: $($result.endToEndResults.endToEndScore)%"
+        Write-Host "  DDL Rate: $($result.endToEndResults.ddlRate)% | Data Rate: $($result.endToEndResults.dataRate)% | Test Rate: $($result.endToEndResults.testRate)%"
+        Write-Host "  Applied (first try): $($result.endToEndResults.appliedFirstTry) | Applied (after fix): $($result.endToEndResults.appliedAfterFix) | Unfixable: $($result.endToEndResults.unfixable)"
+    }
     Write-Host "Report: $reportPath"
 
     exit 0

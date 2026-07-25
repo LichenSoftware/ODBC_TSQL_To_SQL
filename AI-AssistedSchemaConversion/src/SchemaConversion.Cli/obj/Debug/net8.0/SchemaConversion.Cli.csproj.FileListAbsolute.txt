@@ -121,3 +121,4 @@ C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Cli\ob
 C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Cli\obj\Debug\net8.0\SchemaConversion.Cli.pdb
 C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Cli\obj\Debug\net8.0\SchemaConversion.Cli.genruntimeconfig.cache
 C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Cli\obj\Debug\net8.0\ref\SchemaConversion.Cli.dll
+C:\code\ODBC_TSQL_To_SQL\AI-AssistedSchemaConversion\src\SchemaConversion.Cli\bin\Debug\net8.0\Npgsql.dll

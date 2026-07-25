@@ -2,10 +2,10 @@
   "version": 3,
   "targets": {
     "net8.0": {
-      "AWSSDK.BedrockRuntime/3.7.414": {
+      "AWSSDK.BedrockRuntime/4.0.0.3": {
         "type": "package",
         "dependencies": {
-          "AWSSDK.Core": "[3.7.402.13, 4.0.0)"
+          "AWSSDK.Core": "[4.0.0.4, 5.0.0)"
         },
         "compile": {
           "lib/net8.0/AWSSDK.BedrockRuntime.dll": {
@@ -18,7 +18,7 @@
           }
         }
       },
-      "AWSSDK.Core/3.7.402.13": {
+      "AWSSDK.Core/4.0.0.4": {
         "type": "package",
         "compile": {
           "lib/net8.0/AWSSDK.Core.dll": {
@@ -743,6 +743,22 @@
           }
         }
       },
+      "Npgsql/8.0.6": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.ClientModel/1.0.0": {
         "type": "package",
         "dependencies": {
@@ -1157,25 +1173,22 @@
     }
   },
   "libraries": {
-    "AWSSDK.BedrockRuntime/3.7.414": {
-      "sha512": "NPujUH7yQKkdOGfzyWFY0FZl1ioerHYY1ZpBHMjF8ifLiq0ZZyyJX65jG1aPmVZJf3v4FtCvUPFxyHJPtILgXw==",
+    "AWSSDK.BedrockRuntime/4.0.0.3": {
+      "sha512": "LKKiz2RcixI387PCitnSNxcUYG3KJhU9CmcFZi+3Pq3ZRaaDHOMZ7E0nHPPzJ2FAFyj8Mn+m6XTbLQKp6reaBw==",
       "type": "package",
-      "path": "awssdk.bedrockruntime/3.7.414",
+      "path": "awssdk.bedrockruntime/4.0.0.3",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "analyzers/dotnet/cs/AWSSDK.BedrockRuntime.CodeAnalysis.dll",
         "analyzers/dotnet/cs/SharedAnalysisCode.dll",
-        "awssdk.bedrockruntime.3.7.414.nupkg.sha512",
+        "awssdk.bedrockruntime.4.0.0.3.nupkg.sha512",
         "awssdk.bedrockruntime.nuspec",
         "images/AWSLogo.png",
-        "lib/net35/AWSSDK.BedrockRuntime.dll",
-        "lib/net35/AWSSDK.BedrockRuntime.pdb",
-        "lib/net35/AWSSDK.BedrockRuntime.xml",
-        "lib/net45/AWSSDK.BedrockRuntime.dll",
-        "lib/net45/AWSSDK.BedrockRuntime.pdb",
-        "lib/net45/AWSSDK.BedrockRuntime.xml",
+        "lib/net472/AWSSDK.BedrockRuntime.dll",
+        "lib/net472/AWSSDK.BedrockRuntime.pdb",
+        "lib/net472/AWSSDK.BedrockRuntime.xml",
         "lib/net8.0/AWSSDK.BedrockRuntime.dll",
         "lib/net8.0/AWSSDK.BedrockRuntime.pdb",
         "lib/net8.0/AWSSDK.BedrockRuntime.xml",
@@ -1189,23 +1202,20 @@
         "tools/uninstall.ps1"
       ]
     },
-    "AWSSDK.Core/3.7.402.13": {
-      "sha512": "b8mislpWHsmbCsRNvjXeyjs2paYEB7ann3ZD3FOVf/h6p638dqhUM5xR75+9w9qtnRLfX6aJfSdA9FW1/rol9g==",
+    "AWSSDK.Core/4.0.0.4": {
+      "sha512": "5JNAlVZK5dH86G+HJhGpIN3MHlAI2/VEnjMVPfIo0v5raulf+HIypPkvRBsmFhKkgTVp+KOV2AVBMZj9b5sCzA==",
       "type": "package",
-      "path": "awssdk.core/3.7.402.13",
+      "path": "awssdk.core/4.0.0.4",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "awssdk.core.3.7.402.13.nupkg.sha512",
+        "awssdk.core.4.0.0.4.nupkg.sha512",
         "awssdk.core.nuspec",
         "images/AWSLogo.png",
-        "lib/net35/AWSSDK.Core.dll",
-        "lib/net35/AWSSDK.Core.pdb",
-        "lib/net35/AWSSDK.Core.xml",
-        "lib/net45/AWSSDK.Core.dll",
-        "lib/net45/AWSSDK.Core.pdb",
-        "lib/net45/AWSSDK.Core.xml",
+        "lib/net472/AWSSDK.Core.dll",
+        "lib/net472/AWSSDK.Core.pdb",
+        "lib/net472/AWSSDK.Core.xml",
         "lib/net8.0/AWSSDK.Core.dll",
         "lib/net8.0/AWSSDK.Core.pdb",
         "lib/net8.0/AWSSDK.Core.xml",
@@ -2343,6 +2353,29 @@
         "nuspecicon.png"
       ]
     },
+    "Npgsql/8.0.6": {
+      "sha512": "KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
+      "type": "package",
+      "path": "npgsql/8.0.6",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/Npgsql.dll",
+        "lib/net6.0/Npgsql.xml",
+        "lib/net7.0/Npgsql.dll",
+        "lib/net7.0/Npgsql.xml",
+        "lib/net8.0/Npgsql.dll",
+        "lib/net8.0/Npgsql.xml",
+        "lib/netstandard2.0/Npgsql.dll",
+        "lib/netstandard2.0/Npgsql.xml",
+        "lib/netstandard2.1/Npgsql.dll",
+        "lib/netstandard2.1/Npgsql.xml",
+        "npgsql.8.0.6.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
     "System.ClientModel/1.0.0": {
       "sha512": "I3CVkvxeqFYjIVEP59DnjbeoGNfo/+SZrCLpRz2v/g0gpCHaEMPtWSY0s9k/7jR1rAsLNg2z2u1JRB76tPjnIw==",
       "type": "package",
@@ -3049,9 +3082,11 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "AWSSDK.BedrockRuntime >= 4.0.0.3",
       "Microsoft.Extensions.Configuration.Json >= 8.0.1",
       "Microsoft.Extensions.DependencyInjection >= 8.0.1",
       "Microsoft.Extensions.Logging.Console >= 8.0.1",
+      "Npgsql >= 8.0.6",
       "SchemaConversion.AiEngine >= 1.0.0",
       "SchemaConversion.Core >= 1.0.0",
       "SchemaConversion.Extraction >= 1.0.0",
@@ -3131,6 +3166,10 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
+          "AWSSDK.BedrockRuntime": {
+            "target": "Package",
+            "version": "[4.0.0.3, )"
+          },
           "Microsoft.Extensions.Configuration.Json": {
             "target": "Package",
             "version": "[8.0.1, )"
@@ -3142,6 +3181,10 @@
           "Microsoft.Extensions.Logging.Console": {
             "target": "Package",
             "version": "[8.0.1, )"
+          },
+          "Npgsql": {
+            "target": "Package",
+            "version": "[8.0.6, )"
           },
           "System.CommandLine": {
             "target": "Package",

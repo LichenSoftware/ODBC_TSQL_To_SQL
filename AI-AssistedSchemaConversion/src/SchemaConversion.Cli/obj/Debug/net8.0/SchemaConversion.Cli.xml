@@ -4,5 +4,42 @@
         <name>SchemaConversion.Cli</name>
     </assembly>
     <members>
+        <member name="M:SchemaConversion.Cli.Program.TryApplyDdlAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Attempts to apply DDL to PostgreSQL. Returns null on success, or the error message on failure.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Cli.Program.BuildFixServiceProvider(Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Builds a lightweight service provider for the fix command with only BedrockFixService and Npgsql dependencies.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Cli.Services.BedrockFixService">
+            <summary>
+            Sends failed PostgreSQL DDL scripts along with the error message to AWS Bedrock
+            and requests a corrected version of the script.
+            Adapted from ConversionReviewer.Services.BedrockFixService for CLI usage.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Cli.Services.BedrockFixService.RequestFixAsync(System.String,System.String,System.String)">
+            <summary>
+            Submits the failed DDL script and error message to Bedrock and returns the corrected DDL.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Cli.Services.BedrockFixService.ExtractDdl(System.String)">
+            <summary>
+            Extracts the SQL from a ```sql ... ``` code block in the response.
+            </summary>
+        </member>
+        <member name="M:SchemaConversion.Cli.Services.BedrockFixService.ExtractExplanation(System.String)">
+            <summary>
+            Extracts any explanation text that appears after the code block.
+            </summary>
+        </member>
+        <member name="T:SchemaConversion.Cli.Services.FixResult">
+            <summary>
+            Result of a Bedrock fix attempt.
+            </summary>
+        </member>
     </members>
 </doc>

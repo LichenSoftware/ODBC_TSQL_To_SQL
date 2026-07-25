@@ -20,11 +20,17 @@ The pipeline validates the AI-Assisted Schema Conversion tool by:
 4. Validating the generated DDL against PostgreSQL syntax rules
 5. Computing a Compatibility Score (target: 70%+)
 6. Classifying failures into root cause categories to guide improvements
+7. (Optional) Performing end-to-end validation: DDL application, AI fix loop, data migration, and functional testing
 
 ```
 ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌──────────┐    ┌─────────────┐
 │ Extract │ →  │ Convert │ →  │ Generate │ →  │ Validate │ →  │ Score/Report│
 └─────────┘    └─────────┘    └──────────┘    └──────────┘    └─────────────┘
+                                                                      │
+                                              (with -EndToEnd)        ▼
+                                              ┌───────┐  ┌──────────────┐  ┌─────────────────┐  ┌─────────────┐
+                                              │ Apply │→ │ Fix Loop (AI)│→ │ Data Migration  │→ │ Func. Tests │
+                                              └───────┘  └──────────────┘  └─────────────────┘  └─────────────┘
 ```
 
 ## Step 1: Set Up Test Databases
@@ -190,18 +196,186 @@ After a batch run, the pipeline prints a summary table:
 
 ```
 === Batch Execution Summary ===
-+------------------------+---------+------+------+---------+
-| Database               | Objects | Pass | Fail | Score   |
-+------------------------+---------+------+------+---------+
-| AssessmentTestDB       |      18 |   14 |    4 |  77.8%  |
-| ProcedureComplexityDB  |      18 |   11 |    7 |  61.1%  |
-| ViewsTriggerDB         |      20 |   16 |    4 |  80.0%  |
-| TypesAndCLRDB          |      22 |   15 |    7 |  68.2%  |
-| CrossSchemaAdvancedDB  |      19 |   14 |    5 |  73.7%  |
-+------------------------+---------+------+------+---------+
++------------------------+---------+------+------+---------+-----------+
+| Database               | Objects | Pass | Fail | Score   | E2E Score |
++------------------------+---------+------+------+---------+-----------+
+| AssessmentTestDB       |      18 |   14 |    4 |  77.8%  |   72.5%   |
+| ProcedureComplexityDB  |      18 |   11 |    7 |  61.1%  |   55.3%   |
+| ViewsTriggerDB         |      20 |   16 |    4 |  80.0%  |   76.1%   |
+| TypesAndCLRDB          |      22 |   15 |    7 |  68.2%  |   N/A     |
+| CrossSchemaAdvancedDB  |      19 |   14 |    5 |  73.7%  |   69.8%   |
++------------------------+---------+------+------+---------+-----------+
 ```
 
-## Step 5: Use Diagnostics to Improve the Conversion Engine
+The **E2E Score** column shows the End-to-End Score when end-to-end mode is enabled. It displays "N/A" when end-to-end steps were skipped for a database (e.g., no PostgreSQL connection available or end-to-end not configured for that database).
+
+## Step 5: End-to-End Validation
+
+Beyond syntax checking, the pipeline can perform full end-to-end validation that mirrors the real migration workflow: apply DDL to a live PostgreSQL database, fix failures with AI, replicate data, and run functional tests through PgPassthrough.
+
+### Enhanced Workflow
+
+When end-to-end mode is enabled, the pipeline extends with these additional steps:
+
+```
+┌─────────┐  ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌───────┐  ┌──────────────┐  ┌─────────────────┐  ┌─────────────┐
+│ Extract │→ │ Convert │→ │ Generate │→ │ Validate │→ │ Apply │→ │ Fix Loop (AI)│→ │ Data Migration  │→ │ Functional  │
+│         │  │         │  │          │  │(syntax)  │  │ (DDL) │  │ (Bedrock)    │  │ (DataMigrator)  │  │ Tests       │
+└─────────┘  └─────────┘  └──────────┘  └──────────┘  └───────┘  └──────────────┘  └─────────────────┘  └─────────────┘
+```
+
+1. **Apply DDL** — Executes generated DDL against the destination PostgreSQL database in dependency order. The destination database is dropped and recreated for isolation between runs.
+2. **Fix Loop (AI)** — For any DDL that fails to apply, submits the failed DDL + PostgreSQL error + original T-SQL source to AWS Bedrock for AI-assisted correction. Retries up to a configurable maximum (default: 2 attempts).
+3. **Data Migration** — Invokes the DataMigrator tool to replicate table data from SQL Server to PostgreSQL using the session metadata.
+4. **Functional Tests** — Starts PgPassthrough, executes T-SQL test scripts against the migrated database, and validates assertions.
+
+### Enabling End-to-End Mode
+
+#### Single Database Mode
+
+Use the `-EndToEnd` switch with a destination PostgreSQL connection:
+
+```powershell
+.\Run-MigrationPipeline.ps1 `
+  -ConnectionString "Server=localhost;Database=ProcedureComplexityDB;User Id=sa;Password=YourStrong!Pass123;TrustServerCertificate=True" `
+  -SessionName "procedure-complexity" `
+  -PgConnectionString "Host=localhost;Database=validation_scratch;Username=postgres;Password=postgres" `
+  -EndToEnd `
+  -DestPgConnectionString "Host=localhost;Database=procedure_complexity_e2e;Username=postgres;Password=postgres"
+```
+
+#### CLI Parameters for End-to-End Mode
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-EndToEnd` | Switch | Off | Enables end-to-end validation (DDL application, fix loop, data migration, functional tests) |
+| `-DestPgConnectionString` | String | — | Destination PostgreSQL connection for DDL application. Required when `-EndToEnd` is used in single-db mode without batch config |
+| `-MaxFixAttempts` | Int | 2 | Maximum AI fix attempts per failed DDL object |
+| `-PgPassthroughPort` | Int | 11433 | Port for the PgPassthrough TDS proxy |
+
+#### Batch Mode
+
+In batch mode, enable end-to-end by adding the `endToEnd` section to `pipeline-config.json` (see configuration below). The pipeline reads per-database destination settings from this section.
+
+### Configuring End-to-End in pipeline-config.json
+
+Add an `endToEnd` section alongside the existing `databases`, `validation`, and `reporting` sections:
+
+```json
+{
+  "databases": [...],
+  "validation": {...},
+  "reporting": {...},
+  "endToEnd": {
+    "enabled": true,
+    "destinationConnectionString": "Host=localhost;Database=validation_e2e;Username=postgres;Password=postgres",
+    "maintenanceConnectionString": "Host=localhost;Database=postgres;Username=postgres;Password=postgres",
+    "maxFixAttempts": 2,
+    "pgPassthroughPath": "c:\\code\\ODBC_TSQL_To_SQL\\PgPassthrough\\src\\PgPassthrough.Server",
+    "pgPassthroughPort": 11433,
+    "testScriptDirectory": "./tests/functional",
+    "timeoutPerScript": 30,
+    "scoring": {
+      "ddlWeight": 0.4,
+      "dataWeight": 0.3,
+      "testWeight": 0.3
+    },
+    "databases": {
+      "ProcedureComplexityDB": {
+        "destinationDatabase": "procedure_complexity_e2e",
+        "testScripts": "./tests/functional/procedure-complexity"
+      },
+      "ViewsTriggerDB": {
+        "destinationDatabase": "views_trigger_e2e",
+        "testScripts": "./tests/functional/views-triggers"
+      }
+    }
+  }
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `enabled` | Yes | Master switch for end-to-end mode in batch runs |
+| `destinationConnectionString` | Yes | Default PostgreSQL connection for DDL application |
+| `maintenanceConnectionString` | Yes | Connection to the `postgres` database for DROP/CREATE operations |
+| `maxFixAttempts` | No | Maximum AI fix iterations per object (default: 2) |
+| `pgPassthroughPath` | No | Path to PgPassthrough.Server project (auto-detected if omitted) |
+| `pgPassthroughPort` | No | TDS port for PgPassthrough (default: 11433) |
+| `testScriptDirectory` | No | Base path for test scripts (default: `./tests/functional`) |
+| `timeoutPerScript` | No | Max seconds per test script execution (default: 30) |
+| `scoring.ddlWeight` | No | Weight for DDL application rate (default: 0.4) |
+| `scoring.dataWeight` | No | Weight for data migration rate (default: 0.3) |
+| `scoring.testWeight` | No | Weight for functional test rate (default: 0.3) |
+| `databases.<name>.destinationDatabase` | No | Per-database destination DB name override |
+| `databases.<name>.testScripts` | No | Per-database test script directory override |
+
+When the `endToEnd` section is absent from configuration, the pipeline executes only the existing Extract → Convert → Generate → Validate flow (fully backward compatible).
+
+### Test Script Format
+
+Functional test scripts are T-SQL `.sql` files stored in `tests/functional/{database-name}/`. Each script contains queries with assertion directives in SQL comments:
+
+```sql
+-- test: Select all departments
+-- expect-rows: > 0
+SELECT * FROM Departments;
+
+-- test: Call stored procedure
+-- expect-no-error
+EXEC sp_GetDepartmentStats @DeptId = 1;
+
+-- test: Verify row count
+-- expect-value: 7
+SELECT COUNT(*) FROM Employees;
+```
+
+#### Assertion Directives
+
+| Directive | Syntax | Meaning |
+|-----------|--------|---------|
+| `-- test:` | `-- test: <name>` | Names the test case (required before each assertion) |
+| `-- expect-rows:` | `-- expect-rows: > 0` | Asserts the query returns more than 0 rows. Supports `> N`, `= N`, `>= N` |
+| `-- expect-value:` | `-- expect-value: <value>` | Asserts the scalar result of the query equals the given value |
+| `-- expect-no-error` | `-- expect-no-error` | Asserts the query executes without error (no result check) |
+
+Test scripts are executed through PgPassthrough (TDS → PostgreSQL translation), so they use T-SQL syntax. This validates that the migration preserves runtime behavior — not just schema structure.
+
+### End-to-End Score
+
+The End-to-End Score is a weighted composite reflecting the success of the entire migration:
+
+```
+E2E Score = (DDL_Weight × DDL_Rate + Data_Weight × Data_Rate + Test_Weight × Test_Rate) × 100
+
+Where:
+  DDL_Rate  = (applied_first_try + applied_after_fix) / total_objects
+  Data_Rate = tables_migrated / total_tables
+  Test_Rate = tests_passed / total_tests
+```
+
+**Default weights:** DDL = 40%, Data = 30%, Tests = 30%
+
+**Interpreting the score:**
+
+| Score Range | Interpretation |
+|-------------|----------------|
+| 90–100% | Migration is production-ready with minimal manual intervention |
+| 70–89% | Good migration quality; review unfixable objects and failing tests |
+| 50–69% | Significant issues remain; focus on the lowest-scoring component |
+| Below 50% | Major rework needed; check DDL failures and fix loop effectiveness |
+
+**Re-weighting when steps are skipped:**
+
+When a step is skipped (e.g., no test scripts configured, or data migration skipped), the weights are redistributed proportionally among the remaining steps:
+
+- Tests skipped → DDL = 57%, Data = 43%
+- Data skipped → DDL = 100% (only DDL contributes)
+- Data and tests skipped → DDL = 100%
+
+The scoring report distinguishes "applied-first-try" from "applied-after-fix" counts so you can measure conversion quality separately from AI repair effectiveness.
+
+## Step 6: Use Diagnostics to Improve the Conversion Engine
 
 The `diagnostics` section groups failures by root cause:
 
@@ -239,12 +413,16 @@ This happens automatically on the next pipeline run — no special flags needed.
 
 ```
 c:\code\ODBC_TSQL_To_SQL\MigrationAssessment\scripts\Run-MigrationPipeline.ps1
-  -ConnectionString <string>    SQL Server connection string (single-db mode)
-  -SessionName <string>         Session identifier (required with -ConnectionString)
-  -BatchConfig <path>           Path to pipeline-config.json (batch mode)
-  -RerunFailures                Re-convert only previously failed objects
-  -ValidationMode <string>      "live-instance" or "syntax-only" (default: auto-detect)
-  -PgConnectionString <string>  PostgreSQL connection string for live validation
+  -ConnectionString <string>          SQL Server connection string (single-db mode)
+  -SessionName <string>               Session identifier (required with -ConnectionString)
+  -BatchConfig <path>                 Path to pipeline-config.json (batch mode)
+  -RerunFailures                      Re-convert only previously failed objects
+  -ValidationMode <string>            "live-instance" or "syntax-only" (default: auto-detect)
+  -PgConnectionString <string>        PostgreSQL connection string for live validation
+  -EndToEnd                           Enable end-to-end validation mode
+  -DestPgConnectionString <string>    Destination PostgreSQL connection for DDL application
+  -MaxFixAttempts <int>               Override fix loop max attempts (default: 2)
+  -PgPassthroughPort <int>            Port for PgPassthrough TDS proxy (default: 11433)
 ```
 
 ## Running the Tests
@@ -323,11 +501,37 @@ You need to run the pipeline at least once without `-RerunFailures` to produce a
 
 That database failed completely (connection error or pipeline failure). The error is logged and the batch continues with remaining databases. Check the console output for the specific error message.
 
+### End-to-end: "Bedrock service unavailable" or fix loop timeout
+
+The AI-assisted fix loop requires AWS Bedrock access. If Bedrock is unavailable (credentials expired, service outage, or network issues), the pipeline skips the fix loop and records all DDL failures as "unfixable." The pipeline continues to data migration using only the objects that applied on the first try. Check your AWS credentials and ensure the Bedrock endpoint is reachable:
+
+```powershell
+aws bedrock-runtime invoke-model --model-id anthropic.claude-3-sonnet-20240229-v1:0 --body '{}' --region us-east-1
+```
+
+### End-to-end: "PgPassthrough failed to start" or port already in use
+
+The functional test step requires PgPassthrough to run as a background process. If it fails to start:
+
+- Verify the `pgPassthroughPath` in your config points to a valid PgPassthrough.Server project
+- Check that the configured port (default: 11433) is not already in use: `netstat -an | findstr 11433`
+- Ensure the PgPassthrough project builds successfully: `dotnet build` in the PgPassthrough directory
+- If PgPassthrough cannot start, the pipeline skips functional tests and computes a partial E2E score (re-weighted: DDL=57%, Data=43%)
+
+### End-to-end: Destination database connection failures
+
+If the pipeline cannot connect to the destination PostgreSQL instance:
+
+- Verify the `destinationConnectionString` and `maintenanceConnectionString` in your `endToEnd` config
+- Ensure the PostgreSQL instance is running and accepting connections on the specified host/port
+- Check that the user has permissions to DROP/CREATE databases (needed for run isolation)
+- If connection fails, all end-to-end steps are skipped and the pipeline falls back to syntax-only scoring with a clear log message
+
 ## File Layout
 
 ```
 MigrationAssessment/
-├── pipeline-config.json              # Batch configuration
+├── pipeline-config.json              # Batch configuration (includes endToEnd section)
 ├── pipeline-reports/                 # Generated scoring reports (JSON)
 ├── scripts/
 │   ├── Run-MigrationPipeline.ps1     # Pipeline runner (main entry point)
@@ -335,7 +539,12 @@ MigrationAssessment/
 │   │   ├── Invoke-Scoring.ps1        # Scoring engine
 │   │   ├── Invoke-DiagnosticsClassification.ps1  # Failure classifier
 │   │   ├── Invoke-PgValidation.ps1   # PostgreSQL validator
-│   │   └── Invoke-ReportGeneration.ps1  # Report serializer
+│   │   ├── Invoke-ReportGeneration.ps1  # Report serializer
+│   │   ├── Invoke-DdlApplication.ps1   # DDL application to PostgreSQL
+│   │   ├── Invoke-FixLoop.ps1          # AI-assisted fix loop orchestration
+│   │   ├── Invoke-DataMigration.ps1    # Data migration via DataMigrator CLI
+│   │   ├── Invoke-FunctionalTests.ps1  # Functional test runner (PgPassthrough)
+│   │   └── Invoke-EndToEndScoring.ps1  # End-to-End composite scoring
 │   ├── setup-test-database.sql       # AssessmentTestDB
 │   ├── setup-procedure-complexity-db.sql
 │   ├── setup-views-triggers-db.sql
@@ -343,7 +552,11 @@ MigrationAssessment/
 │   └── setup-cross-schema-advanced-db.sql
 ├── tests/
 │   ├── Pipeline.Tests/               # Pester unit tests
-│   └── MigrationAssessment.Pipeline.PropertyTests/  # FsCheck property tests
+│   ├── MigrationAssessment.Pipeline.PropertyTests/  # FsCheck property tests
+│   └── functional/                   # End-to-end functional test scripts
+│       ├── procedure-complexity/     # Test scripts for ProcedureComplexityDB
+│       ├── views-triggers/           # Test scripts for ViewsTriggerDB
+│       └── ...                       # One directory per database
 └── docs/
     └── pipeline-guide.md             # This file
 ```

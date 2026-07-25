@@ -8,9 +8,11 @@
     ".NETCoreApp,Version=v8.0": {
       "SchemaConversion.Cli/1.0.0": {
         "dependencies": {
+          "AWSSDK.BedrockRuntime": "4.0.0.3",
           "Microsoft.Extensions.Configuration.Json": "8.0.1",
           "Microsoft.Extensions.DependencyInjection": "8.0.1",
           "Microsoft.Extensions.Logging.Console": "8.0.1",
+          "Npgsql": "8.0.6",
           "SchemaConversion.AiEngine": "1.0.0",
           "SchemaConversion.Core": "1.0.0",
           "SchemaConversion.Extraction": "1.0.0",
@@ -23,22 +25,22 @@
           "SchemaConversion.Cli.dll": {}
         }
       },
-      "AWSSDK.BedrockRuntime/3.7.414": {
+      "AWSSDK.BedrockRuntime/4.0.0.3": {
         "dependencies": {
-          "AWSSDK.Core": "3.7.402.13"
+          "AWSSDK.Core": "4.0.0.4"
         },
         "runtime": {
           "lib/net8.0/AWSSDK.BedrockRuntime.dll": {
-            "assemblyVersion": "3.3.0.0",
-            "fileVersion": "3.7.414.0"
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.3"
           }
         }
       },
-      "AWSSDK.Core/3.7.402.13": {
+      "AWSSDK.Core/4.0.0.4": {
         "runtime": {
           "lib/net8.0/AWSSDK.Core.dll": {
-            "assemblyVersion": "3.3.0.0",
-            "fileVersion": "3.7.402.13"
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.4"
           }
         }
       },
@@ -516,6 +518,17 @@
           }
         }
       },
+      "Npgsql/8.0.6": {
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "assemblyVersion": "8.0.6.0",
+            "fileVersion": "8.0.6.0"
+          }
+        }
+      },
       "System.ClientModel/1.0.0": {
         "dependencies": {
           "System.Memory.Data": "1.0.2"
@@ -659,7 +672,7 @@
       },
       "SchemaConversion.AiEngine/1.0.0": {
         "dependencies": {
-          "AWSSDK.BedrockRuntime": "3.7.414",
+          "AWSSDK.BedrockRuntime": "4.0.0.3",
           "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
           "SchemaConversion.Core": "1.0.0"
@@ -742,19 +755,19 @@
       "serviceable": false,
       "sha512": ""
     },
-    "AWSSDK.BedrockRuntime/3.7.414": {
+    "AWSSDK.BedrockRuntime/4.0.0.3": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-NPujUH7yQKkdOGfzyWFY0FZl1ioerHYY1ZpBHMjF8ifLiq0ZZyyJX65jG1aPmVZJf3v4FtCvUPFxyHJPtILgXw==",
-      "path": "awssdk.bedrockruntime/3.7.414",
-      "hashPath": "awssdk.bedrockruntime.3.7.414.nupkg.sha512"
+      "sha512": "sha512-LKKiz2RcixI387PCitnSNxcUYG3KJhU9CmcFZi+3Pq3ZRaaDHOMZ7E0nHPPzJ2FAFyj8Mn+m6XTbLQKp6reaBw==",
+      "path": "awssdk.bedrockruntime/4.0.0.3",
+      "hashPath": "awssdk.bedrockruntime.4.0.0.3.nupkg.sha512"
     },
-    "AWSSDK.Core/3.7.402.13": {
+    "AWSSDK.Core/4.0.0.4": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-b8mislpWHsmbCsRNvjXeyjs2paYEB7ann3ZD3FOVf/h6p638dqhUM5xR75+9w9qtnRLfX6aJfSdA9FW1/rol9g==",
-      "path": "awssdk.core/3.7.402.13",
-      "hashPath": "awssdk.core.3.7.402.13.nupkg.sha512"
+      "sha512": "sha512-5JNAlVZK5dH86G+HJhGpIN3MHlAI2/VEnjMVPfIo0v5raulf+HIypPkvRBsmFhKkgTVp+KOV2AVBMZj9b5sCzA==",
+      "path": "awssdk.core/4.0.0.4",
+      "hashPath": "awssdk.core.4.0.0.4.nupkg.sha512"
     },
     "Azure.Core/1.38.0": {
       "type": "package",
@@ -979,6 +992,13 @@
       "sha512": "sha512-SXKtFoDyDJSHiX7xpQMPGfjiLgMFidONN3heG5NWdHYNlklSxAXTdh06dN6GMdzkx1pxPFVIJpdDKh07oM29tw==",
       "path": "microsoft.sqlserver.transactsql.scriptdom/161.9142.1",
       "hashPath": "microsoft.sqlserver.transactsql.scriptdom.161.9142.1.nupkg.sha512"
+    },
+    "Npgsql/8.0.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-KaS6CY5kY2Sd0P00MSeFcOI3t2DiQ4UWG8AuRpVOUeDWITOKfoEEG91DP3cmT6aerixPkjwKgXxnpDxIkDpO6g==",
+      "path": "npgsql/8.0.6",
+      "hashPath": "npgsql.8.0.6.nupkg.sha512"
     },
     "System.ClientModel/1.0.0": {
       "type": "package",

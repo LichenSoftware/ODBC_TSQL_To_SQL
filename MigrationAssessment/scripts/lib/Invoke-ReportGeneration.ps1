@@ -6,8 +6,11 @@
     Serializes pipeline results into a structured JSON Scoring Report matching
     the schema defined in the design document. Includes reportId (UUID),
     timestamp (ISO-8601), per-database results with scores and breakdowns,
-    aggregate scores with delta from previous run, and diagnostics section.
-    Supports loading a previous report for delta computation.
+    aggregate scores with delta from previous run, diagnostics section, and
+    optional end-to-end validation results (DDL application, fix loop, data
+    migration, functional tests, and composite End_To_End_Score).
+    Supports loading a previous report for delta computation of both
+    Compatibility Score and End_To_End_Score.
 
 .PARAMETER ScoringResult
     Output from Invoke-Scoring. Hashtable with:
@@ -33,6 +36,15 @@
 .PARAMETER ConfigHashes
     Hashtable of config file hashes (SHA-256). Keys are filenames, values are hash strings.
 
+.PARAMETER EndToEndResults
+    Optional hashtable containing end-to-end validation results with keys:
+      - scoring: output from Invoke-EndToEndScoring (endToEndScore, ddlRate, dataRate, testRate, appliedFirstTry, appliedAfterFix, unfixable)
+      - ddlResults: array of DDL application results (objectName, status, errorMessage, elapsedMs)
+      - fixResults: array of fix loop results (objectName, finalStatus, attempts, fixedDdl, explanation, errors)
+      - dataMigrationResults: hashtable (tablesSucceeded, tablesFailed, totalRows, elapsed)
+      - functionalTestResults: hashtable (total, passed, failed, results[])
+      - timing: hashtable (applyElapsed, fixLoopElapsed, dataMigrationElapsed, functionalTestElapsed, totalEndToEndElapsed)
+
 .PARAMETER OutputDirectory
     Directory where the report JSON will be saved. Default: "./pipeline-reports/"
 
@@ -53,8 +65,25 @@
         -ValidationMode "live-instance" `
         -ConfigHashes @{ "type-mappings.json" = "sha256-abc" }
 
+.EXAMPLE
+    $report = Invoke-ReportGeneration `
+        -ScoringResult $scoring `
+        -DiagnosticsResult $diagnostics `
+        -ObjectResults $objects `
+        -TotalElapsedSeconds 245.8 `
+        -ValidationMode "live-instance" `
+        -ConfigHashes @{ "type-mappings.json" = "sha256-abc" } `
+        -EndToEndResults @{
+            scoring = $e2eScoring
+            ddlResults = $ddlResults
+            fixResults = $fixResults
+            dataMigrationResults = $dataMigration
+            functionalTestResults = $functionalTests
+            timing = @{ applyElapsed = 8.2; fixLoopElapsed = 45.1; dataMigrationElapsed = 12.3; functionalTestElapsed = 6.7; totalEndToEndElapsed = 72.3 }
+        }
+
 .NOTES
-    Requirements: 2.4, 3.1, 3.3, 3.5, 4.1, 4.5
+    Requirements: 2.4, 3.1, 3.3, 3.5, 4.1, 4.5, 5.2, 5.3, 5.5, 7.1, 7.2, 7.3, 7.4
 #>
 function Invoke-ReportGeneration {
     [CmdletBinding()]
@@ -80,6 +109,8 @@ function Invoke-ReportGeneration {
         [Parameter(Mandatory)]
         [hashtable]$ConfigHashes,
 
+        [hashtable]$EndToEndResults,
+
         [string]$OutputDirectory = './pipeline-reports/',
 
         [string]$PreviousReportPath
@@ -99,6 +130,7 @@ function Invoke-ReportGeneration {
 
     # Extract previous scores from loaded report for delta computation
     $previousScores = @{}
+    $previousEndToEndScore = $null
     if ($null -ne $previousReport) {
         if ($previousReport.databases) {
             foreach ($db in $previousReport.databases) {
@@ -109,6 +141,10 @@ function Invoke-ReportGeneration {
         }
         if ($previousReport.aggregate -and $null -ne $previousReport.aggregate.compatibilityScore) {
             $previousScores['__aggregate__'] = $previousReport.aggregate.compatibilityScore
+        }
+        # Extract previous End_To_End_Score for delta comparison (Requirement 7.2)
+        if ($previousReport.endToEnd -and $null -ne $previousReport.endToEnd.endToEndScore) {
+            $previousEndToEndScore = $previousReport.endToEnd.endToEndScore
         }
     }
 
@@ -279,6 +315,147 @@ function Invoke-ReportGeneration {
         topFailingTypes     = @($topFailingTypes)
     }
 
+    # Build end-to-end section if results are provided (Requirements 7.1, 7.2, 7.3, 7.4)
+    $endToEndSection = $null
+    if ($null -ne $EndToEndResults) {
+        $e2eScoring = $EndToEndResults.scoring
+        $e2eDdlResults = $EndToEndResults.ddlResults
+        $e2eFixResults = $EndToEndResults.fixResults
+        $e2eDataMigration = $EndToEndResults.dataMigrationResults
+        $e2eFunctionalTests = $EndToEndResults.functionalTestResults
+        $e2eTiming = $EndToEndResults.timing
+
+        # Compute current E2E score
+        $currentE2EScore = if ($e2eScoring -and $null -ne $e2eScoring.endToEndScore) { $e2eScoring.endToEndScore } else { $null }
+
+        # Compute E2E delta from previous report (Requirement 7.2)
+        $e2eDelta = $null
+        if ($null -ne $currentE2EScore -and $null -ne $previousEndToEndScore) {
+            $e2eDelta = [Math]::Round($currentE2EScore - $previousEndToEndScore, 1)
+        }
+
+        # Build DDL application subsection (Requirement 5.5)
+        $ddlApplicationSection = $null
+        if ($null -ne $e2eDdlResults) {
+            $totalDdl = @($e2eDdlResults).Count
+            $appliedFirstTry = if ($e2eScoring) { $e2eScoring.appliedFirstTry } else { 0 }
+            $appliedAfterFix = if ($e2eScoring) { $e2eScoring.appliedAfterFix } else { 0 }
+            $unfixable = if ($e2eScoring) { $e2eScoring.unfixable } else { 0 }
+            $ddlRate = if ($e2eScoring -and $null -ne $e2eScoring.ddlRate) { [Math]::Round($e2eScoring.ddlRate * 100, 1) } else { 0.0 }
+
+            $ddlApplicationSection = [ordered]@{
+                total           = $totalDdl
+                appliedFirstTry = $appliedFirstTry
+                appliedAfterFix = $appliedAfterFix
+                unfixable       = $unfixable
+                rate            = $ddlRate
+            }
+        }
+
+        # Build fix loop subsection with per-object details (Requirements 7.3, 7.4)
+        $fixLoopSection = $null
+        if ($null -ne $e2eFixResults) {
+            $fixObjects = [System.Collections.ArrayList]::new()
+            $totalAttempted = @($e2eFixResults).Count
+            $totalFixed = 0
+            $totalAttempts = 0
+
+            foreach ($fixObj in $e2eFixResults) {
+                $attempts = if ($null -ne $fixObj.attempts) { $fixObj.attempts } else { 0 }
+                $totalAttempts += $attempts
+                if ($fixObj.finalStatus -eq 'fixed') { $totalFixed++ }
+
+                $fixEntry = [ordered]@{
+                    name         = $fixObj.objectName
+                    attempts     = $attempts
+                    finalStatus  = $fixObj.finalStatus
+                    explanation  = if ($fixObj.explanation) { $fixObj.explanation } else { $null }
+                    originalError = if ($fixObj.errors -and $fixObj.errors.Count -gt 0) { $fixObj.errors[0] } else { $null }
+                    finalDdl     = if ($fixObj.fixedDdl) { $fixObj.fixedDdl } else { $null }
+                }
+                [void]$fixObjects.Add([PSCustomObject]$fixEntry)
+            }
+
+            $averageAttempts = if ($totalAttempted -gt 0) { [Math]::Round($totalAttempts / $totalAttempted, 1) } else { 0.0 }
+
+            $fixLoopSection = [ordered]@{
+                totalAttempted  = $totalAttempted
+                totalFixed      = $totalFixed
+                averageAttempts = $averageAttempts
+                objects         = @($fixObjects)
+            }
+        }
+
+        # Build data migration subsection
+        $dataMigrationSection = $null
+        if ($null -ne $e2eDataMigration) {
+            $tablesTotal = ($e2eDataMigration.tablesSucceeded + $e2eDataMigration.tablesFailed)
+            $dataRate = if ($e2eScoring -and $null -ne $e2eScoring.dataRate) { [Math]::Round($e2eScoring.dataRate * 100, 1) } else { 0.0 }
+
+            $dataMigrationSection = [ordered]@{
+                tablesTotal     = $tablesTotal
+                tablesSucceeded = $e2eDataMigration.tablesSucceeded
+                tablesFailed    = $e2eDataMigration.tablesFailed
+                totalRows       = if ($null -ne $e2eDataMigration.totalRows) { $e2eDataMigration.totalRows } else { 0 }
+                rate            = $dataRate
+                elapsed         = if ($null -ne $e2eDataMigration.elapsed) { $e2eDataMigration.elapsed } else { 0.0 }
+            }
+        }
+
+        # Build functional tests subsection
+        $functionalTestsSection = $null
+        if ($null -ne $e2eFunctionalTests) {
+            $testResults = [System.Collections.ArrayList]::new()
+            if ($e2eFunctionalTests.results) {
+                foreach ($testResult in $e2eFunctionalTests.results) {
+                    [void]$testResults.Add([PSCustomObject][ordered]@{
+                        script       = if ($testResult.scriptName) { $testResult.scriptName } else { $testResult.script }
+                        test         = if ($testResult.testName) { $testResult.testName } else { $testResult.test }
+                        status       = $testResult.status
+                        errorMessage = if ($testResult.errorMessage) { $testResult.errorMessage } else { $null }
+                    })
+                }
+            }
+
+            $testRate = if ($e2eScoring -and $null -ne $e2eScoring.testRate) { [Math]::Round($e2eScoring.testRate * 100, 1) } else { 0.0 }
+
+            $functionalTestsSection = [ordered]@{
+                total   = if ($null -ne $e2eFunctionalTests.total) { $e2eFunctionalTests.total } else { 0 }
+                passed  = if ($null -ne $e2eFunctionalTests.passed) { $e2eFunctionalTests.passed } else { 0 }
+                failed  = if ($null -ne $e2eFunctionalTests.failed) { $e2eFunctionalTests.failed } else { 0 }
+                rate    = $testRate
+                results = @($testResults)
+            }
+        }
+
+        # Build timing subsection (Requirement 7.4)
+        $timingSection = $null
+        if ($null -ne $e2eTiming) {
+            $timingSection = [ordered]@{
+                applyElapsed          = if ($null -ne $e2eTiming.applyElapsed) { $e2eTiming.applyElapsed } else { 0.0 }
+                fixLoopElapsed        = if ($null -ne $e2eTiming.fixLoopElapsed) { $e2eTiming.fixLoopElapsed } else { 0.0 }
+                dataMigrationElapsed  = if ($null -ne $e2eTiming.dataMigrationElapsed) { $e2eTiming.dataMigrationElapsed } else { 0.0 }
+                functionalTestElapsed = if ($null -ne $e2eTiming.functionalTestElapsed) { $e2eTiming.functionalTestElapsed } else { 0.0 }
+                totalEndToEndElapsed  = if ($null -ne $e2eTiming.totalEndToEndElapsed) { $e2eTiming.totalEndToEndElapsed } else { 0.0 }
+            }
+        }
+
+        # Assemble the endToEnd section
+        $endToEndSection = [PSCustomObject][ordered]@{
+            enabled               = $true
+            endToEndScore         = $currentE2EScore
+            previousEndToEndScore = $previousEndToEndScore
+            endToEndDelta         = $e2eDelta
+            ddlApplication        = if ($ddlApplicationSection) { [PSCustomObject]$ddlApplicationSection } else { $null }
+            fixLoop               = if ($fixLoopSection) { [PSCustomObject]$fixLoopSection } else { $null }
+            dataMigration         = if ($dataMigrationSection) { [PSCustomObject]$dataMigrationSection } else { $null }
+            functionalTests       = if ($functionalTestsSection) { [PSCustomObject]$functionalTestsSection } else { $null }
+            timing                = if ($timingSection) { [PSCustomObject]$timingSection } else { $null }
+        }
+
+        Write-Verbose "End-to-end section added to report. E2E Score: $currentE2EScore"
+    }
+
     # Assemble the full report
     $report = [PSCustomObject][ordered]@{
         reportId            = $reportId
@@ -289,6 +466,7 @@ function Invoke-ReportGeneration {
         databases           = @($databaseEntries)
         aggregate           = [PSCustomObject]$aggregateSection
         diagnostics         = [PSCustomObject]$diagnosticsSection
+        endToEnd            = $endToEndSection
     }
 
     # Ensure output directory exists

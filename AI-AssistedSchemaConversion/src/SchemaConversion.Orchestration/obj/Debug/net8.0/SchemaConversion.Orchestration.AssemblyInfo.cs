@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchemaConversion.Orchestration")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bf76da6c71e7fcda027a58310db32dfd419471f0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3fed8af1258649fe4275da58cef422cfc50937f")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchemaConversion.Orchestration")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchemaConversion.Orchestration")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

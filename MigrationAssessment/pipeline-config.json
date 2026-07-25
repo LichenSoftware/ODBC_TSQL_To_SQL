@@ -39,5 +39,26 @@
   "reporting": {
     "outputDirectory": "./pipeline-reports",
     "trackProgression": true
+  },
+  "endToEnd": {
+    "enabled": true,
+    "destinationConnectionString": "Host=localhost;Database=validation_e2e;Username=postgres;Password=postgres",
+    "maintenanceConnectionString": "Host=localhost;Database=postgres;Username=postgres;Password=postgres",
+    "maxFixAttempts": 2,
+    "pgPassthroughPath": "c:\\code\\ODBC_TSQL_To_SQL\\PgPassthrough\\src\\PgPassthrough.Server",
+    "pgPassthroughPort": 11433,
+    "testScriptDirectory": "./tests/functional",
+    "timeoutPerScript": 30,
+    "scoring": {
+      "ddlWeight": 0.4,
+      "dataWeight": 0.3,
+      "testWeight": 0.3
+    },
+    "databases": {
+      "ProcedureComplexityDB": {
+        "destinationDatabase": "procedure_complexity_e2e",
+        "testScripts": "./tests/functional/procedure-complexity"
+      }
+    }
   }
 }

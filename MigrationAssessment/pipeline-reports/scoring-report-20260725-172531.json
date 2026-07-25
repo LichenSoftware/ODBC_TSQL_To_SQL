@@ -1,0 +1,187 @@
+﻿{
+    "reportId":  "4e665cda-9260-4ed7-9d96-0cb407969bf2",
+    "timestamp":  "2026-07-25T17:25:31.3141849+00:00",
+    "totalElapsedSeconds":  100.57,
+    "validationMode":  "syntax-only",
+    "configHashes":  {
+                         "trigger.v1.0.0.md":  "97300A4CF57E5DBE8D1589B17EAAE926CBE649900783B7846CDDD9552AA5BEC5",
+                         "function-mappings.json":  "CAADDE986F9A4E4A7474E165E1D7776B1630035A6949A84FE6B4CEADC41790DA",
+                         "complex-object.v1.0.0.md":  "642E45ABE397567E6AF18CD9A326D4268881BA39A8B0309E15CFDA712AD9A034",
+                         "schema-mappings.json":  "430D3F3F69FD24D93A0ED75115113E4EDAE7BCD4D820F2F8F489AC1ADF9D9A10",
+                         "type-mappings.json":  "BB0EA462E7206D88326BF01B5C2E9C749425FC10D4BF5F66EB2C3F14C372CA78",
+                         "stored-procedure.v1.0.0.md":  "766FFAF06FA1B0E0B668B7818F1DB380EBB54CB5A93968B3BDB50909E65E2AD7",
+                         "view.v1.0.0.md":  "522593A585E00798356DFC461F54581634F16D8F01E9785E18D2B72F1B1B1AB6",
+                         "function.v1.0.0.md":  "910B1DD4F70E84C708A45DFF813DC72C4899B353959C896A382F4B3EB1305DF8"
+                     },
+    "databases":  [
+                      {
+                          "name":  "procedure-complexity",
+                          "sessionName":  null,
+                          "objectCount":  17,
+                          "elapsedSeconds":  null,
+                          "score":  {
+                                        "compatibilityScore":  64.7,
+                                        "previousScore":  null,
+                                        "delta":  null,
+                                        "pass":  11,
+                                        "failSyntax":  6,
+                                        "failConvert":  0,
+                                        "skip":  0
+                                    },
+                          "byType":  {
+                                         "Table":  {
+                                                       "pass":  7,
+                                                       "fail":  0,
+                                                       "score":  100
+                                                   },
+                                         "StoredProcedure":  {
+                                                                 "pass":  3,
+                                                                 "fail":  6,
+                                                                 "score":  33.3
+                                                             },
+                                         "View":  {
+                                                      "pass":  1,
+                                                      "fail":  0,
+                                                      "score":  100
+                                                  }
+                                     },
+                          "objects":  [
+                                          {
+                                              "name":  "sp_ProcessQueueWithErrorHandling",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_GetDepartmentStats",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 5: OUTPUT parameters with multiple assignments\n-- Computes department statistics and returns them via OUTPUT params\n-- =============================================================================\n\nCREATE OR REPLACE PROCEDURE public.sp_GetDepartmentStats(\n    p_DepartmentID INT,\n    INOUT p_EmployeeCount INT,\n    INOUT p_TotalSalary DECIMAL(12,2),\n    INOUT p_AvgSalary DECIMAL(10,2),\n    INOUT p_MinSalary DECIMAL(10,2),\n    INOUT p_MaxSalary DECIMAL(10,2),\n    INOUT p_BudgetRemaining DECIMAL(12,2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_Budget DECIMAL(12,2);\nBEGIN\n    -- Validate department exists\n    IF NOT EXISTS (SELECT 1 FROM public.Departments WHERE DepartmentID = p_DepartmentID) THEN\n        p_EmployeeCount := 0;\n        p_TotalSalary := 0;\n        p_AvgSalary := 0;\n        p_MinSalary := 0;\n        p_MaxSalary := 0;\n        p_BudgetRemaining := 0;\n        RETURN;\n    END IF;\n\n    -- Compute all statistics\n    SELECT\n        COUNT(*)::INT,\n        COALESCE(SUM(Salary), 0),\n        COALESCE(AVG(Salary), 0),\n        COALESCE(MIN(Salary), 0),\n        COALESCE(MAX(Salary), 0)\n    INTO\n        p_EmployeeCount,\n        p_TotalSalary,\n        p_AvgSalary,\n        p_MinSalary,\n        p_MaxSalary\n    FROM public.Employees\n    WHERE DepartmentID = p_DepartmentID;\n\n    -- Compute remaining budget\n    SELECT BudgetAmount INTO v_Budget \n    FROM public.Departments \n    WHERE DepartmentID = p_DepartmentID;\n    \n    p_BudgetRemaining := v_Budget - p_TotalSalary;\n\n    -- Note: PostgreSQL procedures cannot return result sets directly\n    -- The result set functionality has been moved to a separate function\n    -- See wrapper function below\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "BudgetTransfers",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_BulkInsertEmployees",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 4: Table-valued parameter procedure\n-- Bulk-inserts employees from a TVP with validation\n-- =============================================================================\n\nCREATE OR REPLACE PROCEDURE public.sp_BulkInsertEmployees(\n    p_Employees public.EmployeeBatchType[],\n    INOUT p_InsertedCount INT DEFAULT 0\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_row_count INT;\nBEGIN\n    p_InsertedCount := 0;\n\n    -- Validate all departments exist\n    IF EXISTS (\n        SELECT 1 FROM UNNEST(p_Employees) e\n        WHERE NOT EXISTS (\n            SELECT 1 FROM public.Departments d \n            WHERE d.DepartmentID = e.DepartmentID\n        )\n    ) THEN\n        RAISE EXCEPTION \u0027One or more department IDs are invalid\u0027 \n            USING ERRCODE = \u002750010\u0027;\n    END IF;\n\n    -- Validate no duplicate emails against existing data\n    IF EXISTS (\n        SELECT 1 FROM UNNEST(p_Employees) e\n        INNER JOIN public.Employees existing ON existing.Email = e.Email\n    ) THEN\n        RAISE EXCEPTION \u0027One or more email addresses already exist\u0027 \n            USING ERRCODE = \u002750011\u0027;\n    END IF;\n\n    -- Insert from array parameter\n    INSERT INTO public.Employees (FirstName, LastName, Email, DepartmentID, Salary)\n    SELECT e.FirstName, e.LastName, e.Email, e.DepartmentID, e.Salary\n    FROM UNNEST(p_Employees) e;\n\n    GET DIAGNOSTICS v_row_count = ROW_COUNT;\n    p_InsertedCount := v_row_count;\n\n    -- Log the bulk operation\n    INSERT INTO public.AuditLog (TableName, Operation, RecordID, NewValues)\n    VALUES (\u0027Employees\u0027, \u0027BULK_INSERT\u0027, p_InsertedCount, \u0027Batch insert via TVP\u0027);\n\n    -- Return result set (requires wrapper function for exact compatibility)\n    RAISE NOTICE \u0027TotalInserted: %\u0027, p_InsertedCount;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "sp_CursorDepartmentReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 8: Another cursor pattern - department report generation\n-- Uses cursor to iterate departments and build summary\n-- Converted to PostgreSQL - refactored to set-based operation\n-- =============================================================================\n\nCREATE OR REPLACE FUNCTION public.sp_CursorDepartmentReport()\nRETURNS TABLE (\n    DepartmentName VARCHAR(100),\n    EmployeeCount INT,\n    TotalSalary DECIMAL(12,2),\n    BudgetUtilization DECIMAL(5,2)\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- PostgreSQL best practice: use set-based operation instead of cursor\n    -- This is more efficient and idiomatic in PostgreSQL\n    RETURN QUERY\n    SELECT \n        d.DepartmentName::VARCHAR(100),\n        COALESCE(emp_stats.EmpCount, 0)::INT,\n        COALESCE(emp_stats.TotalSal, 0)::DECIMAL(12,2),\n        CASE \n            WHEN d.BudgetAmount \u003e 0 THEN \n                (COALESCE(emp_stats.TotalSal, 0) / d.BudgetAmount * 100)::DECIMAL(5,2)\n            ELSE \n                0::DECIMAL(5,2)\n        END AS BudgetUtilization\n    FROM \n        public.Departments d\n    LEFT JOIN (\n        SELECT \n            DepartmentID,\n            COUNT(*)::INT AS EmpCount,\n            SUM(Salary)::DECIMAL(12,2) AS TotalSal\n        FROM \n            public.Employees\n        GROUP BY \n            DepartmentID\n    ) emp_stats ON d.DepartmentID = emp_stats.DepartmentID\n    WHERE \n        d.IsActive = true\n    ORDER BY \n        CASE \n            WHEN d.BudgetAmount \u003e 0 THEN \n                (COALESCE(emp_stats.TotalSal, 0) / d.BudgetAmount * 100)\n            ELSE \n                0\n        END DESC;\nEND;\n$$;\n\nCOMMENT ON FUNCTION public.sp_CursorDepartmentReport() IS \u0027Department report generation - refactored from cursor to set-based operation for better performance\u0027;"
+                                          },
+                                          {
+                                              "name":  "sp_NestedTryCatchTransfer",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Departments",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_MultiResultSetDashboard",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 3: Multiple result sets from a single procedure\n-- Returns employee details, department summary, and processing queue status\n-- =============================================================================\n-- NOTE: PostgreSQL does not support multiple result sets from a single procedure/function.\n-- This has been converted to separate functions, one for each result set.\n-- Applications must call each function individually.\n\n-- Result Set 1: Employee listing\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_Employees(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    EmployeeID INT,\n    FullName TEXT,\n    Email VARCHAR,\n    Salary NUMERIC,\n    DepartmentName VARCHAR\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        e.EmployeeID,\n        (e.FirstName || \u0027 \u0027 || e.LastName)::TEXT AS FullName,\n        e.Email,\n        e.Salary,\n        d.DepartmentName\n    FROM public.Employees e\n    INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n    WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n    ORDER BY e.LastName, e.FirstName;\nEND;\n$$;\n\n-- Result Set 2: Department budget summary\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_DepartmentSummary(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    DepartmentID INT,\n    DepartmentName VARCHAR,\n    BudgetAmount NUMERIC,\n    HeadCount BIGINT,\n    TotalSalary NUMERIC,\n    RemainingBudget NUMERIC\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        d.DepartmentID,\n        d.DepartmentName,\n        d.BudgetAmount,\n        COUNT(e.EmployeeID) AS HeadCount,\n        COALESCE(SUM(e.Salary), 0) AS TotalSalary,\n        d.BudgetAmount - COALESCE(SUM(e.Salary), 0) AS RemainingBudget\n    FROM public.Departments d\n    LEFT JOIN public.Employees e ON d.DepartmentID = e.DepartmentID\n    WHERE (p_DepartmentID IS NULL OR d.DepartmentID = p_DepartmentID)\n    GROUP BY d.DepartmentID, d.DepartmentName, d.BudgetAmount;\nEND;\n$$;\n\n-- Result Set 3: Pending processing queue items\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_PendingQueue(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    QueueID INT,\n    EmployeeName TEXT,\n    ActionType VARCHAR,\n    Priority INT,\n    Status VARCHAR,\n    CreatedAt TIMESTAMP\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        pq.QueueID,\n        (e.FirstName || \u0027 \u0027 || e.LastName)::TEXT AS EmployeeName,\n        pq.ActionType,\n        pq.Priority,\n        pq.Status,\n        pq.CreatedAt\n    FROM public.ProcessingQueue pq\n    INNER JOIN public.Employees e ON pq.EmployeeID = e.EmployeeID\n    WHERE pq.Status = \u0027Pending\u0027\n      AND (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n    ORDER BY pq.Priority ASC, pq.CreatedAt ASC;\nEND;\n$$;\n\n-- Result Set 4: Recent audit trail\nCREATE OR REPLACE FUNCTION public.sp_MultiResultSetDashboard_AuditTrail(\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE (\n    AuditID INT,\n    TableName VARCHAR,\n    Operation VARCHAR,\n    RecordID INT,\n    ChangedBy VARCHAR,\n    ChangedAt TIMESTAMP\n)\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    RETURN QUERY\n    SELECT\n        al.AuditID,\n        al.TableName,\n        al.Operation,\n        al.RecordID,\n        al.ChangedBy,\n        al.ChangedAt\n    FROM public.AuditLog al\n    ORDER BY al.ChangedAt DESC\n    LIMIT 10;\nEND;\n$$;\n\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_Employees(INT) IS \u0027Result Set 1 from sp_MultiResultSetDashboard - Employee listing\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_DepartmentSummary(INT) IS \u0027Result Set 2 from sp_MultiResultSetDashboard - Department budget summary\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_PendingQueue(INT) IS \u0027Result Set 3 from sp_MultiResultSetDashboard - Pending processing queue items\u0027;\nCOMMENT ON FUNCTION public.sp_MultiResultSetDashboard_AuditTrail(INT) IS \u0027Result Set 4 from sp_MultiResultSetDashboard - Recent audit trail (note: p_DepartmentID parameter is ignored in this result set)\u0027;"
+                                          },
+                                          {
+                                              "name":  "AuditLog",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "ProcessingQueue",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "SalaryHistory",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "Employees",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "vw_DepartmentSummary",
+                                              "type":  "view",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_EmployeeReport",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 9: Multiple result sets with conditional output\n-- Returns different result sets based on parameters\n-- =============================================================================\n-- NOTE: PostgreSQL does not support multiple result sets from a single function.\n-- This implementation uses a refcursor approach to return multiple result sets.\n-- The caller must fetch from each cursor separately.\n\nCREATE OR REPLACE FUNCTION public.sp_EmployeeReport(\n    p_ReportType VARCHAR(20),\n    p_DepartmentID INTEGER DEFAULT NULL,\n    OUT header_cursor REFCURSOR,\n    OUT data_cursor REFCURSOR\n)\nRETURNS RECORD\nLANGUAGE plpgsql\nAS $$\nBEGIN\n    -- Result Set 1: Always returned - report header\n    OPEN header_cursor FOR\n    SELECT\n        p_ReportType AS ReportType,\n        CURRENT_TIMESTAMP AS GeneratedAt,\n        (SELECT COUNT(*) FROM public.Employees) AS TotalEmployees;\n\n    -- Result Set 2: Conditional on report type\n    IF p_ReportType = \u0027SALARY\u0027 THEN\n        OPEN data_cursor FOR\n        SELECT\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            e.Salary,\n            d.DepartmentName,\n            RANK() OVER (PARTITION BY e.DepartmentID ORDER BY e.Salary DESC) AS SalaryRank\n        FROM public.Employees e\n        INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID);\n    ELSIF p_ReportType = \u0027HISTORY\u0027 THEN\n        OPEN data_cursor FOR\n        SELECT\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            sh.OldSalary,\n            sh.NewSalary,\n            sh.ChangeDate,\n            sh.Reason\n        FROM public.SalaryHistory sh\n        INNER JOIN public.Employees e ON sh.EmployeeID = e.EmployeeID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID)\n        ORDER BY sh.ChangeDate DESC;\n    ELSE\n        OPEN data_cursor FOR\n        SELECT\n            e.EmployeeID,\n            e.FirstName || \u0027 \u0027 || e.LastName AS EmployeeName,\n            e.Email,\n            d.DepartmentName,\n            e.HireDate\n        FROM public.Employees e\n        INNER JOIN public.Departments d ON e.DepartmentID = d.DepartmentID\n        WHERE (p_DepartmentID IS NULL OR e.DepartmentID = p_DepartmentID);\n    END IF;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "sp_CursorSalaryAdjustment",
+                                              "type":  "storedProcedure",
+                                              "status":  "fail-syntax",
+                                              "errorMessage":  "DDL does not start with a valid PostgreSQL statement keyword",
+                                              "errorLineNumber":  1,
+                                              "generatedDdl":  "-- =============================================================================\n-- PROCEDURE 1: Cursor-based processing\n-- Iterates through employees and applies salary adjustments per department rules\n-- =============================================================================\n\nCREATE OR REPLACE FUNCTION public.sp_CursorSalaryAdjustment(\n    p_AdjustmentPercent DECIMAL(5,2),\n    p_DepartmentID INT DEFAULT NULL\n)\nRETURNS TABLE(\n    EmployeesProcessed INT,\n    AdjustmentPercent DECIMAL(5,2)\n)\nLANGUAGE plpgsql\nAS $$\nDECLARE\n    v_EmpID INT;\n    v_CurrentSalary DECIMAL(10,2);\n    v_NewSalary DECIMAL(10,2);\n    v_EmpDeptID INT;\n    v_ProcessedCount INT := 0;\n    v_DeptBudget DECIMAL(12,2);\n    v_DeptCount INT;\n    emp_cursor CURSOR FOR\n        SELECT EmployeeID, Salary, DepartmentID\n        FROM public.Employees\n        WHERE (p_DepartmentID IS NULL OR DepartmentID = p_DepartmentID)\n          AND Salary \u003e 0;\nBEGIN\n    -- Open cursor and iterate through employees\n    OPEN emp_cursor;\n    \n    LOOP\n        FETCH NEXT FROM emp_cursor INTO v_EmpID, v_CurrentSalary, v_EmpDeptID;\n        EXIT WHEN NOT FOUND;\n        \n        -- Calculate new salary\n        v_NewSalary := v_CurrentSalary * (1 + p_AdjustmentPercent / 100.0);\n        \n        -- Cap salary at department budget / employee count\n        SELECT BudgetAmount INTO v_DeptBudget \n        FROM public.Departments \n        WHERE DepartmentID = v_EmpDeptID;\n        \n        SELECT COUNT(*) INTO v_DeptCount \n        FROM public.Employees \n        WHERE DepartmentID = v_EmpDeptID;\n        \n        IF v_DeptCount \u003e 0 AND v_NewSalary \u003e (v_DeptBudget / v_DeptCount) THEN\n            v_NewSalary := v_DeptBudget / v_DeptCount;\n        END IF;\n        \n        -- Record history\n        INSERT INTO public.SalaryHistory (EmployeeID, OldSalary, NewSalary, Reason)\n        VALUES (v_EmpID, v_CurrentSalary, v_NewSalary, \n                \u0027Annual adjustment \u0027 || p_AdjustmentPercent::TEXT || \u0027%\u0027);\n        \n        -- Apply update\n        UPDATE public.Employees \n        SET Salary = v_NewSalary \n        WHERE EmployeeID = v_EmpID;\n        \n        v_ProcessedCount := v_ProcessedCount + 1;\n    END LOOP;\n    \n    CLOSE emp_cursor;\n    \n    -- Return result set\n    RETURN QUERY SELECT v_ProcessedCount, p_AdjustmentPercent;\nEND;\n$$;"
+                                          },
+                                          {
+                                              "name":  "ErrorLog",
+                                              "type":  "table",
+                                              "status":  "pass"
+                                          },
+                                          {
+                                              "name":  "sp_PromoteEmployee",
+                                              "type":  "storedProcedure",
+                                              "status":  "pass"
+                                          }
+                                      ]
+                      }
+                  ],
+    "aggregate":  {
+                      "compatibilityScore":  64.7,
+                      "previousScore":  83,
+                      "delta":  -18.3,
+                      "totalPass":  11,
+                      "totalFailSyntax":  6,
+                      "totalFailConvert":  0,
+                      "totalSkip":  0
+                  },
+    "diagnostics":  {
+                        "rootCauseCategories":  [
+                                                    {
+                                                        "category":  "procedural pattern not handled",
+                                                        "count":  6,
+                                                        "objects":  [
+                                                                        "sp_GetDepartmentStats",
+                                                                        "sp_BulkInsertEmployees",
+                                                                        "sp_CursorDepartmentReport",
+                                                                        "sp_MultiResultSetDashboard",
+                                                                        "sp_EmployeeReport",
+                                                                        "sp_CursorSalaryAdjustment"
+                                                                    ]
+                                                    }
+                                                ],
+                        "topFailingTypes":  [
+                                                {
+                                                    "type":  "storedProcedure",
+                                                    "failCount":  6
+                                                }
+                                            ]
+                    },
+    "endToEnd":  null
+}
