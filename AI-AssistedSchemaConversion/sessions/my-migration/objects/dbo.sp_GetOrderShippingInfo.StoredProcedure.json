@@ -65,5 +65,8 @@
     "promptTemplateVersion": "1.0.0"
   },
   "convertedAt": "2026-07-11T18:30:38.7930326+00:00",
-  "isManuallyEdited": false
+  "isManuallyEdited": false,
+  "appliedAt": "2026-07-26T14:23:44.2005052+00:00",
+  "appliedSuccessfully": false,
+  "applyError": "3D000: database \u0022AssessmentTestDB\u0022 does not exist"
 }

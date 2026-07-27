@@ -1,6 +1,6 @@
 # Migration Assessment Engine
 
-A command-line tool that analyzes a SQL Server database and produces a PostgreSQL migration readiness assessment. It connects to a live SQL Server instance, collects workload and metadata information, parses captured T-SQL using ScriptDom, scores each statement's migration risk, and generates a comprehensive report in JSON format.
+A command-line tool that analyzes a SQL Server database and produces a PostgreSQL migration readiness assessment with actionable work items. It connects to a live SQL Server instance, collects workload and metadata information, parses captured T-SQL using ScriptDom, scores each statement's migration risk, generates a comprehensive report in JSON format, and creates prioritized work items with effort estimates, remediation guidance, and acceptance criteria for every incompatible feature that needs to be addressed.
 
 ## Prerequisites
 
@@ -197,6 +197,95 @@ ALTER EVENT SESSION [migration_assessment] ON SERVER STATE = START;
 ```
 
 This session captures SQL batches, RPC calls, and stored procedure statements into a ring buffer. The engine reads from this buffer during collection.
+
+## Work Item Generation
+
+The tool can generate structured work items from an assessment report, creating actionable tasks for each incompatible SQL Server feature that needs to be addressed during migration. Work items include titles, descriptions, risk levels, effort estimates, PostgreSQL conversion examples, remediation guidance, and acceptance criteria.
+
+### Integrated Mode (during assessment)
+
+Generate work items as part of the assessment pipeline:
+
+```bash
+dotnet run --project src/MigrationAssessment.Cli -- \
+  -c "Server=myserver;Database=mydb;Trusted_Connection=True;TrustServerCertificate=True" \
+  --generate-work-items
+```
+
+With all options:
+
+```bash
+dotnet run --project src/MigrationAssessment.Cli -- \
+  -c "Server=myserver;Database=mydb;User Id=sa;Password=secret;TrustServerCertificate=True" \
+  --output ./reports/assessment.json \
+  --generate-work-items \
+  --work-item-output ./reports/work-items.json \
+  --work-item-markdown \
+  --work-item-markdown-output ./reports/work-items.md \
+  --work-item-min-risk 3 \
+  --work-item-max-count 20
+```
+
+### Standalone Mode (from existing assessment)
+
+Generate work items from a previously-saved assessment JSON file without re-running the assessment:
+
+```bash
+dotnet run --project src/MigrationAssessment.Cli -- generate-work-items ./assessment-output.json
+```
+
+With options:
+
+```bash
+dotnet run --project src/MigrationAssessment.Cli -- generate-work-items ./assessment-output.json \
+  --output ./work-items.json \
+  --markdown \
+  --markdown-output ./work-items.md \
+  --min-risk 3 \
+  --max-items 10
+```
+
+### Work Item Command-Line Options
+
+#### Integrated mode flags (used with `-c`)
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--generate-work-items` | Enable work item generation after assessment | Off |
+| `--work-item-output <path>` | JSON output path | `./work-items.json` |
+| `--work-item-markdown` | Enable Markdown report | Off |
+| `--work-item-markdown-output <path>` | Markdown output path | Same dir as JSON |
+| `--work-item-min-risk <1-5>` | Minimum risk level filter | `1` |
+| `--work-item-max-count <n>` | Maximum number of work items | Unlimited |
+
+#### Standalone mode (`generate-work-items` verb)
+
+| Argument/Option | Description | Default |
+|-----------------|-------------|---------|
+| `<input-file-path>` | Path to assessment JSON file (required) | — |
+| `--output <path>` | JSON output path | `./work-items.json` |
+| `--markdown` | Enable Markdown output | Off |
+| `--markdown-output <path>` | Markdown output path | Same dir as JSON |
+| `--min-risk <1-5>` | Minimum risk level filter | `1` |
+| `--max-items <count>` | Maximum work items to generate | Unlimited |
+
+### Output
+
+Work items are written as both JSON and (optionally) Markdown. Each work item includes:
+
+- **ID and title** — e.g., `WI-001: [Risk 5] Convert XML_METHOD in sp_GetOrderShippingInfo`
+- **Description** — What the incompatibility is and where it occurs
+- **SQL Server pattern** — The original T-SQL code
+- **PostgreSQL equivalent** — Suggested converted code with TODO annotations
+- **Risk level and priority** — Scored and ranked (Critical, High, Medium, Low)
+- **Estimated effort** — Min/max hours with confidence level
+- **Affected objects** — Which stored procedures, views, or ad hoc queries are impacted
+- **Remediation guidance** — Step-by-step conversion instructions
+- **Acceptance criteria** — Definition of done for each work item
+- **Tags** — For filtering (e.g., `risk-4`, `transaction-feature`, `manual`)
+- **Related work item IDs** — Cross-references between related items
+
+The JSON output includes a metadata section with total counts, effort rollups, confidence breakdown, and validation results.
 
 ## Running Tests
 

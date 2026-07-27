@@ -1,25 +1,139 @@
 {
   "assessmentMetadata": {
-    "generatedAt": "2026-06-29T20:16:00.1060326+00:00",
+    "generatedAt": "2026-07-25T20:13:41.8379241+00:00",
     "engineVersion": "1.0.0.0",
     "scoringMethodology": "Migration readiness score is calculated as a weighted average across all analyzed statements, where each statement\u0027s risk level (1-5) is determined by its most complex SQL Server feature. Risk 1-2 features have known direct PostgreSQL equivalents (e.g., ISNULL\u2192COALESCE, TOP\u2192LIMIT). Risk 3 features require procedural restructuring (e.g., TRY_CATCH, TEMP_TABLE). Risk 4-5 features require architectural redesign or have no direct equivalent (e.g., MERGE, XML_METHOD, SQL_CLR). Effort ranges use a geometric series model (0.7 reduction factor per repeated pattern) with confidence-based range clamping: high-confidence items (risk 1-2) are capped at \u22642x ratio, medium-confidence (risk 3) at \u22644x, and low-confidence (risk 4-5) at \u22647x. The overall readiness score ranges from 0 (all risk-5) to 100 (all risk-1), normalized by statement frequency and execution count."
   },
   "executiveSummary": {
-    "migrationReadinessScore": 58,
+    "migrationReadinessScore": 68,
     "classification": "Moderate Candidate - Significant Work Required",
-    "totalStatements": 28,
+    "totalStatements": 58,
     "riskDistribution": {
-      "1": 15,
-      "2": 2,
-      "3": 2,
-      "4": 8,
-      "5": 1
+      "1": 35,
+      "2": 15,
+      "3": 8,
+      "4": 0,
+      "5": 0
     }
   },
   "objectInventory": [
     {
-      "name": "fn_FormatCustomerName",
-      "type": "ScalarFunction",
+      "name": "sp_BulkInsertEmployees",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 4,
+      "conversionCategories": [
+        "automatic",
+        "manual",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "TABLE_VALUED_PARAMETER",
+        "THROW"
+      ]
+    },
+    {
+      "name": "sp_CursorDepartmentReport",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "automatic",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL",
+        "TEMP_TABLE"
+      ]
+    },
+    {
+      "name": "sp_CursorSalaryAdjustment",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ]
+    },
+    {
+      "name": "sp_EmployeeReport",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "GETDATE",
+        "STRING_CONCAT_PLUS"
+      ]
+    },
+    {
+      "name": "sp_GetDepartmentStats",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "automatic",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL"
+      ]
+    },
+    {
+      "name": "sp_MultiResultSetDashboard",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 2,
+      "conversionCategories": [
+        "automatic"
+      ],
+      "detectedFeatures": [
+        "ISNULL",
+        "STRING_CONCAT_PLUS",
+        "TOP"
+      ]
+    },
+    {
+      "name": "sp_NestedTryCatchTransfer",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "automatic",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "EXPLICIT_TRANSACTION",
+        "STRING_CONCAT_PLUS",
+        "THROW",
+        "TRY_CATCH"
+      ]
+    },
+    {
+      "name": "sp_ProcessQueueWithErrorHandling",
+      "type": "StoredProcedure",
+      "statementCount": 1,
+      "maxRiskScore": 3,
+      "conversionCategories": [
+        "automatic",
+        "semi-automatic"
+      ],
+      "detectedFeatures": [
+        "GETDATE",
+        "STRING_CONCAT_PLUS",
+        "THROW",
+        "TOP",
+        "TRY_CATCH"
+      ]
+    },
+    {
+      "name": "sp_PromoteEmployee",
+      "type": "StoredProcedure",
       "statementCount": 1,
       "maxRiskScore": 2,
       "conversionCategories": [
@@ -31,8 +145,8 @@
       ]
     },
     {
-      "name": "fn_GetCustomerTotal",
-      "type": "ScalarFunction",
+      "name": "vw_DepartmentSummary",
+      "type": "View",
       "statementCount": 1,
       "maxRiskScore": 2,
       "conversionCategories": [
@@ -43,227 +157,14 @@
       ]
     },
     {
-      "name": "sp_BuildMonthlyReport",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 3,
-      "conversionCategories": [
-        "semi-automatic"
-      ],
-      "detectedFeatures": [
-        "STRING_CONCAT_PLUS",
-        "TEMP_TABLE"
-      ]
-    },
-    {
-      "name": "sp_DynamicSearch",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 3,
-      "conversionCategories": [
-        "semi-automatic"
-      ],
-      "detectedFeatures": [
-        "DYNAMIC_SQL",
-        "STRING_CONCAT_PLUS"
-      ]
-    },
-    {
-      "name": "sp_GetExternalInventory",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "PRINT_STATEMENT"
-      ]
-    },
-    {
-      "name": "sp_GetInventorySnapshot",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 4,
-      "conversionCategories": [
-        "manual"
-      ],
-      "detectedFeatures": [
-        "NOLOCK"
-      ]
-    },
-    {
-      "name": "sp_GetOrderShippingInfo",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 5,
-      "conversionCategories": [
-        "manual"
-      ],
-      "detectedFeatures": [
-        "XML_METHOD"
-      ]
-    },
-    {
-      "name": "sp_GetTopCustomers",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "DATEDIFF",
-        "GETDATE",
-        "ISNULL",
-        "STRING_CONCAT_PLUS",
-        "TOP"
-      ]
-    },
-    {
-      "name": "sp_ProcessOrder",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 3,
-      "conversionCategories": [
-        "automatic",
-        "semi-automatic"
-      ],
-      "detectedFeatures": [
-        "EXPLICIT_TRANSACTION",
-        "THROW",
-        "TRY_CATCH"
-      ]
-    },
-    {
-      "name": "sp_SharedTempReport",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 4,
-      "conversionCategories": [
-        "manual"
-      ],
-      "detectedFeatures": [
-        "GLOBAL_TEMP_TABLE"
-      ]
-    },
-    {
-      "name": "sp_UpdateStockWithLock",
-      "type": "StoredProcedure",
-      "statementCount": 1,
+      "name": "Ad Hoc",
+      "type": "AdHoc",
+      "statementCount": 20,
       "maxRiskScore": 1,
       "conversionCategories": [
         "automatic"
       ],
       "detectedFeatures": []
-    },
-    {
-      "name": "sp_UpsertProducts",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 3,
-      "conversionCategories": [
-        "semi-automatic"
-      ],
-      "detectedFeatures": [
-        "EXPLICIT_TRANSACTION"
-      ]
-    },
-    {
-      "name": "tr_OrderAudit",
-      "type": "Trigger",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "GETDATE",
-        "STRING_CONCAT_PLUS"
-      ]
-    },
-    {
-      "name": "usp_GetTopCustomers",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "DATEDIFF",
-        "GETDATE",
-        "ISNULL",
-        "STRING_CONCAT_PLUS",
-        "TOP"
-      ]
-    },
-    {
-      "name": "usp_UpdateInventory",
-      "type": "StoredProcedure",
-      "statementCount": 1,
-      "maxRiskScore": 4,
-      "conversionCategories": [
-        "manual"
-      ],
-      "detectedFeatures": [
-        "ROWLOCK",
-        "UPDLOCK"
-      ]
-    },
-    {
-      "name": "vw_MonthlyCategoryRevenue",
-      "type": "View",
-      "statementCount": 1,
-      "maxRiskScore": 4,
-      "conversionCategories": [
-        "manual"
-      ],
-      "detectedFeatures": [
-        "PIVOT"
-      ]
-    },
-    {
-      "name": "vw_OrderSummary",
-      "type": "View",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "ISNULL",
-        "STRING_CONCAT_PLUS"
-      ]
-    },
-    {
-      "name": "vw_RecentOrders",
-      "type": "View",
-      "statementCount": 1,
-      "maxRiskScore": 2,
-      "conversionCategories": [
-        "automatic"
-      ],
-      "detectedFeatures": [
-        "ISNULL",
-        "STRING_CONCAT_PLUS",
-        "TOP"
-      ]
-    },
-    {
-      "name": "Ad Hoc",
-      "type": "AdHoc",
-      "statementCount": 15,
-      "maxRiskScore": 4,
-      "conversionCategories": [
-        "automatic",
-        "manual"
-      ],
-      "detectedFeatures": [
-        "ISNULL",
-        "MERGE",
-        "NOLOCK"
-      ]
     }
   ],
   "featureInventory": [
@@ -322,7 +223,248 @@
   ],
   "analyzedStatements": [
     {
-      "statementText": "(@_msparam_0 nvarchar(4000),@_msparam_1 nvarchar(4000),@_msparam_2 nvarchar(4000))SELECT\nSCHEMA_NAME(sp.schema_id) AS [Schema],\nsp.name AS [Name],\nsp.object_id AS [ID],\nCAST(\r\n case \r\n    when sp.is_ms_shipped = 1 then 1\r\n    when exists (\r\n        select \r\n            1\r\n        from \r\n            sys.extended_properties \r\n        where \r\n            major_id = sp.object_id and \r\n            minor_id = 0 and \r\n            class = 1 and \r\n            name = N\u0027microsoft_database_tools_support\u0027) \r\n        then 1\r\n    else 0\r\nend          \r\n             AS bit) AS [IsSystemObject],\nCASE WHEN sp.type = N\u0027P\u0027 THEN 1 WHEN sp.type = N\u0027PC\u0027 THEN 2 ELSE 1 END AS [ImplementationType],\nCAST(CASE WHEN ISNULL(smsp.definition, ssmsp.definition) IS NULL THEN 1 ELSE 0 END AS bit) AS [IsEncrypted]\nFROM\nsys.all_objects AS sp\nLEFT OUTER JOIN sys.sql_modules AS smsp ON smsp.object_id = sp.object_id\nLEFT OUTER JOIN sys.system_sql_modules AS ssmsp ON ssmsp.object_id = sp.object_id\nWHERE\n(sp.type = @_msparam_0 OR sp.type = @_msparam_1 OR sp.type=@_msparam_2)\nORDER BY\n[Schema] ASC,[Name] ASC",
+      "statementText": "(@DepartmentID int)DECLARE emp_cursor CURSOR LOCAL FAST_FORWARD FOR\r\n        SELECT EmployeeID, Salary, DepartmentID\r\n        FROM dbo.Employees\r\n        WHERE (@DepartmentID IS NULL OR DepartmentID = @DepartmentID)\r\n          AND Salary \u003E 0",
+      "riskScore": 1,
+      "weightedRisk": 4,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@DepartmentID int)SELECT\r\n            e.FirstName \u002B \u0027 \u0027 \u002B e.LastName AS EmployeeName,\r\n            e.Salary,\r\n            d.DepartmentName,\r\n            RANK() OVER (PARTITION BY e.DepartmentID ORDER BY e.Salary DESC) AS SalaryRank\r\n        FROM dbo.Employees e\r\n        INNER JOIN dbo.Departments d ON e.DepartmentID = d.DepartmentID\r\n        WHERE (@DepartmentID IS NULL OR e.DepartmentID = @DepartmentID)",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@DepartmentID int)SELECT\r\n            e.FirstName \u002B \u0027 \u0027 \u002B e.LastName AS EmployeeName,\r\n            sh.OldSalary,\r\n            sh.NewSalary,\r\n            sh.ChangeDate,\r\n            sh.Reason\r\n        FROM dbo.SalaryHistory sh\r\n        INNER JOIN dbo.Employees e ON sh.EmployeeID = e.EmployeeID\r\n        WHERE (@DepartmentID IS NULL OR e.DepartmentID = @DepartmentID)\r\n        ORDER BY sh.ChangeDate DESC",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@DepartmentID int)SELECT\r\n        d.DepartmentID,\r\n        d.DepartmentName,\r\n        d.BudgetAmount,\r\n        COUNT(e.EmployeeID) AS HeadCount,\r\n        ISNULL(SUM(e.Salary), 0) AS TotalSalary,\r\n        d.BudgetAmount - ISNULL(SUM(e.Salary), 0) AS RemainingBudget\r\n    FROM dbo.Departments d\r\n    LEFT JOIN dbo.Employees e ON d.DepartmentID = e.DepartmentID\r\n    WHERE (@DepartmentID IS NULL OR d.DepartmentID = @DepartmentID)\r\n    GROUP BY d.DepartmentID, d.DepartmentName, d.BudgetAmount",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "ISNULL",
+        "ISNULL"
+      ],
+      "riskRationale": "ISNULL translates directly to PostgreSQL COALESCE with no behavioral change."
+    },
+    {
+      "statementText": "(@DepartmentID int)SELECT\r\n        e.EmployeeID,\r\n        e.FirstName \u002B \u0027 \u0027 \u002B e.LastName AS FullName,\r\n        e.Email,\r\n        e.Salary,\r\n        d.DepartmentName\r\n    FROM dbo.Employees e\r\n    INNER JOIN dbo.Departments d ON e.DepartmentID = d.DepartmentID\r\n    WHERE (@DepartmentID IS NULL OR e.DepartmentID = @DepartmentID)\r\n    ORDER BY e.LastName, e.FirstName",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@DepartmentID int)SELECT\r\n        pq.QueueID,\r\n        e.FirstName \u002B \u0027 \u0027 \u002B e.LastName AS EmployeeName,\r\n        pq.ActionType,\r\n        pq.Priority,\r\n        pq.Status,\r\n        pq.CreatedAt\r\n    FROM dbo.ProcessingQueue pq\r\n    INNER JOIN dbo.Employees e ON pq.EmployeeID = e.EmployeeID\r\n    WHERE pq.Status = \u0027Pending\u0027\r\n      AND (@DepartmentID IS NULL OR e.DepartmentID = @DepartmentID)\r\n    ORDER BY pq.Priority ASC, pq.CreatedAt ASC",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@DepartmentID int,@Budget decimal(12,2))SELECT @Budget = BudgetAmount FROM dbo.Departments WHERE DepartmentID = @DepartmentID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@DepartmentID int,@EmployeeCount int,@TotalSalary decimal(12,2),@AvgSalary decimal(10,2),@MinSalary decimal(10,2),@MaxSalary decimal(10,2))SELECT\r\n        @EmployeeCount = COUNT(*),\r\n        @TotalSalary = ISNULL(SUM(Salary), 0),\r\n        @AvgSalary = ISNULL(AVG(Salary), 0),\r\n        @MinSalary = ISNULL(MIN(Salary), 0),\r\n        @MaxSalary = ISNULL(MAX(Salary), 0)\r\n    FROM dbo.Employees\r\n    WHERE DepartmentID = @DepartmentID",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "ISNULL",
+        "ISNULL",
+        "ISNULL",
+        "ISNULL"
+      ],
+      "riskRationale": "ISNULL translates directly to PostgreSQL COALESCE with no behavioral change."
+    },
+    {
+      "statementText": "(@DeptID int,@EmpCount int,@TotalSal decimal(12,2))SELECT @EmpCount = COUNT(*), @TotalSal = ISNULL(SUM(Salary), 0)\r\n        FROM dbo.Employees\r\n        WHERE DepartmentID = @DeptID",
+      "riskScore": 2,
+      "weightedRisk": 10,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "ISNULL"
+      ],
+      "riskRationale": "ISNULL translates directly to PostgreSQL COALESCE with no behavioral change."
+    },
+    {
+      "statementText": "(@DeptName nvarchar(100),@EmpCount int,@TotalSal decimal(12,2),@Utilization decimal(5,2))INSERT INTO #DeptReport (DepartmentName, EmployeeCount, TotalSalary, BudgetUtilization)\r\n        VALUES (@DeptName, @EmpCount, @TotalSal, @Utilization)",
+      "riskScore": 3,
+      "weightedRisk": 15,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [
+        "TEMP_TABLE"
+      ],
+      "riskRationale": "Local temp table (#name) translates to PostgreSQL TEMP TABLE but lifecycle rules differ."
+    },
+    {
+      "statementText": "(@EmpDeptID int,@DeptBudget decimal(12,2))SELECT @DeptBudget = BudgetAmount FROM dbo.Departments WHERE DepartmentID = @EmpDeptID",
+      "riskScore": 1,
+      "weightedRisk": 3,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@EmpDeptID int,@DeptCount int)SELECT @DeptCount = COUNT(*) FROM dbo.Employees WHERE DepartmentID = @EmpDeptID",
+      "riskScore": 1,
+      "weightedRisk": 3,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@EmpID int,@CurrentSalary decimal(10,2),@NewSalary decimal(10,2),@AdjustmentPercent decimal(5,2))INSERT INTO dbo.SalaryHistory (EmployeeID, OldSalary, NewSalary, Reason)\r\n        VALUES (@EmpID, @CurrentSalary, @NewSalary, \u0027Annual adjustment \u0027 \u002B CAST(@AdjustmentPercent AS NVARCHAR(10)) \u002B \u0027%\u0027)",
+      "riskScore": 2,
+      "weightedRisk": 6,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS",
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@EmpID int,@NewSalary decimal(10,2))UPDATE dbo.Employees SET Salary = @NewSalary WHERE EmployeeID = @EmpID",
+      "riskScore": 1,
+      "weightedRisk": 3,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@EmployeeID int,@CurrentSalary decimal(10,2),@CurrentDeptID int,@EmpName nvarchar(201))SELECT @CurrentSalary = Salary, @CurrentDeptID = DepartmentID,\r\n           @EmpName = FirstName \u002B \u0027 \u0027 \u002B LastName\r\n    FROM dbo.Employees WHERE EmployeeID = @EmployeeID",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "STRING_CONCAT_PLUS"
+      ],
+      "riskRationale": "String concatenation with \u002B operator translates to PostgreSQL || operator."
+    },
+    {
+      "statementText": "(@EmployeeID int,@CurrentSalary decimal(10,2),@NewSalary decimal(10,2))INSERT INTO dbo.SalaryHistory (EmployeeID, OldSalary, NewSalary, Reason)\r\n    VALUES (@EmployeeID, @CurrentSalary, @NewSalary, \u0027Promotion\u0027)",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@EmployeeID int,@NewSalary decimal(10,2),@TargetDept int)UPDATE dbo.Employees\r\n    SET Salary = @NewSalary,\r\n        DepartmentID = @TargetDept\r\n    WHERE EmployeeID = @EmployeeID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@FromDeptID int,@Amount decimal(12,2))UPDATE dbo.Departments\r\n                SET BudgetAmount = BudgetAmount - @Amount\r\n                WHERE DepartmentID = @FromDeptID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@FromDeptID int,@CurrentBudget decimal(12,2))SELECT @CurrentBudget = BudgetAmount FROM dbo.Departments WHERE DepartmentID = @FromDeptID",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@FromDeptID int,@ToDeptID int,@Amount decimal(12,2),@ApprovedBy nvarchar(128))INSERT INTO dbo.BudgetTransfers (FromDepartmentID, ToDepartmentID, Amount, ApprovedBy, Status)\r\n                VALUES (@FromDeptID, @ToDeptID, @Amount, @ApprovedBy, \u0027Completed\u0027)",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@InsertedCount int)INSERT INTO dbo.AuditLog (TableName, Operation, RecordID, NewValues)\r\n    VALUES (\u0027Employees\u0027, \u0027BULK_INSERT\u0027, @InsertedCount, \u0027Batch insert via TVP\u0027)",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@MaxItems int)DECLARE queue_cursor CURSOR LOCAL FAST_FORWARD FOR\r\n        SELECT TOP (@MaxItems) QueueID, EmployeeID, ActionType\r\n        FROM dbo.ProcessingQueue\r\n        WHERE Status = \u0027Pending\u0027\r\n        ORDER BY Priority ASC, CreatedAt ASC",
+      "riskScore": 2,
+      "weightedRisk": 12,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "TOP"
+      ],
+      "riskRationale": "TOP clause translates to PostgreSQL LIMIT with no behavioral change."
+    },
+    {
+      "statementText": "(@MaxItems int)DECLARE queue_cursor CURSOR LOCAL FAST_FORWARD FOR\r\n        SELECT TOP (@MaxItems) QueueID, EmployeeID, ActionType\r\n        FROM dbo.ProcessingQueue\r\n        WHERE Status = \u0027Pending\u0027\r\n        ORDER BY Priority ASC, CreatedAt ASC",
+      "riskScore": 2,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "TOP"
+      ],
+      "riskRationale": "TOP clause translates to PostgreSQL LIMIT with no behavioral change."
+    },
+    {
+      "statementText": "(@QueueID int)UPDATE dbo.ProcessingQueue\r\n                SET Status = \u0027Completed\u0027, ProcessedAt = GETDATE()\r\n                WHERE QueueID = @QueueID",
+      "riskScore": 2,
+      "weightedRisk": 10,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "GETDATE"
+      ],
+      "riskRationale": "GETDATE() translates to PostgreSQL NOW() or CURRENT_TIMESTAMP with no behavioral change."
+    },
+    {
+      "statementText": "(@ReportType nvarchar(20))SELECT\r\n        @ReportType AS ReportType,\r\n        GETDATE() AS GeneratedAt,\r\n        (SELECT COUNT(*) FROM dbo.Employees) AS TotalEmployees",
+      "riskScore": 2,
+      "weightedRisk": 4,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [
+        "GETDATE"
+      ],
+      "riskRationale": "GETDATE() translates to PostgreSQL NOW() or CURRENT_TIMESTAMP with no behavioral change."
+    },
+    {
+      "statementText": "(@TargetDept int,@DeptBudget decimal(12,2))SELECT @DeptBudget = BudgetAmount FROM dbo.Departments WHERE DepartmentID = @TargetDept",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "(@TargetDept int,@EmployeeID int,@DeptCurrentSalaries decimal(12,2))SELECT @DeptCurrentSalaries = ISNULL(SUM(Salary), 0) FROM dbo.Employees WHERE DepartmentID = @TargetDept AND EmployeeID \u003C\u003E @EmployeeID",
       "riskScore": 2,
       "weightedRisk": 2,
       "conversionCategory": "automatic",
@@ -332,7 +474,7 @@
       "riskRationale": "ISNULL translates directly to PostgreSQL COALESCE with no behavioral change."
     },
     {
-      "statementText": "(@CustomerID int,@Price decimal(10,2),@Quantity int)INSERT INTO dbo.Orders (CustomerID, TotalAmount, Status)\r\n        VALUES (@CustomerID, @Price * @Quantity, \u0027Processing\u0027)",
+      "statementText": "(@ToDeptID int,@Amount decimal(12,2))UPDATE dbo.Departments\r\n                SET BudgetAmount = BudgetAmount \u002B @Amount\r\n                WHERE DepartmentID = @ToDeptID",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -340,149 +482,91 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "(@OrderID int)SELECT\r\n        o.OrderID,\r\n        m.MetadataXml.value(\u0027(/order/shipping/address)[1]\u0027, \u0027NVARCHAR(500)\u0027) AS ShippingAddress,\r\n        m.MetadataXml.value(\u0027(/order/shipping/method)[1]\u0027, \u0027NVARCHAR(100)\u0027) AS ShippingMethod,\r\n        m.MetadataXml.query(\u0027/order/items\u0027) AS ItemsXml\r\n    FROM dbo.Orders o\r\n    INNER JOIN dbo.OrderMetadata m ON o.OrderID = m.OrderID\r\n    WHERE o.OrderID = @OrderID",
-      "riskScore": 5,
-      "weightedRisk": 5,
-      "conversionCategory": "manual",
+      "statementText": "DECLARE dept_cursor CURSOR LOCAL FAST_FORWARD FOR\r\n        SELECT DepartmentID, DepartmentName, BudgetAmount\r\n        FROM dbo.Departments\r\n        WHERE IsActive = 1",
+      "riskScore": 1,
+      "weightedRisk": 6,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF EXISTS (\r\n        SELECT 1 FROM @Employees e\r\n        INNER JOIN dbo.Employees existing ON existing.Email = e.Email\r\n    )",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF EXISTS (\r\n        SELECT 1 FROM @Employees e\r\n        WHERE NOT EXISTS (SELECT 1 FROM dbo.Departments d WHERE d.DepartmentID = e.DepartmentID)\r\n    )",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE DepartmentID = @DepartmentID)",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE DepartmentID = @FromDeptID)",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF NOT EXISTS (SELECT 1 FROM dbo.Departments WHERE DepartmentID = @ToDeptID)",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "IF NOT EXISTS (SELECT 1 FROM dbo.Employees WHERE EmployeeID = @EmpID)",
+      "riskScore": 3,
+      "weightedRisk": 15,
+      "conversionCategory": "semi-automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "INSERT INTO dbo.Employees (FirstName, LastName, Email, DepartmentID, Salary)\r\n    SELECT FirstName, LastName, Email, DepartmentID, Salary\r\n    FROM @Employees",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT * FROM #DeptReport ORDER BY BudgetUtilization DESC",
+      "riskScore": 3,
+      "weightedRisk": 3,
+      "conversionCategory": "semi-automatic",
       "detectedFeatures": [
-        "XML_METHOD",
-        "XML_METHOD",
-        "XML_METHOD"
+        "TEMP_TABLE"
       ],
-      "riskRationale": "XML_METHOD usage requires XPath rewrite using PostgreSQL xpath() \u2014 no direct equivalent exists."
+      "riskRationale": "Local temp table (#name) translates to PostgreSQL TEMP TABLE but lifecycle rules differ."
     },
     {
-      "statementText": "(@OrderID int,@ProductID int,@Quantity int,@Price decimal(10,2))INSERT INTO dbo.OrderItems (OrderID, ProductID, Quantity, UnitPrice)\r\n        VALUES (@OrderID, @ProductID, @Quantity, @Price)",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "(@ProductID int,@CurrentStock int)SELECT @CurrentStock = StockQuantity FROM dbo.Products WHERE ProductID = @ProductID",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "(@ProductID int,@NewQuantity int)UPDATE p\r\n    SET p.StockQuantity = @NewQuantity\r\n    FROM dbo.Products p WITH (UPDLOCK, ROWLOCK)\r\n    WHERE p.ProductID = @ProductID",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "UPDLOCK",
-        "ROWLOCK"
-      ],
-      "riskRationale": "ROWLOCK hint is not supported in PostgreSQL; application-level locking redesign required."
-    },
-    {
-      "statementText": "(@ProductID int,@Price decimal(10,2))SELECT @Price = Price FROM dbo.Products WHERE ProductID = @ProductID",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "(@ProductID int,@Quantity int)UPDATE dbo.Products\r\n        SET StockQuantity = StockQuantity - @Quantity\r\n        WHERE ProductID = @ProductID",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "(@TopN int)SELECT TOP (@TopN)\r\n        c.CustomerID,\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS FullName,\r\n        COUNT(o.OrderID) AS OrderCount,\r\n        ISNULL(SUM(o.TotalAmount), 0) AS TotalSpent,\r\n        DATEDIFF(DAY, MAX(o.OrderDate), GETDATE()) AS DaysSinceLastOrder\r\n    FROM dbo.Customers c\r\n    LEFT JOIN dbo.Orders o ON c.CustomerID = o.CustomerID\r\n    GROUP BY c.CustomerID, c.FirstName, c.LastName\r\n    ORDER BY TotalSpent DESC",
+      "statementText": "SELECT TOP 10\r\n        AuditID,\r\n        TableName,\r\n        Operation,\r\n        RecordID,\r\n        ChangedBy,\r\n        ChangedAt\r\n    FROM dbo.AuditLog\r\n    ORDER BY ChangedAt DESC",
       "riskScore": 2,
       "weightedRisk": 2,
       "conversionCategory": "automatic",
       "detectedFeatures": [
-        "TOP",
-        "STRING_CONCAT_PLUS",
-        "ISNULL",
-        "DATEDIFF",
-        "GETDATE"
+        "TOP"
       ],
-      "riskRationale": "DATEDIFF translates to PostgreSQL date subtraction or EXTRACT with minor refactoring."
+      "riskRationale": "TOP clause translates to PostgreSQL LIMIT with no behavioral change."
     },
     {
-      "statementText": "(@Year int,@Month int)INSERT INTO #MonthlyStats\r\n    SELECT\r\n        o.CustomerID,\r\n        COUNT(*),\r\n        SUM(o.TotalAmount)\r\n    FROM dbo.Orders o\r\n    WHERE YEAR(o.OrderDate) = @Year AND MONTH(o.OrderDate) = @Month\r\n    GROUP BY o.CustomerID",
-      "riskScore": 3,
-      "weightedRisk": 3,
-      "conversionCategory": "semi-automatic",
-      "detectedFeatures": [
-        "TEMP_TABLE"
-      ],
-      "riskRationale": "Local temp table (#name) translates to PostgreSQL TEMP TABLE but lifecycle rules differ."
-    },
-    {
-      "statementText": "INSERT INTO ##GlobalOrderSummary\r\n    SELECT\r\n        CAST(OrderDate AS DATE),\r\n        COUNT(*),\r\n        SUM(TotalAmount)\r\n    FROM dbo.Orders\r\n    GROUP BY CAST(OrderDate AS DATE)",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "GLOBAL_TEMP_TABLE"
-      ],
-      "riskRationale": "GLOBAL_TEMP_TABLE (##name) has no PostgreSQL equivalent; architectural redesign required for cross-session state."
-    },
-    {
-      "statementText": "MERGE dbo.Products AS target\r\n    USING dbo.ProductImportStaging AS source\r\n    ON target.SKU = source.SKU\r\n    WHEN MATCHED THEN\r\n        UPDATE SET\r\n            ProductName = source.ProductName,\r\n            Price = source.Price,\r\n            StockQuantity = source.StockQuantity\r\n    WHEN NOT MATCHED BY TARGET THEN\r\n        INSERT (ProductName, SKU, Price, StockQuantity)\r\n        VALUES (source.ProductName, source.SKU, source.Price, source.StockQuantity)\r\n    WHEN NOT MATCHED BY SOURCE THEN\r\n        DELETE;",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "MERGE"
-      ],
-      "riskRationale": "MERGE statement syntax differs significantly; DELETE branch requires separate handling in PostgreSQL."
-    },
-    {
-      "statementText": "SELECT * FROM ##GlobalOrderSummary ORDER BY OrderDate DESC",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "GLOBAL_TEMP_TABLE"
-      ],
-      "riskRationale": "GLOBAL_TEMP_TABLE (##name) has no PostgreSQL equivalent; architectural redesign required for cross-session state."
-    },
-    {
-      "statementText": "SELECT\n      db_id() AS database_id,\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.is_filestream,\n      c.encryption_type,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,\n      COUNT_BIG(*) AS [ColCount],\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END AS collation_name,\n      AVG(c.max_length) AS avg_max_length\n      FROM sys.columns c WITH (NOLOCK)\n      LEFT OUTER JOIN sys.objects o WITH (NOLOCK)\n      ON o.object_id = c.object_id\n      AND o.type = \u0027U\u0027\n      GROUP BY\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.encryption_type,\n      c.is_filestream,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END,\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "NOLOCK",
-        "NOLOCK"
-      ],
-      "riskRationale": "NOLOCK hint is not supported; read consistency strategy must be reconsidered under MVCC."
-    },
-    {
-      "statementText": "SELECT\n      db_id() AS database_id,\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.is_filestream,\n      c.encryption_type,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,\n      COUNT_BIG(*) AS [ColCount],\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END AS collation_name,\n      AVG(c.max_length) AS avg_max_length\n      FROM sys.columns c WITH (NOLOCK)\n      LEFT OUTER JOIN sys.objects o WITH (NOLOCK)\n      ON o.object_id = c.object_id\n      AND o.type = \u0027U\u0027\n      GROUP BY\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.encryption_type,\n      c.is_filestream,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END,\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "NOLOCK",
-        "NOLOCK"
-      ],
-      "riskRationale": "NOLOCK hint is not supported; read consistency strategy must be reconsidered under MVCC."
-    },
-    {
-      "statementText": "SELECT\n      db_id() AS database_id,\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.is_filestream,\n      c.encryption_type,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END AS is_user,\n      COUNT_BIG(*) AS [ColCount],\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END AS collation_name,\n      AVG(c.max_length) AS avg_max_length\n      FROM sys.columns c WITH (NOLOCK)\n      LEFT OUTER JOIN sys.objects o WITH (NOLOCK)\n      ON o.object_id = c.object_id\n      AND o.type = \u0027U\u0027\n      GROUP BY\n      c.system_type_id,\n      c.user_type_id,\n      c.is_sparse,\n      c.is_column_set,\n      c.encryption_type,\n      c.is_filestream,\n      CASE WHEN o.object_id IS NOT NULL THEN 1 ELSE 0 END,\n      CASE WHEN c.collation_name IS NULL THEN CONVERT(VARCHAR(128), SERVERPROPERTY(\u0027Collation\u0027)) ELSE c.collation_name END",
-      "riskScore": 4,
-      "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "NOLOCK",
-        "NOLOCK"
-      ],
-      "riskRationale": "NOLOCK hint is not supported; read consistency strategy must be reconsidered under MVCC."
-    },
-    {
-      "statementText": "SELECT\n      db_id() as database_id,\n      sm.[is_inlineable] AS InlineableScalarCount,\n      sm.[inline_type] AS InlineType,\n      COUNT_BIG(*) AS ScalarCount, \n      COUNT_BIG(CASE WHEN sm.[definition] LIKE \u0027%getdate%\u0027 OR \n      sm.[definition] LIKE \u0027%getutcdate%\u0027 OR \n      sm.[definition] LIKE \u0027%sysdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysutcdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysdatetimeoffset%\u0027 OR\n      sm.[definition] LIKE \u0027%CURRENT_TIMESTAMP%\u0027\n      THEN 1 \n      END) AS ScalarCountWithDate          \n      FROM    [sys].[objects] o\n      INNER JOIN    [sys].[sql_modules] sm \n      ON o.[object_id] = sm.[object_id]\n      WHERE   o.[type] = \u0027FN\u0027\n      GROUP BY \n      sm.[is_inlineable],\n      sm.[inline_type]",
+      "statementText": "SELECT\r\n    i.object_id,\r\n    i.name AS constraint_name,\r\n    i.is_primary_key,\r\n    i.is_unique_constraint,\r\n    i.is_unique,\r\n    i.type_desc,\r\n    STRING_AGG(c.name, \u0027, \u0027) WITHIN GROUP (ORDER BY ic.key_ordinal) AS column_list\r\nFROM sys.indexes i\r\nINNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id\r\nINNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id\r\nINNER JOIN sys.tables t ON t.object_id = i.object_id\r\nWHERE t.is_ms_shipped = 0\r\n  AND ic.is_included_column = 0\r\n  AND (i.is_primary_key = 1 OR i.is_unique_constraint = 1)\r\nGROUP BY i.object_id, i.name, i.is_primary_key, i.is_unique_constraint, i.is_unique, i.type_desc",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -490,7 +574,7 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\n      db_id() as database_id,\n      sm.[is_inlineable] AS InlineableScalarCount,\n      sm.[inline_type] AS InlineType,\n      COUNT_BIG(*) AS ScalarCount, \n      COUNT_BIG(CASE WHEN sm.[definition] LIKE \u0027%getdate%\u0027 OR \n      sm.[definition] LIKE \u0027%getutcdate%\u0027 OR \n      sm.[definition] LIKE \u0027%sysdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysutcdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysdatetimeoffset%\u0027 OR\n      sm.[definition] LIKE \u0027%CURRENT_TIMESTAMP%\u0027\n      THEN 1 \n      END) AS ScalarCountWithDate          \n      FROM    [sys].[objects] o\n      INNER JOIN    [sys].[sql_modules] sm \n      ON o.[object_id] = sm.[object_id]\n      WHERE   o.[type] = \u0027FN\u0027\n      GROUP BY \n      sm.[is_inlineable],\n      sm.[inline_type]",
+      "statementText": "SELECT\r\n    i.object_id,\r\n    i.name AS constraint_name,\r\n    i.is_primary_key,\r\n    i.is_unique_constraint,\r\n    i.is_unique,\r\n    i.type_desc,\r\n    STRING_AGG(c.name, \u0027, \u0027) WITHIN GROUP (ORDER BY ic.key_ordinal) AS column_list\r\nFROM sys.indexes i\r\nINNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id\r\nINNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id\r\nINNER JOIN sys.tables t ON t.object_id = i.object_id\r\nWHERE t.is_ms_shipped = 0\r\n  AND ic.is_included_column = 0\r\n  AND (i.is_primary_key = 1 OR i.is_unique_constraint = 1)\r\nGROUP BY i.object_id, i.name, i.is_primary_key, i.is_unique_constraint, i.is_unique, i.type_desc",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -498,7 +582,7 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\n      db_id() as database_id,\n      sm.[is_inlineable] AS InlineableScalarCount,\n      sm.[inline_type] AS InlineType,\n      COUNT_BIG(*) AS ScalarCount, \n      COUNT_BIG(CASE WHEN sm.[definition] LIKE \u0027%getdate%\u0027 OR \n      sm.[definition] LIKE \u0027%getutcdate%\u0027 OR \n      sm.[definition] LIKE \u0027%sysdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysutcdatetime%\u0027 OR\n      sm.[definition] LIKE \u0027%sysdatetimeoffset%\u0027 OR\n      sm.[definition] LIKE \u0027%CURRENT_TIMESTAMP%\u0027\n      THEN 1 \n      END) AS ScalarCountWithDate          \n      FROM    [sys].[objects] o\n      INNER JOIN    [sys].[sql_modules] sm \n      ON o.[object_id] = sm.[object_id]\n      WHERE   o.[type] = \u0027FN\u0027\n      GROUP BY \n      sm.[is_inlineable],\n      sm.[inline_type]",
+      "statementText": "SELECT\r\n    i.object_id,\r\n    i.name AS constraint_name,\r\n    i.is_primary_key,\r\n    i.is_unique_constraint,\r\n    i.is_unique,\r\n    i.type_desc,\r\n    STRING_AGG(c.name, \u0027, \u0027) WITHIN GROUP (ORDER BY ic.key_ordinal) AS column_list\r\nFROM sys.indexes i\r\nINNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id\r\nINNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id\r\nINNER JOIN sys.tables t ON t.object_id = i.object_id\r\nWHERE t.is_ms_shipped = 0\r\n  AND ic.is_included_column = 0\r\n  AND (i.is_primary_key = 1 OR i.is_unique_constraint = 1)\r\nGROUP BY i.object_id, i.name, i.is_primary_key, i.is_unique_constraint, i.is_unique, i.type_desc",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -506,7 +590,7 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -514,7 +598,7 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
       "riskScore": 1,
       "weightedRisk": 1,
       "conversionCategory": "automatic",
@@ -522,7 +606,15 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
       "riskScore": 1,
       "weightedRisk": 2,
       "conversionCategory": "automatic",
@@ -530,7 +622,7 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
       "riskScore": 1,
       "weightedRisk": 2,
       "conversionCategory": "automatic",
@@ -538,56 +630,107 @@
       "riskRationale": "Standard DML with no SQL Server-specific features detected."
     },
     {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                o.name AS ObjectName,\r\n                o.type_desc AS ObjectType,\r\n                sm.definition AS SourceText,\r\n                CASE WHEN sm.definition IS NULL AND sm.object_id IS NOT NULL THEN 1 ELSE 0 END AS IsEncrypted\r\n            FROM sys.objects o\r\n            INNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\n            LEFT JOIN sys.sql_modules sm ON sm.object_id = o.object_id\r\n            WHERE o.type IN (\u0027V\u0027, \u0027TR\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027P\u0027, \u0027AF\u0027)\r\n              AND s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND o.is_ms_shipped = 0\r\n            ORDER BY s.name, o.type_desc, o.name",
+      "statementText": "SELECT\r\n    m.object_id,\r\n    m.definition\r\nFROM sys.sql_modules m\r\nWHERE m.definition IS NOT NULL",
       "riskScore": 1,
-      "weightedRisk": 2,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                t.name AS TableName,\r\n                c.name AS ColumnName,\r\n                c.column_id AS OrdinalPosition,\r\n                tp.name AS DataType,\r\n                c.precision AS [Precision],\r\n                c.scale AS Scale,\r\n                c.max_length AS MaxLength,\r\n                c.is_nullable AS IsNullable,\r\n                c.is_identity AS IsIdentity,\r\n                cc.definition AS ComputedDefinition\r\n            FROM sys.tables t\r\n            INNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\n            INNER JOIN sys.columns c ON c.object_id = t.object_id\r\n            INNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\n            LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\n            WHERE s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND t.is_ms_shipped = 0\r\n            ORDER BY s.name, t.name, c.column_id",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "SELECT\r\n                s.name AS SchemaName,\r\n                t.name AS TableName,\r\n                c.name AS ColumnName,\r\n                c.column_id AS OrdinalPosition,\r\n                tp.name AS DataType,\r\n                c.precision AS [Precision],\r\n                c.scale AS Scale,\r\n                c.max_length AS MaxLength,\r\n                c.is_nullable AS IsNullable,\r\n                c.is_identity AS IsIdentity,\r\n                cc.definition AS ComputedDefinition\r\n            FROM sys.tables t\r\n            INNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\n            INNER JOIN sys.columns c ON c.object_id = t.object_id\r\n            INNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\n            LEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\n            WHERE s.name NOT IN (\u0027sys\u0027, \u0027INFORMATION_SCHEMA\u0027)\r\n              AND t.is_ms_shipped = 0\r\n            ORDER BY s.name, t.name, c.column_id",
-      "riskScore": 1,
-      "weightedRisk": 1,
-      "conversionCategory": "automatic",
-      "detectedFeatures": [],
-      "riskRationale": "Standard DML with no SQL Server-specific features detected."
-    },
-    {
-      "statementText": "SELECT\r\n        c.FirstName \u002B \u0027 \u0027 \u002B c.LastName AS CustomerName,\r\n        ms.OrderCount,\r\n        ms.TotalRevenue\r\n    FROM #MonthlyStats ms\r\n    INNER JOIN dbo.Customers c ON ms.CustomerID = c.CustomerID\r\n    ORDER BY ms.TotalRevenue DESC",
-      "riskScore": 3,
-      "weightedRisk": 3,
-      "conversionCategory": "semi-automatic",
-      "detectedFeatures": [
-        "STRING_CONCAT_PLUS",
-        "TEMP_TABLE"
-      ],
-      "riskRationale": "Local temp table (#name) translates to PostgreSQL TEMP TABLE but lifecycle rules differ."
-    },
-    {
-      "statementText": "SELECT\r\n        p.ProductID,\r\n        p.ProductName,\r\n        p.StockQuantity,\r\n        p.Price\r\n    FROM dbo.Products p WITH (NOLOCK)\r\n    WHERE p.StockQuantity \u003E 0\r\n    ORDER BY p.StockQuantity ASC",
-      "riskScore": 4,
       "weightedRisk": 4,
-      "conversionCategory": "manual",
-      "detectedFeatures": [
-        "NOLOCK"
-      ],
-      "riskRationale": "NOLOCK hint is not supported; read consistency strategy must be reconsidered under MVCC."
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    o.object_id,\r\n    s.name AS schema_name,\r\n    o.name AS object_name,\r\n    o.type AS type_code\r\nFROM sys.objects o\r\nINNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\nWHERE o.is_ms_shipped = 0\r\n  AND o.type IN (\u0027U\u0027, \u0027V\u0027, \u0027P\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027TR\u0027, \u0027SO\u0027, \u0027SN\u0027)\nORDER BY s.name, o.name",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    o.object_id,\r\n    s.name AS schema_name,\r\n    o.name AS object_name,\r\n    o.type AS type_code\r\nFROM sys.objects o\r\nINNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\nWHERE o.is_ms_shipped = 0\r\n  AND o.type IN (\u0027U\u0027, \u0027V\u0027, \u0027P\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027TR\u0027, \u0027SO\u0027, \u0027SN\u0027)\nORDER BY s.name, o.name",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    o.object_id,\r\n    s.name AS schema_name,\r\n    o.name AS object_name,\r\n    o.type AS type_code\r\nFROM sys.objects o\r\nINNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\nWHERE o.is_ms_shipped = 0\r\n  AND o.type IN (\u0027U\u0027, \u0027V\u0027, \u0027P\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027TR\u0027, \u0027SO\u0027, \u0027SN\u0027)\nORDER BY s.name, o.name",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    o.object_id,\r\n    s.name AS schema_name,\r\n    o.name AS object_name,\r\n    o.type AS type_code\r\nFROM sys.objects o\r\nINNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\nWHERE o.is_ms_shipped = 0\r\n  AND o.type IN (\u0027U\u0027, \u0027V\u0027, \u0027P\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027TR\u0027, \u0027SO\u0027, \u0027SN\u0027)\nORDER BY s.name, o.name",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    o.object_id,\r\n    s.name AS schema_name,\r\n    o.name AS object_name,\r\n    o.type AS type_code\r\nFROM sys.objects o\r\nINNER JOIN sys.schemas s ON o.schema_id = s.schema_id\r\nWHERE o.is_ms_shipped = 0\r\n  AND o.type IN (\u0027U\u0027, \u0027V\u0027, \u0027P\u0027, \u0027FN\u0027, \u0027IF\u0027, \u0027TF\u0027, \u0027TR\u0027, \u0027SO\u0027, \u0027SN\u0027)\nORDER BY s.name, o.name",
+      "riskScore": 1,
+      "weightedRisk": 4,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 1,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 2,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
+    },
+    {
+      "statementText": "SELECT\r\n    t.object_id,\r\n    s.name AS schema_name,\r\n    t.name AS table_name,\r\n    c.column_id,\r\n    c.name AS column_name,\r\n    tp.name AS type_name,\r\n    c.max_length,\r\n    c.precision,\r\n    c.scale,\r\n    c.is_nullable,\r\n    c.is_identity,\r\n    ic.seed_value,\r\n    ic.increment_value,\r\n    dc.definition AS default_definition,\r\n    cc.definition AS computed_definition,\r\n    cc.is_persisted\r\nFROM sys.tables t\r\nINNER JOIN sys.schemas s ON t.schema_id = s.schema_id\r\nINNER JOIN sys.columns c ON c.object_id = t.object_id\r\nINNER JOIN sys.types tp ON c.user_type_id = tp.user_type_id\r\nLEFT JOIN sys.identity_columns ic ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nLEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id\r\nLEFT JOIN sys.computed_columns cc ON cc.object_id = c.object_id AND cc.column_id = c.column_id\r\nWHERE t.is_ms_shipped = 0\r\nORDER BY t.object_id, c.column_id",
+      "riskScore": 1,
+      "weightedRisk": 4,
+      "conversionCategory": "automatic",
+      "detectedFeatures": [],
+      "riskRationale": "Standard DML with no SQL Server-specific features detected."
     }
   ],
   "schemaAnalysis": {
     "findings": [
       {
-        "tableName": "dbo.Categories",
-        "columnName": "CategoryID",
+        "tableName": "dbo.AuditLog",
+        "columnName": "AuditID",
         "issueType": "Identity",
         "sqlServerType": "IDENTITY(seed, increment)",
         "postgresType": "GENERATED ALWAYS AS IDENTITY",
@@ -595,8 +738,8 @@
         "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
       },
       {
-        "tableName": "dbo.Categories",
-        "columnName": "CategoryName",
+        "tableName": "dbo.AuditLog",
+        "columnName": "TableName",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
         "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
@@ -604,17 +747,8 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.Customers",
-        "columnName": "CustomerID",
-        "issueType": "Identity",
-        "sqlServerType": "IDENTITY(seed, increment)",
-        "postgresType": "GENERATED ALWAYS AS IDENTITY",
-        "riskScore": 2,
-        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
-      },
-      {
-        "tableName": "dbo.Customers",
-        "columnName": "FirstName",
+        "tableName": "dbo.AuditLog",
+        "columnName": "Operation",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
         "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
@@ -622,8 +756,8 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.Customers",
-        "columnName": "LastName",
+        "tableName": "dbo.AuditLog",
+        "columnName": "ChangedBy",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
         "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
@@ -631,17 +765,8 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.Customers",
-        "columnName": "Email",
-        "issueType": "Collation",
-        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
-        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
-        "riskScore": 3,
-        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
-      },
-      {
-        "tableName": "dbo.Customers",
-        "columnName": "CreatedAt",
+        "tableName": "dbo.AuditLog",
+        "columnName": "ChangedAt",
         "issueType": "DataType",
         "sqlServerType": "datetime2(27,7)",
         "postgresType": "TIMESTAMPTZ",
@@ -649,35 +774,44 @@
         "description": "Direct mapping; TIMESTAMPTZ preserves precision"
       },
       {
-        "tableName": "dbo.Customers",
-        "columnName": "IsActive",
+        "tableName": "dbo.AuditLog",
+        "columnName": "OldValues",
         "issueType": "DataType",
-        "sqlServerType": "bit(1)",
-        "postgresType": "BOOLEAN",
-        "riskScore": 1,
-        "description": "Direct mapping; BIT(1) \u2192 BOOLEAN"
-      },
-      {
-        "tableName": "dbo.OrderItems",
-        "columnName": "OrderItemID",
-        "issueType": "Identity",
-        "sqlServerType": "IDENTITY(seed, increment)",
-        "postgresType": "GENERATED ALWAYS AS IDENTITY",
-        "riskScore": 2,
-        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
-      },
-      {
-        "tableName": "dbo.OrderMetadata",
-        "columnName": "MetadataXml",
-        "issueType": "DataType",
-        "sqlServerType": "xml(MAX)",
+        "sqlServerType": "nvarchar(MAX)",
         "postgresType": "TEXT",
         "riskScore": 2,
         "description": "VARCHAR(MAX)/NVARCHAR(MAX) maps to TEXT; no length limit in PostgreSQL"
       },
       {
-        "tableName": "dbo.Orders",
-        "columnName": "OrderID",
+        "tableName": "dbo.AuditLog",
+        "columnName": "OldValues",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.AuditLog",
+        "columnName": "NewValues",
+        "issueType": "DataType",
+        "sqlServerType": "nvarchar(MAX)",
+        "postgresType": "TEXT",
+        "riskScore": 2,
+        "description": "VARCHAR(MAX)/NVARCHAR(MAX) maps to TEXT; no length limit in PostgreSQL"
+      },
+      {
+        "tableName": "dbo.AuditLog",
+        "columnName": "NewValues",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.BudgetTransfers",
+        "columnName": "TransferID",
         "issueType": "Identity",
         "sqlServerType": "IDENTITY(seed, increment)",
         "postgresType": "GENERATED ALWAYS AS IDENTITY",
@@ -685,8 +819,8 @@
         "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
       },
       {
-        "tableName": "dbo.Orders",
-        "columnName": "OrderDate",
+        "tableName": "dbo.BudgetTransfers",
+        "columnName": "TransferDate",
         "issueType": "DataType",
         "sqlServerType": "datetime2(27,7)",
         "postgresType": "TIMESTAMPTZ",
@@ -694,7 +828,16 @@
         "description": "Direct mapping; TIMESTAMPTZ preserves precision"
       },
       {
-        "tableName": "dbo.Orders",
+        "tableName": "dbo.BudgetTransfers",
+        "columnName": "ApprovedBy",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.BudgetTransfers",
         "columnName": "Status",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
@@ -703,26 +846,8 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.ProductImportStaging",
-        "columnName": "SKU",
-        "issueType": "Collation",
-        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
-        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
-        "riskScore": 3,
-        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
-      },
-      {
-        "tableName": "dbo.ProductImportStaging",
-        "columnName": "ProductName",
-        "issueType": "Collation",
-        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
-        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
-        "riskScore": 3,
-        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
-      },
-      {
-        "tableName": "dbo.Products",
-        "columnName": "ProductID",
+        "tableName": "dbo.Departments",
+        "columnName": "DepartmentID",
         "issueType": "Identity",
         "sqlServerType": "IDENTITY(seed, increment)",
         "postgresType": "GENERATED ALWAYS AS IDENTITY",
@@ -730,8 +855,8 @@
         "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
       },
       {
-        "tableName": "dbo.Products",
-        "columnName": "ProductName",
+        "tableName": "dbo.Departments",
+        "columnName": "DepartmentName",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
         "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
@@ -739,8 +864,26 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.Products",
-        "columnName": "SKU",
+        "tableName": "dbo.Departments",
+        "columnName": "IsActive",
+        "issueType": "DataType",
+        "sqlServerType": "bit(1)",
+        "postgresType": "BOOLEAN",
+        "riskScore": 1,
+        "description": "Direct mapping; BIT(1) \u2192 BOOLEAN"
+      },
+      {
+        "tableName": "dbo.Employees",
+        "columnName": "EmployeeID",
+        "issueType": "Identity",
+        "sqlServerType": "IDENTITY(seed, increment)",
+        "postgresType": "GENERATED ALWAYS AS IDENTITY",
+        "riskScore": 2,
+        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
+      },
+      {
+        "tableName": "dbo.Employees",
+        "columnName": "FirstName",
         "issueType": "Collation",
         "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
         "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
@@ -748,8 +891,134 @@
         "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
       },
       {
-        "tableName": "dbo.Categories",
-        "columnName": "PK__Categori__19093A2BBFB5A8EA",
+        "tableName": "dbo.Employees",
+        "columnName": "LastName",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.Employees",
+        "columnName": "Email",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.ErrorLog",
+        "columnName": "ErrorLogID",
+        "issueType": "Identity",
+        "sqlServerType": "IDENTITY(seed, increment)",
+        "postgresType": "GENERATED ALWAYS AS IDENTITY",
+        "riskScore": 2,
+        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
+      },
+      {
+        "tableName": "dbo.ErrorLog",
+        "columnName": "ErrorProcedure",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.ErrorLog",
+        "columnName": "ErrorMessage",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.ErrorLog",
+        "columnName": "LoggedAt",
+        "issueType": "DataType",
+        "sqlServerType": "datetime2(27,7)",
+        "postgresType": "TIMESTAMPTZ",
+        "riskScore": 1,
+        "description": "Direct mapping; TIMESTAMPTZ preserves precision"
+      },
+      {
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "QueueID",
+        "issueType": "Identity",
+        "sqlServerType": "IDENTITY(seed, increment)",
+        "postgresType": "GENERATED ALWAYS AS IDENTITY",
+        "riskScore": 2,
+        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
+      },
+      {
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "ActionType",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "Status",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "CreatedAt",
+        "issueType": "DataType",
+        "sqlServerType": "datetime2(27,7)",
+        "postgresType": "TIMESTAMPTZ",
+        "riskScore": 1,
+        "description": "Direct mapping; TIMESTAMPTZ preserves precision"
+      },
+      {
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "ProcessedAt",
+        "issueType": "DataType",
+        "sqlServerType": "datetime2(27,7)",
+        "postgresType": "TIMESTAMPTZ",
+        "riskScore": 1,
+        "description": "Direct mapping; TIMESTAMPTZ preserves precision"
+      },
+      {
+        "tableName": "dbo.SalaryHistory",
+        "columnName": "HistoryID",
+        "issueType": "Identity",
+        "sqlServerType": "IDENTITY(seed, increment)",
+        "postgresType": "GENERATED ALWAYS AS IDENTITY",
+        "riskScore": 2,
+        "description": "IDENTITY columns map to GENERATED ALWAYS AS IDENTITY. Behavior differs on DELETE/reinsert: PostgreSQL does not reuse values."
+      },
+      {
+        "tableName": "dbo.SalaryHistory",
+        "columnName": "ChangeDate",
+        "issueType": "DataType",
+        "sqlServerType": "datetime2(27,7)",
+        "postgresType": "TIMESTAMPTZ",
+        "riskScore": 1,
+        "description": "Direct mapping; TIMESTAMPTZ preserves precision"
+      },
+      {
+        "tableName": "dbo.SalaryHistory",
+        "columnName": "Reason",
+        "issueType": "Collation",
+        "sqlServerType": "SQL_Latin1_General_CP1_CI_AS (default)",
+        "postgresType": "citext extension or explicit COLLATE \u0022und-x-icu\u0022",
+        "riskScore": 3,
+        "description": "SQL Server defaults to case-insensitive collation. PostgreSQL defaults to case-sensitive. Consider using the citext extension or adding explicit case-insensitive collation for columns used in WHERE/JOIN comparisons."
+      },
+      {
+        "tableName": "dbo.AuditLog",
+        "columnName": "PK__AuditLog__A17F23B85A8BA12C",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -757,8 +1026,8 @@
         "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
       },
       {
-        "tableName": "dbo.Customers",
-        "columnName": "PK__Customer__A4AE64B89415D088",
+        "tableName": "dbo.BudgetTransfers",
+        "columnName": "PK__BudgetTr__95490171E556E2FB",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -766,8 +1035,8 @@
         "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
       },
       {
-        "tableName": "dbo.OrderItems",
-        "columnName": "PK__OrderIte__57ED06A136D9DEE3",
+        "tableName": "dbo.Departments",
+        "columnName": "PK__Departme__B2079BCDB77CCDF8",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -775,8 +1044,8 @@
         "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
       },
       {
-        "tableName": "dbo.OrderMetadata",
-        "columnName": "PK_OrderMetadata",
+        "tableName": "dbo.Employees",
+        "columnName": "PK__Employee__7AD04FF1100424B1",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -784,8 +1053,8 @@
         "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
       },
       {
-        "tableName": "dbo.Orders",
-        "columnName": "PK__Orders__C3905BAF57C37ABD",
+        "tableName": "dbo.ErrorLog",
+        "columnName": "PK__ErrorLog__D65247E2F09E05C7",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -793,8 +1062,17 @@
         "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
       },
       {
-        "tableName": "dbo.Products",
-        "columnName": "PK__Products__B40CC6ED0E119479",
+        "tableName": "dbo.ProcessingQueue",
+        "columnName": "PK__Processi__8324E8F5F4CE171B",
+        "issueType": "ClusteredIndex",
+        "sqlServerType": "CLUSTERED INDEX",
+        "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
+        "riskScore": 3,
+        "description": "PostgreSQL has no clustered indexes. Data is stored in heap order. Use CLUSTER command for one-time physical reordering, or consider index-organized approaches for read-heavy workloads."
+      },
+      {
+        "tableName": "dbo.SalaryHistory",
+        "columnName": "PK__SalaryHi__4D7B4ADDB15C1ECB",
         "issueType": "ClusteredIndex",
         "sqlServerType": "CLUSTERED INDEX",
         "postgresType": "B-tree index (non-clustered) \u002B optional CLUSTER command",
@@ -803,57 +1081,57 @@
       }
     ],
     "estimatedEffort": {
-      "minHours": 5,
-      "maxHours": 14
+      "minHours": 8,
+      "maxHours": 22
     },
     "findingCountsByType": {
-      "Identity": 5,
-      "Collation": 9,
-      "DataType": 4,
-      "ClusteredIndex": 6
+      "Identity": 7,
+      "Collation": 16,
+      "DataType": 9,
+      "ClusteredIndex": 7
     }
   },
   "migrationRecommendation": {
     "recommendation": "PostgreSQL Migration with Compatibility Middleware",
-    "reasoning": "Migration readiness score of 58 indicates moderate complexity. 1 critical (Risk 5) and 8 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
-    "migrationReadinessScore": 58
+    "reasoning": "Migration readiness score of 68 indicates moderate complexity. 0 critical (Risk 5) and 0 high-risk (Risk 4) statements require compatibility middleware to bridge gaps during migration. Architectural features detected: Service Broker.",
+    "migrationReadinessScore": 68
   },
   "effort": {
     "schemaConversion": {
-      "minHours": 5,
-      "maxHours": 14
+      "minHours": 8,
+      "maxHours": 22
     },
     "codeConversion": {
-      "minHours": 73,
-      "maxHours": 528
+      "minHours": 4,
+      "maxHours": 32
     },
     "testing": {
-      "minHours": 109,
-      "maxHours": 792
+      "minHours": 6,
+      "maxHours": 48
     },
     "dataMigration": {
       "minHours": 7,
       "maxHours": 28
     },
     "performanceTuning": {
-      "minHours": 18,
-      "maxHours": 72
+      "minHours": 0,
+      "maxHours": 0
     },
-    "totalClassification": "Large",
+    "totalClassification": "Medium",
     "confidenceSummary": {
       "highConfidenceHours": {
-        "minHours": 12,
-        "maxHours": 42
+        "minHours": 15,
+        "maxHours": 50
       },
       "mediumConfidenceHours": {
-        "minHours": 110,
-        "maxHours": 800
+        "minHours": 10,
+        "maxHours": 80
       },
       "lowConfidenceHours": {
-        "minHours": 90,
-        "maxHours": 592
+        "minHours": 0,
+        "maxHours": 0
       },
-      "notes": "Critical-risk (Risk 5) statements require architectural replacement strategies before effort can be scoped. High-risk (Risk 4) items require design decisions to narrow estimates."
+      "notes": "All items are medium or high confidence. Estimates can be further refined with spike investigations on semi-automatic conversions."
     }
   }
 }
