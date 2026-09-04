@@ -1,0 +1,17 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "SessionsPath": "..\\..\\..\\AI-AssistedSchemaConversion\\sessions",
+  "ConnectionStrings": {
+    "TargetPostgres": "Host=YOUR_HOST;Port=5432;Database=YOUR_DATABASE;Username=YOUR_USERNAME;Password=YOUR_PASSWORD"
+  },
+  "Bedrock": {
+    "ModelId": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "Region": "us-east-1"
+  }
+}
